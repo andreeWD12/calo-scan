@@ -64,3 +64,45 @@ public struct BodyMetrics: Codable, Equatable, Sendable {
 public enum ValidationError: Error, Equatable, Sendable {
     case outOfRange(field: String)
 }
+
+/// Profilo nutrizionale dell'utente (dati inseriti nell'onboarding, modificabili dal Profilo).
+public struct UserProfile: Codable, Equatable, Sendable {
+    public var displayName: String
+    public var birthDate: Date
+    public var sex: BiologicalSex
+    public var heightCm: Double
+    public var weightKg: Double
+    public var targetWeightKg: Double?
+    public var activity: ActivityLevel
+    public var goal: NutritionGoal
+    public var diet: DietPreference
+    public var otherDietNote: String?
+    public var allergens: Set<Allergen>
+    public var otherAllergyNote: String?
+    /// Note libere su esigenze alimentari. Trattate come dato sanitario (art. 9 GDPR).
+    public var dietaryNotes: String?
+
+    public init(
+        displayName: String, birthDate: Date, sex: BiologicalSex, heightCm: Double, weightKg: Double,
+        targetWeightKg: Double?, activity: ActivityLevel, goal: NutritionGoal, diet: DietPreference,
+        otherDietNote: String? = nil, allergens: Set<Allergen> = [], otherAllergyNote: String? = nil,
+        dietaryNotes: String? = nil
+    ) {
+        self.displayName = displayName; self.birthDate = birthDate; self.sex = sex
+        self.heightCm = heightCm; self.weightKg = weightKg; self.targetWeightKg = targetWeightKg
+        self.activity = activity; self.goal = goal; self.diet = diet; self.otherDietNote = otherDietNote
+        self.allergens = allergens; self.otherAllergyNote = otherAllergyNote; self.dietaryNotes = dietaryNotes
+    }
+
+    public func ageYears(on date: Date = .now) -> Int { BodyMetrics.age(birthDate: birthDate, on: date) }
+
+    public func metrics(on date: Date = .now) throws -> BodyMetrics {
+        try BodyMetrics(ageYears: ageYears(on: date), sex: sex, heightCm: heightCm, weightKg: weightKg)
+    }
+}
+
+/// Politiche d'età. 16 anni è la soglia più alta tra gli Stati UE per il consenso digitale
+/// (art. 8 GDPR): adottarla vale in tutta l'Unione.
+public enum AgePolicy {
+    public static let minimumAccountAge = 16
+}

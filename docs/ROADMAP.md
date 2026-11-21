@@ -3,8 +3,8 @@
 | Fase | Contenuto | Stato |
 |---|---|---|
 | 1 | Architettura e struttura del progetto | ✅ completata |
-| 2 | Design system e schermate principali | ⏳ prossima |
-| 3 | Registrazione, login, onboarding | |
+| 2 | Design system e schermate principali | ✅ completata |
+| 3 | Registrazione, login, onboarding (collegamento a Supabase Auth) | ⏳ prossima |
 | 4 | Database (schema + RLS) e backend | |
 | 5 | AI Food Scanner e analisi nutrizionale | |
 | 6 | Diario e statistiche | |
@@ -23,3 +23,15 @@
 - Container dipendenze, protocolli dei servizi, stato `Loadable` per le schermate.
 
 Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è ancora stato compilato. Va verificato al primo `xcodegen generate` sul Mac.
+
+## Fase 2 – consegnato
+
+- Design system (`DesignSystem/`): palette light/dark con contrasti WCAG AA, tipografia Dynamic Type, spaziature, componenti (pulsanti, card, anelli, barre macro, stati di caricamento/vuoto/errore, campi, selezioni).
+- Navigazione a 5 sezioni con Scanner centrale a schermo intero.
+- Tutte le 25 schermate (vedi `ios/CaloScan/Features/README.md`), ognuna con ViewModel e stati di caricamento, vuoto ed errore.
+- Fotocamera reale (AVFoundation), scelta dalla libreria, ridimensionamento e rimozione dei metadati EXIF/GPS.
+- Promemoria locali reali (UserNotifications), tema chiaro/scuro/automatico.
+- Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
+- Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
+
+I servizi di produzione restano `NotConnectedService` (errore esplicito, nessun dato finto) finché ogni fase non collega il proprio backend.

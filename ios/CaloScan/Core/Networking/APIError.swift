@@ -10,6 +10,8 @@ enum APIError: LocalizedError, Equatable {
     case invalidInput(String)
     case server(status: Int)
     case decoding
+    /// Funzione il cui backend non è ancora collegato (solo durante lo sviluppo per fasi).
+    case notConnected
     case unknown
 
     var errorDescription: String? {
@@ -22,6 +24,7 @@ enum APIError: LocalizedError, Equatable {
         case .invalidInput(let message): message
         case .server: String(localized: "Si è verificato un problema sul server. Riprova.")
         case .decoding: String(localized: "Risposta non valida dal server.")
+        case .notConnected: String(localized: "Questa funzione non è ancora collegata al server.")
         case .unknown: String(localized: "Si è verificato un errore imprevisto.")
         }
     }

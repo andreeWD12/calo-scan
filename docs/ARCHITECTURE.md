@@ -147,6 +147,14 @@ Notifiche **locali** per i promemoria (pasti, peso, riepilogo giornaliero): funz
 - Ogni schermata gestisce: caricamento (skeleton), vuoto (con azione), errore (con "Riprova").
 - Retry con backoff solo per errori transitori; mai per 4xx.
 
-## 12. Limiti noti dell'ambiente di sviluppo
+## 12. Modalità anteprima (solo Debug)
+
+Le build Debug avviate con l'argomento `-PreviewMode` usano `PreviewStore` (servizi in memoria con dati d'esempio), utile per provare l'interfaccia nel simulatore e per i test. Con `-PreviewOnboarding` si parte dalla schermata di benvenuto. Il file è racchiuso in `#if DEBUG` e non esiste nelle build Release o App Store. Per attivarlo in Xcode: *Product → Scheme → Edit Scheme → Run → Arguments*.
+
+## 13. Conformità
+
+Requisiti GDPR, AI Act, MDR, consumatori, accessibilità e App Store, con lo stato di implementazione: `docs/COMPLIANCE.md`.
+
+## 14. Limiti noti dell'ambiente di sviluppo
 
 Questo progetto viene scritto in un ambiente Linux: non è possibile eseguire Xcode, il simulatore o compilare SwiftUI qui. La logica server (TypeScript) viene testata in questo ambiente; il codice Swift va compilato e verificato sul tuo Mac.
