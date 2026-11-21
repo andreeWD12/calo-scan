@@ -1,0 +1,14 @@
+# Xcode
+ios/CaloScan.xcodeproj/
+ios/Config/Secrets.xcconfig
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.build/
+.swiftpm/
+# Supabase
+supabase/.env
+supabase/.temp/
+supabase/functions/.env
+# OS
+.DS_Store

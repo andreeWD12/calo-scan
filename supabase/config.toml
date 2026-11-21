@@ -1,0 +1,46 @@
+# Configurazione Supabase CLI per lo sviluppo locale (`supabase start`).
+project_id = "caloscan"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+max_rows = 500
+
+[db]
+port = 54322
+major_version = 15
+
+[storage]
+enabled = true
+file_size_limit = "5MiB"
+
+[auth]
+enabled = true
+site_url = "caloscan://auth-callback"
+additional_redirect_urls = ["caloscan://auth-callback"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+minimum_password_length = 8
+password_requirements = "lower_upper_letters_digits"
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+secure_password_change = true
+
+[auth.external.apple]
+enabled = true
+client_id = "env(APPLE_SERVICES_ID)"
+secret = "env(APPLE_SIGNIN_SECRET)"
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_WEB_CLIENT_ID)"
+secret = "env(GOOGLE_WEB_CLIENT_SECRET)"
+skip_nonce_check = true
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
