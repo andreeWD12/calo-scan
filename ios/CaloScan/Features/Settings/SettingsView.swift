@@ -59,7 +59,7 @@ struct SettingsView: View {
                 LabeledContent("Versione", value: Bundle.main.appVersion)
                 Link("Termini di servizio", destination: LegalLinks.terms)
                 Link("Informativa sulla privacy", destination: LegalLinks.privacyPolicy)
-                Link("Assistenza", destination: LegalLinks.support)
+                NavigationLink("Assistenza") { SupportView() }
             }
             Section {
                 Text("I valori nutrizionali provengono da USDA FoodData Central e Open Food Facts (licenza ODbL). Le stime da foto e i consigli del coach sono generati dall'intelligenza artificiale e possono contenere errori.")

@@ -6,6 +6,12 @@ enum LegalLinks {
     static var privacyPolicy: URL { url("PRIVACY_POLICY_URL") }
     static var terms: URL { url("TERMS_URL") }
     static var support: URL { url("SUPPORT_URL") }
+    /// Email di assistenza (SUPPORT_EMAIL). Nil se manca o non è valida: la schermata nasconde "Scrivici".
+    static var supportEmail: String? {
+        guard let s = Bundle.main.object(forInfoDictionaryKey: "SUPPORT_EMAIL") as? String,
+              s.contains("@"), !s.contains("$("), !s.contains(" ") else { return nil }
+        return s
+    }
     /// Contratto di licenza standard Apple, usato se non si fornisce un EULA personalizzato.
     static let appleEULA = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 

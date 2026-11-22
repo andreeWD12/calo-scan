@@ -43,6 +43,8 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 14. Pagine pubbliche per **Informativa privacy** e **Termini di servizio** (URL richiesti da App Store Connect).
     Consigliato un controllo legale: l'app tratta dati relativi alla salute (art. 9 GDPR).
+    In `Secrets.xcconfig` imposta anche `SUPPORT_URL` (pagina di assistenza, richiesta da App Store Connect come *Support URL*,
+    con un modo per contattarti) e `SUPPORT_EMAIL` (usata da Impostazioni › Assistenza › "Scrivici"; è visibile agli utenti).
 15. Chiave APNs (.p8) per le notifiche push remote: Apple Developer → Keys → nuova chiave con *Apple Push Notifications service*. Serve anche la capability *Push Notifications* sull'App ID (già dichiarata in `project.yml`). I promemoria locali funzionano senza.
 16. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect.
 
