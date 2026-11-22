@@ -1,11 +1,12 @@
 import SwiftUI
 import CaloScanCore
 
-/// Onboarding a passi: consenso → dati personali → fisici → stile di vita → obiettivi → piano.
+/// Onboarding a passi: consenso → dati personali → fisici → stile di vita → obiettivi → piano → guida all'app.
 struct OnboardingFlowView: View {
     @Environment(AppState.self) private var app
     @State private var model: OnboardingViewModel
     @State private var savedResult: (UserProfile, DailyTargets)?
+    @State private var showingGuide = false
 
     init(services: AppServices) {
         _model = State(initialValue: OnboardingViewModel(services: services))
@@ -13,6 +14,10 @@ struct OnboardingFlowView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if showingGuide {
+                AppGuideView(onFinish: complete)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            } else {
             header
             if model.step == .plan {
                 PlanChoiceView(services: app.services, onContinueFree: finish, onPurchased: finish)
@@ -32,9 +37,11 @@ struct OnboardingFlowView: View {
                 .scrollDismissesKeyboard(.interactively)
                 footer
             }
+            }
         }
         .background(DS.Palette.background.ignoresSafeArea())
         .animation(DS.Motion.standard, value: model.step)
+        .animation(DS.Motion.standard, value: showingGuide)
         .alert("Salvataggio non riuscito",
                isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } }),
                presenting: model.error) { _ in
@@ -97,7 +104,13 @@ struct OnboardingFlowView: View {
         .background(DS.Palette.background)
     }
 
+    /// Dopo la scelta del piano: guida a funzioni e pulsanti, poi l'app.
     private func finish() {
+        guard savedResult != nil else { return }
+        showingGuide = true
+    }
+
+    private func complete() {
         guard let result = savedResult else { return }
         app.completeOnboarding(profile: result.0, targets: result.1)
     }
@@ -113,6 +126,7 @@ private struct IntroStep: View {
             Label("Stime basate su formule scientifiche riconosciute", systemImage: "function")
             Label("Obiettivi graduali, mai restrizioni estreme", systemImage: "shield.lefthalf.filled")
             Label("I tuoi dati restano tuoi: puoi esportarli o cancellarli quando vuoi", systemImage: "lock")
+            Label("Alla fine una breve guida ti mostra tutte le funzioni e i pulsanti dell'app", systemImage: "questionmark.circle")
         }
         .font(DS.Font.callout)
         .labelStyle(BrandLabelStyle())

@@ -7,6 +7,7 @@ enum ProfileRoute: Hashable { case editProfile, editTargets, professionalPlan, s
 struct ProfileView: View {
     @Environment(AppState.self) private var app
     @State private var path: [ProfileRoute] = []
+    @State private var showGuide = false
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -72,12 +73,16 @@ struct ProfileView: View {
                     NavigationLink(value: ProfileRoute.privacy) { Label("Privacy e account", systemImage: "hand.raised") }
                 }
                 Section {
+                    Button { showGuide = true } label: { Label("Guida all'app", systemImage: "book.pages") }
                     Link(destination: LegalLinks.support) { Label("Assistenza", systemImage: "questionmark.circle") }
                 } footer: {
                     Text("CaloScan fornisce stime a scopo informativo e non è un dispositivo medico.")
                 }
             }
             .navigationTitle("Profilo")
+            .fullScreenCover(isPresented: $showGuide) {
+                AppGuideView { showGuide = false }
+            }
             .onChange(of: app.router.pending, initial: true) { _, link in
                 if link == .professionalPlan { path = [.professionalPlan]; app.router.pending = nil }
             }

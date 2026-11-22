@@ -79,6 +79,8 @@ caloscan/
 4. **AppContainer**: crea le implementazioni una volta e le inietta tramite `Environment`. Nessun singleton globale nascosto.
 5. **CaloScanCore**: tipi puri e calcoli (BMR, TDEE, obiettivi, macro, aggregazioni del diario). Nessuna dipendenza da UI o rete.
 
+In Home, in alto a destra: corona (piani Plus/Pro; per gli utenti Pro, gestione dell'abbonamento) e ✦ (coach). Alla fine dell'onboarding, dopo la scelta del piano, `AppGuideView` spiega in 7 pagine tutte le funzioni e i pulsanti (Home, Scanner, Diario, Progressi, Coach, Profilo, piani); si può saltare ed è riapribile da Profilo → Guida all'app.
+
 Navigazione: `TabView` con 5 sezioni (Home, Diario, Scanner, Progressi, Profilo). Lo Scanner è il tab centrale, reso con un pulsante circolare in evidenza che apre la fotocamera a schermo intero. Ogni tab ha il proprio `NavigationStack` con percorso tipizzato.
 
 ## 5. Flusso principale: scansione di un piatto

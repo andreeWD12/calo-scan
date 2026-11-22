@@ -1,7 +1,7 @@
 import SwiftUI
 import CaloScanCore
 
-enum HomeRoute: Hashable { case coach }
+enum HomeRoute: Hashable { case coach, subscription }
 
 /// Dashboard: calorie e macro di oggi, pulsante di scansione, consigli, pasti del giorno.
 struct HomeView: View {
@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var model: HomeViewModel
     @State private var addingTo: MealType?
     @State private var loggingPlanned: PlannedMeal?
+    @State private var showPaywall = false
     @State private var path: [HomeRoute] = []
     let onScan: () -> Void
 
@@ -30,7 +31,11 @@ struct HomeView: View {
             .background(DS.Palette.background.ignoresSafeArea())
             .refreshable { await model.load() }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    PlanShortcut(plan: app.entitlements.plan) {
+                        // Free e Plus vedono i piani; Pro va alla gestione dell'abbonamento.
+                        if app.entitlements.plan == .pro { path.append(.subscription) } else { showPaywall = true }
+                    }
                     Button { path.append(.coach) } label: { Image(systemName: "sparkles") }
                         .accessibilityLabel(Text("Apri AI Nutrition Coach"))
                 }
@@ -38,7 +43,11 @@ struct HomeView: View {
             .navigationDestination(for: HomeRoute.self) { route in
                 switch route {
                 case .coach: CoachView(services: app.services)
+                case .subscription: ManageSubscriptionView()
                 }
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView(services: app.services, highlight: app.entitlements.plan == .plus ? .pro : .plus)
             }
             .sheet(item: $addingTo) { type in
                 AddFoodFlowView(services: app.services, mealType: type) {
@@ -308,5 +317,28 @@ private struct PlannedMealPreview: View {
             .foregroundStyle(DS.Palette.brand)
             .background(DS.Palette.brandSoft, in: .rect(cornerRadius: DS.Radius.m))
         }
+    }
+}
+
+/// Icona in alto per raggiungere subito i piani (o la gestione dell'abbonamento per Pro).
+private struct PlanShortcut: View {
+    let plan: Plan
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            if plan == .free {
+                Image(systemName: "crown")
+            } else {
+                HStack(spacing: 3) {
+                    Image(systemName: "crown.fill")
+                    Text(plan.displayName).font(.caption.weight(.bold))
+                }
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(DS.Palette.brandSoft, in: .capsule)
+            }
+        }
+        .foregroundStyle(DS.Palette.brand)
+        .accessibilityLabel(Text(plan == .pro ? "Gestisci l'abbonamento Pro" : "Scopri i piani Premium"))
     }
 }
