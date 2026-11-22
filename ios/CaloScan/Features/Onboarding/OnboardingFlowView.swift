@@ -225,7 +225,7 @@ private struct PersonalStep: View {
                     if model.isPregnant {
                         PregnancyDatingFields(byWeek: $model.pregnancyByWeek, week: $model.pregnancyWeek,
                                               dueDate: $model.dueDate, dueDateRange: model.dueDateRange)
-                        Text("Da qui la settimana avanza da sola e la dieta si adatta. Non imposteremo mai un deficit calorico né digiuni. Con Plus avrai energia, proteine e consigli per la tua settimana e gli avvisi sugli alimenti da evitare. Segui sempre le indicazioni di ginecologo e ostetrica.")
+                        Text("Da qui la settimana avanza da sola e la dieta si adatta. Non imposteremo mai un deficit calorico né digiuni. Con Pro avrai energia, proteine e consigli per la tua settimana e gli avvisi sugli alimenti da evitare. Segui sempre le indicazioni di ginecologo e ostetrica.")
                             .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
                     }
                 }

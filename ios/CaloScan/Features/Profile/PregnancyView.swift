@@ -80,7 +80,7 @@ struct PregnancyFoodBadge: View {
 
 /// Profilo › Gravidanza.
 /// Per tutti (tutela di sicurezza): mai deficit, niente digiuni, elenco degli alimenti da evitare.
-/// Con Plus o Pro (dieta per la gravidanza): energia, proteine e consigli della settimana, avvisi automatici sugli alimenti.
+/// Con Pro (dieta per la gravidanza): energia, proteine e consigli della settimana, avvisi automatici sugli alimenti.
 struct PregnancyView: View {
     @Environment(AppState.self) private var app
     @State private var showPaywall = false
@@ -117,7 +117,7 @@ struct PregnancyView: View {
             } footer: {
                 Text(enabled
                      ? "L'esito del test sulla toxoplasmosi è nei tuoi esami del primo trimestre. Se non lo sai, consideriamo i salumi crudi da evitare."
-                     : "Con la modalità gravidanza CaloScan non imposta mai un deficit calorico né digiuni e ti mostra gli alimenti da evitare. Con Plus anche il fabbisogno per trimestre e gli avvisi automatici sugli alimenti.")
+                     : "Con la modalità gravidanza CaloScan non imposta mai un deficit calorico né digiuni e ti mostra gli alimenti da evitare. Con Pro anche energia, proteine e consigli per la tua settimana e gli avvisi automatici sugli alimenti.")
             }
 
             if let draft {
@@ -132,7 +132,7 @@ struct PregnancyView: View {
                     } else if !app.hasPregnancyPlan {
                         Label("Obiettivo di mantenimento: nessun deficit calorico.", systemImage: "checkmark.shield")
                             .font(DS.Font.callout)
-                        pregnancyPlusCard(trimester: tri)
+                        pregnancyProCard(trimester: tri)
                     } else {
                         LabeledContent("Energia in più al giorno", value: "+\(plan.extraKcal) kcal")
                         LabeledContent("Proteine in più al giorno", value: "+\(plan.extraProteinG) g")
@@ -212,17 +212,17 @@ struct PregnancyView: View {
             }
         }
         .sheet(isPresented: $showPaywall) {
-            PaywallView(services: app.services, highlight: .plus, showsPregnancyOffer: true)
+            PaywallView(services: app.services, highlight: .pro, showsPregnancyOffer: true)
         }
         .alert("Salvataggio non riuscito",
                isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } }),
                presenting: error) { _ in Button("OK", role: .cancel) {} } message: { Text($0.localizedDescription) }
     }
 
-    /// Invito a Plus per il piano Free. L'offerta del 30% compare nel paywall solo se Apple la concede.
-    private func pregnancyPlusCard(trimester: Int) -> some View {
+    /// Invito a Pro per i piani Free e Plus. L'offerta del 30% compare nel paywall solo se Apple la concede.
+    private func pregnancyProCard(trimester: Int) -> some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-            Label("Dieta per la gravidanza con Plus", systemImage: "lock.fill")
+            Label("Dieta per la gravidanza con Pro", systemImage: "lock.fill")
                 .font(DS.Font.callout.weight(.semibold))
             Text("Energia, proteine e consigli per la tua settimana, che si aggiornano da soli (ora +\(PregnancyNutrition.extraKcal(trimester: trimester)) kcal e +\(PregnancyNutrition.extraProteinG(trimester: trimester)) g di proteine al giorno), avvisi automatici su scansioni, ricerca e lista della spesa, suggerimenti AI senza gli alimenti da evitare.")
                 .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)

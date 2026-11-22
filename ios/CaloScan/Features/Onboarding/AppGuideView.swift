@@ -212,7 +212,7 @@ struct GuidePage: Identifiable {
                     Item(symbol: "fork.knife", title: "Stile alimentare (Plus e Pro)",
                          text: "Dal Coach o dal Profilo scegli con il coach lo stile più adatto: mediterranea, proteica, vegetariana, digiuno intermittente e altri. Prima rispondi a poche domande di sicurezza."),
                     Item(symbol: "heart.circle", title: "Gravidanza (gratis)",
-                         text: "Da Profilo › Gravidanza: indica a che settimana sei: niente deficit calorico per tutti; con Plus energia, proteine e consigli che si adattano alla settimana e avvisi sugli alimenti da evitare in scansioni, ricerca e lista della spesa."),
+                         text: "Da Profilo › Gravidanza: indica a che settimana sei: niente deficit calorico per tutti; con Pro energia, proteine e consigli che si adattano alla settimana e avvisi sugli alimenti da evitare in scansioni, ricerca e lista della spesa."),
                     Item(symbol: "person.2", title: "Invita un amico",
                          text: "Da Profilo › Invita un amico condividi il tuo codice: quando un amico inizia a usare CaloScan ricevi uno sconto sul primo mese (uno solo, non accumulabile)."),
                   ]),

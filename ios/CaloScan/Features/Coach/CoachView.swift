@@ -117,7 +117,7 @@ struct CoachView: View {
 }
 
 /// Trasparenza sull'uso dell'AI (Regolamento UE 2024/1689, art. 50) e limiti dei consigli.
-/// Accesso alla scelta dello stile alimentare (Plus e Pro; per Free mostra il lucchetto).
+/// Accesso alla scelta dello stile alimentare (solo Pro; per Free e Plus mostra il lucchetto).
 private struct EatingStyleEntry: View {
     let plan: Plan
     let current: EatingStyle?
@@ -133,8 +133,8 @@ private struct EatingStyleEntry: View {
                     .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
             }
             Spacer()
-            if plan == .free {
-                Label("Plus", systemImage: "lock.fill").font(.caption.weight(.bold))
+            if plan != .pro {
+                Label("Pro", systemImage: "lock.fill").font(.caption.weight(.bold))
                     .foregroundStyle(DS.Palette.brand)
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(DS.Palette.brandSoft, in: .capsule)

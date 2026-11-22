@@ -218,8 +218,8 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
          PlanOffer(id: "caloscan.plus.yearly", plan: .plus, period: .yearly, displayPrice: "39,99 €", pricePerMonthText: "3,33 €", introOffer: "7 giorni gratis"),
          PlanOffer(id: "caloscan.pro.monthly", plan: .pro, period: .monthly, displayPrice: "9,99 €", pricePerMonthText: nil, introOffer: nil),
          PlanOffer(id: "caloscan.pro.yearly", plan: .pro, period: .yearly, displayPrice: "79,99 €", pricePerMonthText: "6,67 €", introOffer: nil),
-         PlanOffer(id: "caloscan.plus.monthly.pregnancy", plan: .plus, period: .monthly, displayPrice: "4,99 €", pricePerMonthText: nil,
-                   introOffer: "−30% per i primi 3 mesi", audience: .pregnancy, introPrice: "3,49 €", introMonths: 3)]
+         PlanOffer(id: "caloscan.pro.monthly.pregnancy", plan: .pro, period: .monthly, displayPrice: "9,99 €", pricePerMonthText: nil,
+                   introOffer: "−30% per i primi 3 mesi", audience: .pregnancy, introPrice: "6,99 €", introMonths: 3)]
     }
 
     func purchase(offerID: String) async throws -> PurchaseOutcome {

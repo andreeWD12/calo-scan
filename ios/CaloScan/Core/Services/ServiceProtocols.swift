@@ -154,8 +154,8 @@ struct PlanOffer: Identifiable, Hashable, Sendable {
     let displayPrice: String
     let pricePerMonthText: String?
     let introOffer: String?
-    /// `.pregnancy`: prodotto Plus mensile dedicato (`caloscan.plus.monthly.pregnancy`), stesso gruppo di abbonamenti
-    /// e stesso prezzo di Plus mensile, con offerta introduttiva Apple "pagamento anticipato a rate" del 30% per 3 mesi.
+    /// `.pregnancy`: prodotto Pro mensile dedicato (`caloscan.pro.monthly.pregnancy`), stesso gruppo di abbonamenti
+    /// e stesso prezzo di Pro mensile, con offerta introduttiva Apple "pagamento anticipato a rate" del 30% per 3 mesi.
     /// Non compare nel paywall normale: solo a chi ha indicato la gravidanza.
     var audience: Audience = .standard
     /// Prezzo dell'offerta introduttiva da StoreKit (es. "3,49 €"), con la sua durata in mesi.

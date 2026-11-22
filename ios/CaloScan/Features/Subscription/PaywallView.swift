@@ -42,7 +42,7 @@ struct PaywallView: View {
 /// Contenuto riutilizzato sia nel paywall sia nella scelta del piano in onboarding.
 struct PaywallContent: View {
     @Bindable var model: PaywallViewModel
-    /// Chi ha indicato la gravidanza vede in cima l'offerta Plus dedicata (se Apple gliela concede).
+    /// Chi ha indicato la gravidanza vede in cima l'offerta Pro dedicata (se Apple gliela concede).
     var showsPregnancyOffer = false
     let onPurchased: () -> Void
 
@@ -125,9 +125,9 @@ struct PaywallContent: View {
     }
 }
 
-/// Offerta Plus per la gravidanza: offerta introduttiva Apple del 30% per 3 mesi su un prodotto dedicato.
+/// Offerta Pro per la gravidanza: offerta introduttiva Apple del 30% per 3 mesi su un prodotto dedicato.
 /// Prezzo scontato, durata e prezzo successivo sono scritti accanto al pulsante (linea guida 3.1.2,
-/// Codice del Consumo art. 17-bis: lo sconto è calcolato sul prezzo normale di Plus mensile, che non cambia).
+/// Codice del Consumo art. 17-bis: lo sconto è calcolato sul prezzo normale di Pro mensile, che non cambia).
 private struct PregnancyOfferCard: View {
     let offer: PlanOffer
     let isPurchasing: Bool
@@ -140,7 +140,7 @@ private struct PregnancyOfferCard: View {
             Label("Offerta per la gravidanza", systemImage: "heart.fill")
                 .font(DS.Font.caption.weight(.semibold))
                 .foregroundStyle(DS.Palette.brand)
-            Text("Plus a \(offer.introPrice ?? "") al mese per i primi \(months) mesi")
+            Text("Pro a \(offer.introPrice ?? "") al mese per i primi \(months) mesi")
                 .font(DS.Font.headline)
             Text("Invece di \(offer.displayPrice) al mese: il 30% in meno.")
                 .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
@@ -166,7 +166,7 @@ private struct PregnancyOfferCard: View {
         "Energia, proteine e consigli per la tua settimana di gravidanza (EFSA)",
         "Avvisi automatici su scansioni, ricerca e lista della spesa",
         "Suggerimenti AI senza gli alimenti da evitare",
-        "Tutte le funzioni di Plus",
+        "Tutte le funzioni di Pro",
     ]
 }
 

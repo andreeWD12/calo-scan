@@ -150,7 +150,7 @@ final class EatingStyleViewModel {
     }
 }
 
-/// Scelta dello stile alimentare insieme al coach AI. Solo Plus e Pro.
+/// Scelta dello stile alimentare insieme al coach AI. Solo Pro.
 struct EatingStyleView: View {
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
@@ -163,7 +163,7 @@ struct EatingStyleView: View {
         _model = State(initialValue: EatingStyleViewModel(services: services))
     }
 
-    private var isLocked: Bool { app.entitlements.plan == .free }
+    private var isLocked: Bool { !app.hasEatingStyles }
 
     var body: some View {
         Form {
@@ -195,7 +195,7 @@ struct EatingStyleView: View {
         .navigationTitle("Stile alimentare")
         .navigationBarTitleDisplayMode(.inline)
         .animation(DS.Motion.standard, value: model.step)
-        .sheet(isPresented: $showPaywall) { PaywallView(services: app.services, highlight: .plus) }
+        .sheet(isPresented: $showPaywall) { PaywallView(services: app.services, highlight: .pro) }
         .confirmationDialog("Rimuovere lo stile alimentare?", isPresented: $confirmRemove, titleVisibility: .visible) {
             Button("Rimuovi", role: .destructive) { Task { await model.remove(app: app) } }
         }
@@ -216,7 +216,7 @@ struct EatingStyleView: View {
             Button {
                 showPaywall = true
             } label: {
-                Label("Disponibile con Plus e Pro", systemImage: "lock.fill")
+                Label("Disponibile con Pro", systemImage: "lock.fill")
                     .font(DS.Font.callout.weight(.semibold))
             }
         }

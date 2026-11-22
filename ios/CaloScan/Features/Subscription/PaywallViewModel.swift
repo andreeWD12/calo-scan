@@ -80,11 +80,11 @@ extension Plan {
         case .plus:
             ["Più scansioni AI ogni giorno", "Analisi dettagliata dei macronutrienti",
              "Statistiche settimanali e mensili complete", "Consigli nutrizionali personalizzati",
-             "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI",
-             "Stile alimentare scelto con il coach, anche digiuno intermittente",
-             "Dieta per la gravidanza che si adatta alla tua settimana"]
+             "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI"]
         case .pro:
             ["Tutto di Plus", "Scansioni AI con limiti molto più alti", "AI Nutrition Coach avanzato",
+             "Stile alimentare scelto con il coach, anche digiuno intermittente",
+             "Dieta per la gravidanza che si adatta alla tua settimana",
              "Piano dei pasti settimanale e idee ricette", "Lista della spesa AI senza limiti settimanali",
              "Report mensili avanzati"]
         }

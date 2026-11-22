@@ -18,7 +18,7 @@ final class AppState {
     private(set) var professionalPlan: ProfessionalPlan?
     /// Obiettivi effettivi usati da Home, Diario, Progressi e Coach.
     /// Ordine: piano del professionista › gravidanza › obiettivi calcolati.
-    /// Gravidanza: con Plus o Pro fabbisogno EFSA per trimestre; con Free almeno il mantenimento.
+    /// Gravidanza: con Pro fabbisogno EFSA per settimana/trimestre; con Free almeno il mantenimento.
     /// Il "mai in deficit" vale per tutti i piani: è una tutela di sicurezza, non una funzione a pagamento.
     var targets: DailyTargets? {
         if let professionalPlan { return professionalPlan.dailyTargets(fallback: computedTargets) }
@@ -36,8 +36,10 @@ final class AppState {
 
     /// Gravidanza attiva (tutti i piani): niente deficit, niente digiuni o stili restrittivi.
     var pregnancy: PregnancyInfo? { profile?.activePregnancy() }
-    /// Dieta per la gravidanza completa (Plus e Pro): fabbisogno per trimestre, avvisi automatici sugli alimenti.
-    var hasPregnancyPlan: Bool { entitlements.plan != .free }
+    /// Dieta per la gravidanza completa (solo Pro): fabbisogno per settimana, avvisi automatici sugli alimenti.
+    var hasPregnancyPlan: Bool { entitlements.plan == .pro }
+    /// Stile alimentare scelto con il coach, digiuni compresi (solo Pro).
+    var hasEatingStyles: Bool { entitlements.plan == .pro }
     private(set) var entitlements: Entitlements = .free
     /// Incrementato quando il diario cambia, così Home e Diario ricaricano i dati.
     private(set) var diaryRevision = 0

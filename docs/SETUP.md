@@ -31,10 +31,10 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 10. **App Store Connect**: crea l'app, poi un *Subscription Group* "CaloScan Premium" con i 4 prodotti
     `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly` e imposta i prezzi.
-    **Offerta gravidanza**: nello stesso gruppo crea anche `caloscan.plus.monthly.pregnancy` (nome "CaloScan Plus – Gravidanza",
-    durata 1 mese, **stesso prezzo** di `caloscan.plus.monthly`, stesso livello di servizio). Nella sua pagina → *Subscription Prices* →
-    *Introductory Offers* → **Pay as you go**, durata **3 mesi**, prezzo pari al 70% del normale (es. 3,49 € se Plus costa 4,99 €),
-    in tutti i paesi in vendita. Se cambi il prezzo di Plus mensile, aggiorna anche questo prodotto e la sua offerta.
+    **Offerta gravidanza**: nello stesso gruppo crea anche `caloscan.pro.monthly.pregnancy` (nome "CaloScan Pro – Gravidanza",
+    durata 1 mese, **stesso prezzo** di `caloscan.pro.monthly`, stesso livello di servizio). Nella sua pagina → *Subscription Prices* →
+    *Introductory Offers* → **Pay as you go**, durata **3 mesi**, prezzo pari al 70% del normale (es. 6,99 € se Pro costa 9,99 €),
+    in tutti i paesi in vendita. Se cambi il prezzo di Pro mensile, aggiorna anche questo prodotto e la sua offerta.
 11. Firma il *Paid Applications Agreement* e inserisci dati fiscali e bancari (senza, gli acquisti non funzionano).
 12. Crea una chiave **App Store Connect API (In-App Purchase)** → `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`.
 13. Imposta l'URL delle **App Store Server Notifications V2** sulla funzione `app-store-notifications`.
