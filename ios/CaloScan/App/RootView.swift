@@ -45,7 +45,7 @@ struct SplashView: View {
     }
 }
 
-/// Logo dell'app: mela nel mirino dello scanner. Asset vettoriale (Assets.xcassets/Logo)
+/// Logo dell'app: pera nel mirino dello scanner. Asset vettoriale (Assets.xcassets/Logo)
 /// con variante per la dark mode; sorgenti in design/logo/.
 struct AppMark: View {
     var size: CGFloat = 64
