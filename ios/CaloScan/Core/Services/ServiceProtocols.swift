@@ -128,7 +128,8 @@ enum Plan: String, Codable, Comparable, Sendable, CaseIterable {
 struct Entitlements: Codable, Equatable, Sendable {
     let plan: Plan
     let scansUsedToday: Int
-    let scansLimitToday: Int
+    /// nil = scansioni illimitate (Pro). Resta solo il limite anti-abuso del server su raffiche automatiche.
+    let scansLimitToday: Int?
     let coachMessagesUsedToday: Int
     let coachMessagesLimitToday: Int
     let expiresAt: Date?
@@ -138,7 +139,8 @@ struct Entitlements: Codable, Equatable, Sendable {
                                    coachMessagesUsedToday: 0, coachMessagesLimitToday: 5,
                                    expiresAt: nil, willRenew: false)
 
-    var scansRemaining: Int { max(scansLimitToday - scansUsedToday, 0) }
+    var hasUnlimitedScans: Bool { scansLimitToday == nil }
+    var scansRemaining: Int { scansLimitToday.map { max($0 - scansUsedToday, 0) } ?? .max }
 }
 
 protocol EntitlementService: Sendable {

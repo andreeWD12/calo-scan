@@ -23,7 +23,11 @@ struct ManageSubscriptionView: View {
                 }
             }
             Section("Utilizzo di oggi") {
-                usageRow("Scansioni AI", used: e.scansUsedToday, limit: e.scansLimitToday)
+                if let limit = e.scansLimitToday {
+                    usageRow("Scansioni AI", used: e.scansUsedToday, limit: limit)
+                } else {
+                    LabeledContent("Scansioni AI", value: String(localized: "Illimitate · \(e.scansUsedToday) oggi"))
+                }
                 usageRow("Messaggi al coach", used: e.coachMessagesUsedToday, limit: e.coachMessagesLimitToday)
             }
             Section {

@@ -96,7 +96,7 @@ struct HomeView: View {
             if let targets = app.targets {
                 SummaryCard(day: day, targets: targets, professional: app.professionalPlan?.professional).appear(index: 0)
             }
-            ScanCallToAction(scansRemaining: app.entitlements.scansRemaining, action: onScan).appear(index: 1)
+            ScanCallToAction(scansRemaining: app.entitlements.hasUnlimitedScans ? nil : app.entitlements.scansRemaining, action: onScan).appear(index: 1)
             if let insight = model.insights.first {
                 InsightCard(insight: insight) { path.append(.coach) }
                     .appear(index: 2)
@@ -162,7 +162,13 @@ private struct SummaryCard: View {
 
 /// Il fulcro dell'app: pulsante grande per scansionare un piatto.
 private struct ScanCallToAction: View {
-    let scansRemaining: Int
+    private var scansText: LocalizedStringKey {
+        guard let scansRemaining else { return "Scansioni illimitate" }
+        return scansRemaining > 0 ? "\(scansRemaining) scansioni disponibili oggi" : "Scansioni di oggi esaurite"
+    }
+
+    /// nil = illimitate (Pro).
+    let scansRemaining: Int?
     let action: () -> Void
 
     var body: some View {
@@ -172,7 +178,7 @@ private struct ScanCallToAction: View {
                     .font(.system(size: 30, weight: .semibold))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("SCANSIONA IL TUO PIATTO").font(DS.Font.headline).tracking(0.3)
-                    Text(scansRemaining > 0 ? LocalizedStringKey("\(scansRemaining) scansioni disponibili oggi") : LocalizedStringKey("Scansioni di oggi esaurite"))
+                    Text(scansText)
                         .font(DS.Font.caption)
                         .opacity(0.85)
                 }

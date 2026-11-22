@@ -206,7 +206,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     // MARK: Abbonamenti
 
     func refresh() async throws -> Entitlements {
-        let limit = switch plan { case .free: 3; case .plus: 20; case .pro: 100 }
+        let limit: Int? = switch plan { case .free: 3; case .plus: 20; case .pro: nil }
         return Entitlements(plan: plan, scansUsedToday: scansUsed, scansLimitToday: limit,
                             coachMessagesUsedToday: messages.count / 2, coachMessagesLimitToday: plan == .free ? 5 : 30,
                             expiresAt: plan == .free ? nil : Calendar.current.date(byAdding: .month, value: 1, to: .now),

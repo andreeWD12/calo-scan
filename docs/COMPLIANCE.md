@@ -77,6 +77,7 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | App Store 1.4.1 – gravidanza | Avvisi informativi con fonti, limiti del riconoscimento dichiarati ("controlla l'etichetta"), nessuna promessa sulla salute | ✅ Fase 2 |
 | 3.1.1 / 3.2.2 Premi per gli inviti | Il premio è solo un codice offerta Apple (sconto sul primo mese), mai uno sblocco gestito dall'app; nessun obbligo di invitare per usare funzioni; nessun premio per recensioni o download di altre app | 🟡 Fase 8 |
 | GDPR art. 5(1)(c) Minimizzazione negli inviti | Niente accesso ai contatti; il referrer vede solo conteggi; righe cancellate con l'account; DeviceCheck senza identificatori | 🟡 Fase 4 |
+| Codice del Consumo artt. 20-23 – "scansioni illimitate" (Pro) | Nessun tetto giornaliero nascosto: solo il limite anti-abuso sulle raffiche automatiche (20 in 10 minuti), dichiarato nei Termini e irraggiungibile con un uso personale. Se in futuro serve un tetto, non usare più la parola "illimitate" | ✅ app / 🟡 Termini Fase 9 |
 | Codice del Consumo (pratiche commerciali) | Regolamento dell'invito chiaro in app e nei Termini: premio unico non accumulabile, solo primo mese, scadenza, rinnovo a prezzo pieno; trasparenza sul prezzo dopo lo sconto | 🟡 Fase 8 |
 | 3.1.2 Abbonamenti: titolo, durata, prezzo, link a Termini/EULA e Privacy, ripristino acquisti | Paywall | ✅ UI |
 | 4.8 Sign in with Apple quando c'è un login di terze parti | Apple mostrato per primo accanto a Google | ✅ |
