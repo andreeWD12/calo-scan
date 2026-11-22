@@ -9,6 +9,7 @@ struct ScannerFlowView: View {
     @State private var model: ScannerViewModel
     @State private var showManualEntry = false
     @State private var showPaywall = false
+    @State private var showDescribe = false
 
     init(services: AppServices) {
         _model = State(initialValue: ScannerViewModel(services: services))
@@ -25,23 +26,28 @@ struct ScannerFlowView: View {
                                          onManual: { showManualEntry = true })
                     } else if model.hasAIConsent == false {
                         AIConsentView(onAccept: { Task { await model.grantAIConsent() } },
+                                      onDescribe: { showDescribe = true },
                                       onManual: { showManualEntry = true })
                     } else {
                         CaptureView(onImage: { data in Task { await model.analyze(rawImage: data) } },
+                                    onDescribe: { showDescribe = true },
                                     onManual: { showManualEntry = true })
                     }
                 case .analyzing:
-                    AnalyzingView(imageData: model.imageData)
+                    AnalyzingView(imageData: model.imageData, description: model.analyzedDescription)
                         .transition(.opacity.combined(with: .scale(scale: 0.96)))
                 case .result:
-                    ScanResultView(model: model, services: app.services) {
-                        app.mealSaved(model.mealType, fromScan: true)
+                    ScanResultView(model: model, services: app.services,
+                                   onDescribe: { showDescribe = true }) {
+                        app.mealSaved(model.mealType, source: model.mealSource)
                         dismiss()
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 case .failed(let error):
                     ScanFailureView(error: error,
+                                    hasPhoto: model.imageData != nil,
                                     onRetry: { model.retake() },
+                                    onDescribe: { showDescribe = true },
                                     onManual: { showManualEntry = true },
                                     onUpgrade: { showPaywall = true })
                 }
@@ -67,6 +73,11 @@ struct ScannerFlowView: View {
                 dismiss()
             }
         }
+        .sheet(isPresented: $showDescribe) {
+            DescribeFoodView(text: $model.descriptionDraft, includesPhoto: model.imageData != nil) { text in
+                Task { await model.analyze(description: text) }
+            }
+        }
         .sheet(isPresented: $showPaywall) {
             PaywallView(services: app.services, highlight: app.entitlements.plan == .plus ? .pro : .plus)
         }
@@ -77,6 +88,7 @@ struct ScannerFlowView: View {
 
 private struct CaptureView: View {
     let onImage: (Data) -> Void
+    let onDescribe: () -> Void
     let onManual: () -> Void
 
     @State private var camera = CameraController()
@@ -101,6 +113,17 @@ private struct CaptureView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, DS.Spacing.s).padding(.vertical, DS.Spacing.xs)
                     .background(.black.opacity(0.45), in: .capsule)
+                Button(action: onDescribe) {
+                    Label("Descrivi a parole", systemImage: "text.bubble")
+                        .font(DS.Font.callout.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, DS.Spacing.m).frame(minHeight: 44)
+                        .background(.ultraThinMaterial.opacity(0.9), in: .capsule)
+                        .environment(\.colorScheme, .dark)
+                }
+                .buttonStyle(.pressable)
+                .padding(.top, DS.Spacing.xs)
+                .accessibilityHint(Text("Scrivi cosa hai mangiato invece di scattare una foto"))
                 controls
             }
             .padding(.bottom, DS.Spacing.l)
@@ -208,6 +231,7 @@ private struct FramingGuide: View {
 
 private struct AnalyzingView: View {
     let imageData: Data?
+    let description: String?
     @State private var pulse = false
     @State private var sweep = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -233,8 +257,18 @@ private struct AnalyzingView: View {
                         .strokeBorder(DS.Palette.brand, lineWidth: 3).opacity(pulse ? 1 : 0.3))
                     .accessibilityHidden(true)
             }
+            if let description {
+                Text("“\(description)”")
+                    .font(DS.Font.callout.italic())
+                    .foregroundStyle(DS.Palette.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
+                    .padding(DS.Spacing.m)
+                    .frame(maxWidth: .infinity)
+                    .background(DS.Palette.surface, in: .rect(cornerRadius: DS.Radius.l))
+            }
             ProgressView()
-            Text("Analisi del piatto in corso…").font(DS.Font.headline)
+            Text(description == nil ? "Analisi del piatto in corso…" : "Analisi della descrizione in corso…").font(DS.Font.headline)
             Text("Riconosciamo gli alimenti, stimiamo le porzioni e cerchiamo i valori nutrizionali nei database.")
                 .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary).multilineTextAlignment(.center)
         }
@@ -251,7 +285,9 @@ private struct AnalyzingView: View {
 
 private struct ScanFailureView: View {
     let error: APIError
+    let hasPhoto: Bool
     let onRetry: () -> Void
+    let onDescribe: () -> Void
     let onManual: () -> Void
     let onUpgrade: () -> Void
 
@@ -264,9 +300,13 @@ private struct ScanFailureView: View {
             if case .quotaExceeded = error {
                 Button("Scopri i piani Premium", action: onUpgrade).buttonStyle(.borderedProminent)
             } else {
-                Button("Scatta di nuovo", action: onRetry).buttonStyle(.borderedProminent)
+                Button(action: onDescribe) {
+                    Label("Descrivi il piatto a parole", systemImage: "text.bubble")
+                }
+                .buttonStyle(.borderedProminent)
+                Button(hasPhoto ? "Scatta di nuovo" : "Usa la fotocamera", action: onRetry)
             }
-            Button("Inserisci manualmente", action: onManual)
+            Button("Cerca gli alimenti manualmente", action: onManual)
         }
         .tint(DS.Palette.brand)
         .background(DS.Palette.background.ignoresSafeArea())
@@ -299,6 +339,7 @@ private struct QuotaReachedView: View {
 /// Consenso all'invio delle foto al fornitore AI, chiesto al primo utilizzo se non dato in onboarding.
 private struct AIConsentView: View {
     let onAccept: () -> Void
+    let onDescribe: () -> Void
     let onManual: () -> Void
 
     var body: some View {
@@ -311,7 +352,10 @@ private struct AIConsentView: View {
                 .font(DS.Font.callout.weight(.semibold))
             Spacer()
             Button("Acconsento e continuo", action: onAccept).buttonStyle(.primary)
-            Button("Inserisci manualmente", action: onManual).buttonStyle(.secondary)
+            Button("Descrivi il piatto senza foto", action: onDescribe).buttonStyle(.secondary)
+            Button("Inserisci manualmente", action: onManual)
+                .font(DS.Font.callout.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
             Text("Puoi revocare il consenso in qualsiasi momento da Impostazioni → Privacy.")
                 .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
         }

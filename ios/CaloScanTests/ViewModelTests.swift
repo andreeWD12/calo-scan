@@ -59,6 +59,7 @@ final class DeepLinkTests: XCTestCase {
     func testURLParsing() {
         XCTAssertEqual(DeepLink(url: URL(string: "caloscan://scanner")!), .scanner)
         XCTAssertEqual(DeepLink(url: URL(string: "caloscan://log-weight")!), .logWeight)
+        XCTAssertEqual(DeepLink(url: URL(string: "caloscan://professional-plan")!), .professionalPlan)
         XCTAssertNil(DeepLink(url: URL(string: "https://example.com/scanner")!))
     }
 }

@@ -23,6 +23,9 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func loadProfile() async throws -> UserProfile? { throw fail() }
     func loadTargets() async throws -> DailyTargets? { throw fail() }
     func save(profile: UserProfile, targets: DailyTargets) async throws { throw fail() }
+    func loadProfessionalPlan() async throws -> ProfessionalPlan? { throw fail() }
+    func save(professionalPlan: ProfessionalPlan) async throws { throw fail() }
+    func deleteProfessionalPlan() async throws { throw fail() }
 
     func dayLog(for day: Date) async throws -> DayLog { throw fail() }
     func dayLogs(from start: Date, to end: Date) async throws -> [DayLog] { throw fail() }
@@ -32,6 +35,7 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func search(_ query: String) async throws -> [FoodItem] { throw fail() }
     func lookup(barcode: String) async throws -> FoodItem? { throw fail() }
     func analyze(jpegData: Data) async throws -> ScanResult { throw fail() }
+    func analyze(description: String, jpegData: Data?) async throws -> ScanResult { throw fail() }
 
     func dailyInsights() async throws -> [CoachInsight] { throw fail() }
     func history() async throws -> [CoachMessage] { throw fail() }

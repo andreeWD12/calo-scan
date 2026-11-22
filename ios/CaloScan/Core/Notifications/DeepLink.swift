@@ -3,6 +3,7 @@ import Foundation
 /// Destinazioni raggiungibili da una notifica (campo `route` nel payload) o da un URL `caloscan://`.
 enum DeepLink: String, Sendable {
     case home, diary, scanner, progress, profile, coach, logWeight = "log-weight"
+    case professionalPlan = "professional-plan"
 
     init?(url: URL) {
         guard url.scheme == "caloscan", let host = url.host() else { return nil }

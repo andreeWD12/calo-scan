@@ -32,6 +32,11 @@ protocol ProfileRepository: Sendable {
     func loadTargets() async throws -> DailyTargets?
     /// Salva profilo e obiettivi. Il server rivalida gli obiettivi con le soglie di sicurezza.
     func save(profile: UserProfile, targets: DailyTargets) async throws
+    /// Piano indicato da un medico o dietista. Il server lo rivalida con `validateProfessionalPlan`.
+    func loadProfessionalPlan() async throws -> ProfessionalPlan?
+    func save(professionalPlan: ProfessionalPlan) async throws
+    /// Torna agli obiettivi calcolati dall'app.
+    func deleteProfessionalPlan() async throws
 }
 
 // MARK: - Diario e alimenti
@@ -51,6 +56,9 @@ protocol FoodSearchService: Sendable {
 protocol ScanService: Sendable {
     /// Invia la foto (già ridimensionata e senza metadati) all'analisi server-side.
     func analyze(jpegData: Data) async throws -> ScanResult
+    /// Riconosce gli alimenti da una descrizione scritta (già ripulita con `FoodDescription.sanitize`).
+    /// Se c'è la foto di un tentativo precedente, viene inviata insieme al testo per migliorare la stima.
+    func analyze(description: String, jpegData: Data?) async throws -> ScanResult
 }
 
 // MARK: - Coach

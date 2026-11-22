@@ -16,6 +16,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     private var state: SessionState
     private var profile: UserProfile?
     private var targets: DailyTargets?
+    private var professionalPlan: ProfessionalPlan?
     private var meals: [Meal] = []
     private var weights: [WeightEntry] = []
     private var bodyMeasurements: [BodyMeasurement] = []
@@ -105,6 +106,12 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     func loadProfile() async throws -> UserProfile? { profile }
     func loadTargets() async throws -> DailyTargets? { targets }
     func save(profile: UserProfile, targets: DailyTargets) async throws { self.profile = profile; self.targets = targets }
+    func loadProfessionalPlan() async throws -> ProfessionalPlan? { professionalPlan }
+    func save(professionalPlan: ProfessionalPlan) async throws {
+        guard professionalPlan.validate().isEmpty else { throw APIError.invalidInput(String(localized: "Controlla i valori del piano.")) }
+        self.professionalPlan = professionalPlan
+    }
+    func deleteProfessionalPlan() async throws { professionalPlan = nil }
 
     // MARK: Pasti
 
@@ -128,7 +135,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     func save(_ meal: Meal) async throws {
         meals.removeAll { $0.id == meal.id }
         meals.append(meal)
-        if meal.source == .scan { scansUsed += 1 }
+        if meal.source == .scan || meal.source == .description { scansUsed += 1 }
     }
 
     func delete(mealID: UUID) async throws { meals.removeAll { $0.id == mealID } }
@@ -152,6 +159,19 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
             ScannedItem(detectedName: "Parmigiano grattugiato", matchedFood: nil, estimatedGrams: 10, confidenceScore: 0.45),
         ], questions: ["Quanto olio è stato usato nella preparazione?", "C'è formaggio grattugiato sulla pasta?"],
            overallConfidenceScore: 0.65)
+    }
+
+    /// Anteprima: cerca nel catalogo d'esempio le parole della descrizione. Il server reale usa l'AI.
+    func analyze(description: String, jpegData: Data?) async throws -> ScanResult {
+        try await Task.sleep(for: .seconds(1.2))
+        let words = description.lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init).filter { $0.count > 3 }
+        let matches = Self.catalog.filter { item in words.contains { item.name.lowercased().contains($0.prefix(4)) } }
+        let items = matches.prefix(5).map {
+            ScannedItem(detectedName: $0.name, matchedFood: $0, estimatedGrams: $0.defaultServingG ?? 100, confidenceScore: 0.75)
+        }
+        return ScanResult(id: UUID(), items: Array(items),
+                          questions: items.isEmpty ? [] : ["Le quantità sono stimate da porzioni standard: correggile se serve."],
+                          overallConfidenceScore: items.isEmpty ? 0 : 0.75)
     }
 
     // MARK: Coach

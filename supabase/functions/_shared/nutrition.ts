@@ -98,3 +98,89 @@ export function targets(
 export function isSafeManualTarget(kcal: number, m: BodyMetrics): boolean {
   return kcal >= calorieFloor(m.sex) && kcal <= 6000;
 }
+
+// ---------------------------------------------------------------------------
+// Piano indicato da un professionista sanitario (stesse regole di ProfessionalPlan.swift).
+
+export type HealthProfessional = "doctor" | "dietitian" | "nutritionist";
+
+export interface ProfessionalPlan {
+  professional: HealthProfessional;
+  professionalName?: string | null;
+  calorieTarget: number;
+  proteinG?: number | null;
+  carbsG?: number | null;
+  fatG?: number | null;
+  notes?: string | null;
+  startDate: string; // ISO 8601
+  reviewDate?: string | null;
+  confirmedAt: string;
+}
+
+export type ProfessionalPlanIssue =
+  | "caloriesOutOfRange"
+  | "macroOutOfRange"
+  | "macrosDoNotMatchCalories"
+  | "notesTooLong"
+  | "nameTooLong"
+  | "reviewBeforeStart";
+
+export const PROFESSIONAL_PLAN_LIMITS = {
+  minKcal: 800,
+  maxKcal: 6000,
+  maxMacroG: 1000,
+  notesMaxLength: 1000,
+  nameMaxLength: 80,
+  macroTolerance: 0.15,
+} as const;
+
+const chars = (s?: string | null) => (s ? [...s].length : 0);
+
+export function validateProfessionalPlan(p: ProfessionalPlan): ProfessionalPlanIssue[] {
+  const L = PROFESSIONAL_PLAN_LIMITS;
+  const issues: ProfessionalPlanIssue[] = [];
+  if (!Number.isInteger(p.calorieTarget) || p.calorieTarget < L.minKcal || p.calorieTarget > L.maxKcal) {
+    issues.push("caloriesOutOfRange");
+  }
+  const macros = [p.proteinG, p.carbsG, p.fatG].filter((v): v is number => v != null);
+  if (macros.some((v) => !Number.isInteger(v) || v < 0 || v > L.maxMacroG)) issues.push("macroOutOfRange");
+  if (p.proteinG != null && p.carbsG != null && p.fatG != null && p.calorieTarget > 0) {
+    const fromMacros = p.proteinG * 4 + p.carbsG * 4 + p.fatG * 9;
+    if (Math.abs(fromMacros - p.calorieTarget) / p.calorieTarget > L.macroTolerance) {
+      issues.push("macrosDoNotMatchCalories");
+    }
+  }
+  if (chars(p.notes) > L.notesMaxLength) issues.push("notesTooLong");
+  if (chars(p.professionalName) > L.nameMaxLength) issues.push("nameTooLong");
+  if (p.reviewDate && Date.parse(p.reviewDate) < Date.parse(p.startDate)) issues.push("reviewBeforeStart");
+  return issues;
+}
+
+/** Obiettivi effettivi: i macro non indicati seguono le proporzioni degli obiettivi calcolati. */
+export function professionalPlanTargets(p: ProfessionalPlan, fallback: DailyTargets | null): DailyTargets {
+  const kcal = p.calorieTarget;
+  const baseKcal = Math.max(fallback?.calorieTarget ?? 0, 1);
+  const proteinShare = fallback ? (fallback.proteinG * 4) / baseKcal : 0.25;
+  const fatShare = fallback ? (fallback.fatG * 9) / baseKcal : 0.3;
+  const proteinG = p.proteinG ?? Math.round((kcal * proteinShare) / 4);
+  const fatG = p.fatG ?? Math.round((kcal * fatShare) / 9);
+  const carbsG = p.carbsG ?? Math.max(Math.round((kcal - proteinG * 4 - fatG * 9) / 4), 0);
+  return {
+    bmr: fallback?.bmr ?? 0, tdee: fallback?.tdee ?? 0, calorieTarget: kcal,
+    proteinG, carbsG, fatG, isAdjustedForSafety: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Descrizione testuale del pasto (stesse regole di FoodDescription in ProfessionalPlan.swift).
+
+export const FOOD_DESCRIPTION_LIMITS = { minLength: 3, maxLength: 500 } as const;
+
+export function sanitizeFoodDescription(text: unknown): string | null {
+  if (typeof text !== "string") return null;
+  const cleaned = text.replace(/[\p{Cc}\p{Cf}]/gu, " ").split(/\s+/u).filter(Boolean).join(" ");
+  const n = [...cleaned].length;
+  if (n < FOOD_DESCRIPTION_LIMITS.minLength || n > FOOD_DESCRIPTION_LIMITS.maxLength) return null;
+  if (!/\p{L}/u.test(cleaned)) return null;
+  return cleaned;
+}

@@ -15,6 +15,8 @@ Legenda stato: ✅ implementato · 🟡 parziale (completato nella fase indicata
 | Revoca del consenso facile quanto la concessione (art. 7(3)) | Profilo → Privacy e account | ✅ UI · 🟡 backend (Fase 4/9) |
 | Informativa (art. 13) | Link in Welcome, Registrazione, Onboarding, Paywall, Impostazioni | ✅ link · ⏳ testo dell'informativa (a cura tua) |
 | Età minima per il consenso digitale (art. 8) | 16 anni, la soglia più alta nell'UE (`AgePolicy.minimumAccountAge`) | ✅ |
+| Piano del medico/dietista e descrizioni dei pasti: dati sanitari | Coperti dal consenso art. 9 dell'onboarding; inclusi in esportazione e cancellazione; nome del professionista facoltativo; nessun documento o ricetta caricato | ✅ UI · 🟡 tabella `professional_plans` (Fase 4) |
+| Descrizione testuale inviata al fornitore AI | Informativa nel foglio "Descrivi il piatto"; nessun addestramento; disponibile anche senza consenso alle foto, perché non invia immagini | ✅ UI · 🟡 `analyze-food` (Fase 5) |
 | Minimizzazione (art. 5(1)(c)) | Sesso biologico facoltativo; foto ridimensionate e senza EXIF/GPS; nessun SDK di tracciamento | ✅ |
 | Limitazione della conservazione (art. 5(1)(e)) | Foto cancellate dopo `SCAN_IMAGE_RETENTION_DAYS` (default 30) | 🟡 Fase 4/5 |
 | Diritto di accesso e portabilità (art. 15, 20) | Privacy e account → Esporta i miei dati (JSON) | ✅ UI · 🟡 `export-data` (Fase 9) |
@@ -36,7 +38,8 @@ Legenda stato: ✅ implementato · 🟡 parziale (completato nella fase indicata
 
 CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora patologie. Per restare fuori dall'ambito MDR:
 - avvertenza "non è un dispositivo medico" in onboarding, profilo e coach ✅
-- nessun obiettivo terapeutico; le "esigenze alimentari" sono note libere, non piani clinici ✅
+- nessun obiettivo terapeutico generato dall'app; le "esigenze alimentari" sono note libere, non piani clinici ✅
+- piano indicato da un professionista: l'app **registra e mostra** i valori inseriti dall'utente (funzione di archivio e visualizzazione, esclusa dall'MDR secondo le linee guida MDCG 2019-11); non li calcola, non li corregge, non dà indicazioni cliniche. Conferma esplicita che i valori vengono da un professionista e avviso sotto le soglie dell'app ✅
 - il coach rifiuta diagnosi e diete terapeutiche (prompt e filtri lato server, Fase 7) 🟡
 - soglie di sicurezza: mai sotto 1.200/1.500 kcal né sotto il BMR, nessun deficit per i minori, peso obiettivo non sotto BMI 18,5 ✅
 

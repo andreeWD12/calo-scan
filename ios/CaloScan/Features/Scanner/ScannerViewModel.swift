@@ -30,6 +30,10 @@ final class ScannerViewModel {
     private(set) var overallConfidence: Confidence?
     private(set) var isSaving = false
     private(set) var hasAIConsent: Bool?
+    /// Descrizione inviata per l'ultima analisi (nil se l'analisi è partita solo dalla foto).
+    private(set) var analyzedDescription: String?
+    /// Testo che l'utente sta scrivendo nel foglio "Descrivi il piatto".
+    var descriptionDraft = ""
     var items: [DraftItem] = []
     var mealType: MealType = .suggested()
     var saveError: APIError?
@@ -63,27 +67,51 @@ final class ScannerViewModel {
             return
         }
         imageData = jpeg
+        analyzedDescription = nil
         phase = .analyzing
         do {
-            let result = try await services.scanner.analyze(jpegData: jpeg)
-            scanID = result.id
-            questions = result.questions
-            overallConfidence = Confidence(score: result.overallConfidenceScore)
-            items = result.items.map {
-                DraftItem(id: $0.id, detectedName: $0.detectedName, food: $0.matchedFood,
-                          grams: $0.estimatedGrams, confidence: $0.confidence, ingredients: $0.ingredients)
-            }
-            phase = result.items.isEmpty
-                ? .failed(.invalidInput(String(localized: "Non abbiamo riconosciuto alimenti in questa foto. Prova con un'inquadratura dall'alto e una luce migliore, oppure inserisci il pasto manualmente.")))
-                : .result
+            apply(try await services.scanner.analyze(jpegData: jpeg),
+                  emptyMessage: String(localized: "Non abbiamo riconosciuto alimenti in questa foto. Prova a descrivere il piatto a parole, oppure inserisci il pasto manualmente."))
         } catch {
             phase = .failed(APIError.from(error))
         }
     }
 
+    /// Analisi a partire dal testo, per quando la foto non basta o non c'è.
+    /// Se c'è la foto di un tentativo precedente, viene inviata insieme al testo.
+    func analyze(description: String) async {
+        guard let text = FoodDescription.sanitize(description) else {
+            phase = .failed(.invalidInput(String(localized: "Descrivi il piatto con qualche parola in più, per esempio \"pasta al pomodoro, un piatto medio\".")))
+            return
+        }
+        analyzedDescription = text
+        phase = .analyzing
+        do {
+            apply(try await services.scanner.analyze(description: text, jpegData: imageData),
+                  emptyMessage: String(localized: "Non siamo riusciti a riconoscere alimenti da questa descrizione. Prova a indicare i singoli alimenti e le quantità, oppure cercali manualmente."))
+        } catch {
+            phase = .failed(APIError.from(error))
+        }
+    }
+
+    private func apply(_ result: ScanResult, emptyMessage: String) {
+        scanID = result.id
+        questions = result.questions
+        overallConfidence = Confidence(score: result.overallConfidenceScore)
+        items = result.items.map {
+            DraftItem(id: $0.id, detectedName: $0.detectedName, food: $0.matchedFood,
+                      grams: $0.estimatedGrams, confidence: $0.confidence, ingredients: $0.ingredients)
+        }
+        phase = result.items.isEmpty ? .failed(.invalidInput(emptyMessage)) : .result
+    }
+
+    /// Origine del pasto salvato: la descrizione prevale se è stata usata.
+    var mealSource: MealSource { analyzedDescription == nil ? .scan : .description }
+
     func retake() {
         phase = .capture
         imageData = nil
+        analyzedDescription = nil
         items = []
         questions = []
         scanID = nil
@@ -117,7 +145,7 @@ final class ScannerViewModel {
         isSaving = true
         defer { isSaving = false }
         let mealItems = items.compactMap { item in item.food.map { MealItem(food: $0, grams: item.grams) } }
-        let meal = Meal(type: mealType, loggedAt: .now, items: mealItems, source: .scan, scanID: scanID)
+        let meal = Meal(type: mealType, loggedAt: .now, items: mealItems, source: mealSource, scanID: scanID)
         do {
             try await services.meals.save(meal)
             return true

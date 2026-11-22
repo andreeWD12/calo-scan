@@ -77,6 +77,7 @@ struct MainTabView: View {
         // Questi li completa la sezione stessa (apre il coach o il foglio del peso) e azzera `pending`.
         case .coach: selection = .home
         case .logWeight: selection = .progress
+        case .professionalPlan: selection = .profile
         }
     }
 }

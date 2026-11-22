@@ -92,6 +92,16 @@ Navigazione: `TabView` con 5 sezioni (Home, Diario, Scanner, Progressi, Profilo)
 7. L'utente modifica/aggiunge/elimina/sostituisce alimenti e conferma → `meals` + `meal_items`. I totali giornalieri (`daily_nutrition`) si aggiornano con un trigger.
 8. L'immagine viene cancellata automaticamente dopo il periodo di conservazione (default 30 giorni, configurabile; subito se l'utente lo sceglie).
 
+### 5b. Descrizione a parole
+
+Quando la foto non viene riconosciuta (o l'utente non vuole scattarla, o non ha dato il consenso all'analisi delle foto) può **descrivere il piatto**: "pasta al pomodoro, un piatto medio, con parmigiano".
+
+- Punti di accesso: fotocamera ("Descrivi a parole"), schermata di errore dell'analisi, schermata del consenso foto ("Descrivi il piatto senza foto"), risultato della scansione ("Non è corretto? Descrivi il piatto").
+- L'app ripulisce il testo con `FoodDescription.sanitize` (3–500 caratteri, niente caratteri di controllo); il server ripete la stessa regola con `sanitizeFoodDescription`.
+- `analyze-food` accetta `{ description, scan_id? }`. Con `scan_id` (foto di un tentativo precedente) il modello riceve foto **e** testo; senza, solo il testo. Il resto del flusso è identico: output JSON vincolato, valori dai database, `needs_review` se manca la corrispondenza.
+- Quota: conta come un'analisi AI. **Un'analisi che non riconosce alimenti non viene conteggiata**, così descrivere un piatto dopo una foto fallita non consuma due analisi.
+- Il pasto salvato ha `source = 'description'`; il diario e i report distinguono foto, descrizione e inserimento manuale.
+
 ## 6. Calcoli nutrizionali
 
 - **BMR**: Mifflin-St Jeor (1990). Uomo: 10·kg + 6,25·cm − 5·età + 5. Donna: stesso con −161. Se l'utente non indica il sesso biologico, si usa la media dei due valori e lo si spiega nell'interfaccia.
@@ -100,11 +110,12 @@ Navigazione: `TabView` con 5 sezioni (Home, Diario, Scanner, Progressi, Profilo)
 - **Limiti di sicurezza**: mai sotto il BMR né sotto 1.500 kcal (uomini) / 1.200 kcal (donne) / 1.350 (non specificato); minimo 18 anni per gli obiettivi di perdita peso; ritmo massimo di perdita indicato ~0,5–1% del peso a settimana.
 - **Macro**: proteine 1,6 g/kg (aumento massa 1,8–2,0, perdita 1,8) limitate a 2,2 g/kg; grassi 25–30% delle kcal (minimo 0,6 g/kg); carboidrati = calorie rimanenti, con aggiustamento per preferenza low carb.
 - Tutte le stime sono **modificabili** dall'utente; il server applica comunque gli stessi limiti minimi.
+- **Piano del professionista**: se l'utente inserisce le calorie (ed eventualmente i macronutrienti e le indicazioni della dieta) ricevute da un medico, dietista o biologo nutrizionista, quei valori diventano l'obiettivo effettivo (`AppState.targets`). I macronutrienti non indicati mantengono le proporzioni degli obiettivi calcolati e i carboidrati coprono le kcal restanti (`ProfessionalPlan.dailyTargets` / `professionalPlanTargets`). Intervallo ammesso 800–6.000 kcal: sotto le soglie dell'app l'interfaccia mostra un avviso e chiede la conferma esplicita che il valore viene da un professionista. L'app non modifica né giudica il piano; il coach lo usa come riferimento e non propone obiettivi diversi. Promemoria locale il giorno dopo la data del controllo per aggiornarlo.
 - Lo stesso algoritmo esiste in Swift (`CaloScanCore`) e in TypeScript (`supabase/functions/_shared/nutrition.ts`), con gli stessi casi di test.
 
 ## 7. Database (dettagli in Fase 4)
 
-Tabelle: `users` (vista su `auth.users` → tabella `public.users` 1:1), `user_profiles`, `user_goals`, `user_preferences`, `food_items`, `food_scans`, `meals`, `meal_items`, `daily_nutrition`, `weight_history`, `body_measurements`, `nutrition_reports`, `ai_conversations`, `ai_messages`, `subscriptions`, `subscription_usage`, `consents`.
+Tabelle: `users` (vista su `auth.users` → tabella `public.users` 1:1), `user_profiles`, `user_goals`, `user_preferences`, `food_items`, `food_scans`, `meals`, `meal_items`, `daily_nutrition`, `weight_history`, `body_measurements`, `nutrition_reports`, `ai_conversations`, `ai_messages`, `subscriptions`, `subscription_usage`, `consents`, `professional_plans` (1:1 con l'utente: professionista, nome facoltativo, kcal, macro facoltativi, note, data di inizio e di controllo, `confirmed_at`; CHECK identici a `validateProfessionalPlan`).
 
 Regole:
 - RLS attiva su **ogni** tabella; policy `user_id = auth.uid()`.

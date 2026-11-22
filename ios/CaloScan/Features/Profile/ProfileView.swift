@@ -1,7 +1,7 @@
 import SwiftUI
 import CaloScanCore
 
-enum ProfileRoute: Hashable { case editProfile, editTargets, subscription, settings, privacy, coach }
+enum ProfileRoute: Hashable { case editProfile, editTargets, professionalPlan, subscription, settings, privacy, coach }
 
 /// Profilo personale: dati, obiettivi, piano, impostazioni.
 struct ProfileView: View {
@@ -32,12 +32,37 @@ struct ProfileView: View {
                     }
                 }
                 if let targets = app.targets {
-                    Section("Obiettivi giornalieri") {
+                    Section {
+                        if let plan = app.professionalPlan {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(plan.professional.targetLabel).font(DS.Font.callout.weight(.semibold))
+                                    if let review = plan.reviewDate {
+                                        Text("Prossimo controllo: \(review.formatted(date: .long, time: .omitted))")
+                                            .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                                    }
+                                }
+                            } icon: {
+                                Image(systemName: "stethoscope").foregroundStyle(DS.Palette.brand)
+                            }
+                        }
                         LabeledContent("Calorie", value: Format.kcal(Double(targets.calorieTarget)))
                         LabeledContent("Proteine", value: "\(targets.proteinG) g")
                         LabeledContent("Carboidrati", value: "\(targets.carbsG) g")
                         LabeledContent("Grassi", value: "\(targets.fatG) g")
-                        NavigationLink("Modifica obiettivi", value: ProfileRoute.editTargets)
+                        NavigationLink(value: ProfileRoute.professionalPlan) {
+                            Label(app.professionalPlan == nil ? "Aggiungi il piano del medico o dietista" : "Modifica il piano del professionista",
+                                  systemImage: "stethoscope")
+                        }
+                        if app.professionalPlan == nil {
+                            NavigationLink("Modifica obiettivi", value: ProfileRoute.editTargets)
+                        }
+                    } header: {
+                        Text("Obiettivi giornalieri")
+                    } footer: {
+                        if app.professionalPlan == nil {
+                            Text("Hai calorie o una dieta indicate da un professionista? Aggiungile: il diario userà quei valori.")
+                        }
                     }
                 }
                 Section {
@@ -53,10 +78,14 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profilo")
+            .onChange(of: app.router.pending, initial: true) { _, link in
+                if link == .professionalPlan { path = [.professionalPlan]; app.router.pending = nil }
+            }
             .navigationDestination(for: ProfileRoute.self) { route in
                 switch route {
                 case .editProfile: EditProfileView()
                 case .editTargets: EditTargetsView()
+                case .professionalPlan: ProfessionalPlanView()
                 case .subscription: ManageSubscriptionView()
                 case .settings: SettingsView()
                 case .privacy: PrivacyAccountView()
@@ -174,7 +203,7 @@ struct EditTargetsView: View {
     private var carbShare: Double { max(1 - proteinShare - fatShare, 0) }
 
     private var targets: DailyTargets? {
-        guard let base = app.targets else { return nil }
+        guard let base = app.computedTargets else { return nil }
         let kcal = Double(calories)
         return DailyTargets(bmr: base.bmr, tdee: base.tdee, calorieTarget: calories,
                             proteinG: Int((kcal * proteinShare / 4).rounded()),
@@ -185,12 +214,19 @@ struct EditTargetsView: View {
 
     var body: some View {
         Form {
+            if app.professionalPlan != nil {
+                Section {
+                    Label("Stai seguendo il piano indicato dal tuo professionista: il diario usa quei valori. Qui modifichi gli obiettivi calcolati dall'app, che tornano in uso se rimuovi il piano.",
+                          systemImage: "stethoscope")
+                        .font(DS.Font.callout)
+                }
+            }
             Section {
                 Stepper(value: $calories, in: floor...6000, step: 50) {
                     LabeledContent("Calorie", value: Format.kcal(Double(calories)))
                 }
             } footer: {
-                if let t = app.targets {
+                if let t = app.computedTargets {
                     Text("Stima calcolata: \(Format.kcal(Double(t.tdee))) di fabbisogno. Per sicurezza l'obiettivo non può scendere sotto \(Format.kcal(Double(floor))).")
                 }
             }
@@ -227,7 +263,7 @@ struct EditTargetsView: View {
     }
 
     private func loadCurrent() {
-        guard let t = app.targets, t.calorieTarget > 0 else { return }
+        guard let t = app.computedTargets, t.calorieTarget > 0 else { return }
         calories = max(t.calorieTarget, floor)
         let kcal = Double(t.calorieTarget)
         proteinShare = min(max(Double(t.proteinG) * 4 / kcal, 0.10), 0.35)

@@ -45,6 +45,27 @@ enum ReminderScheduler {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
+    private static let reviewID = "reminder.professional-review"
+
+    /// Promemoria locale il giorno dopo il controllo con il professionista, per aggiornare il piano.
+    /// Con `nil` lo rimuove. Non chiede permessi: se le notifiche non sono autorizzate non viene mostrato.
+    static func scheduleProfessionalReview(on date: Date?) async {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [reviewID])
+        guard let date,
+              let day = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: date)),
+              day > .now else { return }
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Com'è andato il controllo?")
+        content.body = String(localized: "Se il tuo piano è cambiato, aggiorna calorie e indicazioni in CaloScan.")
+        content.sound = .default
+        content.userInfo = ["route": DeepLink.professionalPlan.rawValue]
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: day)
+        components.hour = 10
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        try? await center.add(UNNotificationRequest(identifier: reviewID, content: content, trigger: trigger))
+    }
+
     /// Sostituisce tutti i promemoria con quelli attivi nelle impostazioni.
     static func apply(_ settings: ReminderSettings) async {
         let center = UNUserNotificationCenter.current()

@@ -36,7 +36,8 @@ public struct MealItem: Identifiable, Codable, Hashable, Sendable {
     public var nutrients: Nutrients { food.per100g.scaled(per100gTo: grams) }
 }
 
-public enum MealSource: String, Codable, Sendable { case scan, manual }
+/// `description`: alimenti riconosciuti dall'AI a partire da una descrizione scritta dall'utente.
+public enum MealSource: String, Codable, Sendable { case scan, description, manual }
 
 public struct Meal: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID

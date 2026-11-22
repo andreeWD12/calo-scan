@@ -5,6 +5,7 @@ import CaloScanCore
 struct ScanResultView: View {
     @Bindable var model: ScannerViewModel
     let services: AppServices
+    let onDescribe: () -> Void
     let onSaved: () -> Void
 
     @State private var editing: DraftItem?
@@ -26,7 +27,9 @@ struct ScanResultView: View {
 
             Section {
                 TotalsRow(totals: model.totals, confidence: model.overallConfidence)
-                EstimateNotice(text: "Valori stimati da una foto: peso, olio, condimenti e ingredienti nascosti non sono determinabili con precisione. Controlla e correggi le quantità prima di salvare.")
+                EstimateNotice(text: model.mealSource == .description
+                    ? "Valori stimati dalla tua descrizione: dove non hai indicato le quantità usiamo porzioni standard. Controlla e correggi prima di salvare."
+                    : "Valori stimati da una foto: peso, olio, condimenti e ingredienti nascosti non sono determinabili con precisione. Controlla e correggi le quantità prima di salvare.")
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
             }
@@ -49,6 +52,10 @@ struct ScanResultView: View {
                 }
                 Button { addingIngredient = true } label: {
                     Label("Aggiungi alimento o ingrediente", systemImage: "plus")
+                }
+                Button(action: onDescribe) {
+                    Label(model.mealSource == .description ? "Modifica la descrizione" : "Non è corretto? Descrivi il piatto",
+                          systemImage: "text.bubble")
                 }
             } header: {
                 Text("Alimenti riconosciuti")

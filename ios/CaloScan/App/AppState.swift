@@ -11,7 +11,14 @@ final class AppState {
 
     private(set) var session: SessionState = .unknown
     private(set) var profile: UserProfile?
-    private(set) var targets: DailyTargets?
+    /// Obiettivi calcolati dall'app (o modificati a mano dall'utente).
+    private(set) var computedTargets: DailyTargets?
+    /// Piano indicato da un medico o dietista: se presente, prevale sugli obiettivi calcolati.
+    private(set) var professionalPlan: ProfessionalPlan?
+    /// Obiettivi effettivi usati da Home, Diario, Progressi e Coach.
+    var targets: DailyTargets? {
+        professionalPlan.map { $0.dailyTargets(fallback: computedTargets) } ?? computedTargets
+    }
     private(set) var entitlements: Entitlements = .free
     /// Incrementato quando il diario cambia, così Home e Diario ricaricano i dati.
     private(set) var diaryRevision = 0
@@ -36,7 +43,7 @@ final class AppState {
     private func apply(_ state: SessionState) async {
         session = state
         guard case .signedIn = state else {
-            profile = nil; targets = nil; entitlements = .free
+            profile = nil; computedTargets = nil; professionalPlan = nil; entitlements = .free
             return
         }
         await reloadProfile()
@@ -46,7 +53,8 @@ final class AppState {
     func reloadProfile() async {
         do {
             profile = try await services.profile.loadProfile()
-            targets = try await services.profile.loadTargets()
+            computedTargets = try await services.profile.loadTargets()
+            professionalPlan = try await services.profile.loadProfessionalPlan()
         } catch {
             Log.app.error("Caricamento profilo fallito: \(String(describing: error), privacy: .public)")
         }
@@ -60,21 +68,34 @@ final class AppState {
     /// Chiamato al termine dell'onboarding, dopo il salvataggio sul server.
     func completeOnboarding(profile: UserProfile, targets: DailyTargets) {
         self.profile = profile
-        self.targets = targets
+        self.computedTargets = targets
         if case .needsOnboarding(let id) = session { session = .signedIn(userID: id) }
     }
 
     func updateProfile(_ profile: UserProfile, targets: DailyTargets) {
         self.profile = profile
-        self.targets = targets
+        self.computedTargets = targets
+    }
+
+    func setProfessionalPlan(_ plan: ProfessionalPlan?) {
+        professionalPlan = plan
+        diaryRevision += 1
     }
 
     /// Pasto salvato: aggiorna il diario e mostra la conferma.
-    func mealSaved(_ type: MealType, fromScan: Bool = false) {
+    func mealSaved(_ type: MealType, source: MealSource = .manual) {
         diaryDidChange()
-        toasts.success(String(localized: "Aggiunto a \(type.title)"),
-                       subtitle: fromScan ? String(localized: "Valori stimati dalla foto") : nil,
-                       symbol: fromScan ? "camera.viewfinder" : "checkmark.circle.fill")
+        let subtitle: String? = switch source {
+        case .scan: String(localized: "Valori stimati dalla foto")
+        case .description: String(localized: "Valori stimati dalla descrizione")
+        case .manual: nil
+        }
+        let symbol = switch source {
+        case .scan: "camera.viewfinder"
+        case .description: "text.bubble"
+        case .manual: "checkmark.circle.fill"
+        }
+        toasts.success(String(localized: "Aggiunto a \(type.title)"), subtitle: subtitle, symbol: symbol)
     }
 
     func diaryDidChange() {

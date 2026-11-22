@@ -74,7 +74,7 @@ struct HomeView: View {
             EmptyView()
         case .loaded(let day):
             if let targets = app.targets {
-                SummaryCard(day: day, targets: targets).appear(index: 0)
+                SummaryCard(day: day, targets: targets, professional: app.professionalPlan?.professional).appear(index: 0)
             }
             ScanCallToAction(scansRemaining: app.entitlements.scansRemaining, action: onScan).appear(index: 1)
             if let insight = model.insights.first {
@@ -96,6 +96,8 @@ struct HomeView: View {
 private struct SummaryCard: View {
     let day: DayLog
     let targets: DailyTargets
+    /// Presente se l'obiettivo viene dal piano di un professionista.
+    let professional: HealthProfessional?
 
     var body: some View {
         let totals = day.totals
@@ -105,7 +107,7 @@ private struct SummaryCard: View {
                 CalorieRing(consumed: totals.kcal, target: targets.calorieTarget)
                     .frame(width: 150, height: 150)
                 VStack(alignment: .leading, spacing: DS.Spacing.s) {
-                    metric("Obiettivo", Format.kcal(Double(targets.calorieTarget)))
+                    metric(professional?.targetLabel ?? "Obiettivo", Format.kcal(Double(targets.calorieTarget)))
                     metric("Consumate", Format.kcal(totals.kcal))
                     metric("Raggiunto", Format.percent(progress))
                 }
