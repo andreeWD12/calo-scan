@@ -63,3 +63,44 @@ final class DeepLinkTests: XCTestCase {
         XCTAssertNil(DeepLink(url: URL(string: "https://example.com/scanner")!))
     }
 }
+
+final class UpsellPolicyTests: XCTestCase {
+    private let day: TimeInterval = 86_400
+    private let start = Date(timeIntervalSince1970: 1_800_000_000)
+
+    func testProNeverSeesUpsell() {
+        let policy = UpsellPolicy(firstLaunch: start)
+        XCTAssertFalse(policy.canShow(.scansRunningLow, plan: .pro, now: start))
+    }
+
+    func testQuietPeriodExceptForScanQuota() {
+        let policy = UpsellPolicy(firstLaunch: start)
+        let now = start.addingTimeInterval(day)
+        XCTAssertFalse(policy.canShow(.engagedUser, plan: .free, now: now))
+        XCTAssertTrue(policy.canShow(.scansRunningLow, plan: .free, now: now))
+    }
+
+    func testOncePerDayAndTwicePerWeek() {
+        var policy = UpsellPolicy(firstLaunch: start)
+        let d3 = start.addingTimeInterval(3 * day)
+        policy.recordShown(.scansRunningLow, now: d3)
+        XCTAssertFalse(policy.canShow(.coachRunningLow, plan: .free, now: d3.addingTimeInterval(3600)))
+        let d4 = d3.addingTimeInterval(day)
+        XCTAssertTrue(policy.canShow(.coachRunningLow, plan: .free, now: d4))
+        policy.recordShown(.coachRunningLow, now: d4)
+        XCTAssertFalse(policy.canShow(.engagedUser, plan: .free, now: d4.addingTimeInterval(day)))
+        XCTAssertFalse(policy.canShow(.scansRunningLow, plan: .free, now: d3.addingTimeInterval(6 * day)))
+        XCTAssertTrue(policy.canShow(.scansRunningLow, plan: .free, now: d3.addingTimeInterval(7 * day + 60)))
+    }
+
+    func testStopsAfterThreeDismissals() {
+        var policy = UpsellPolicy(firstLaunch: start)
+        for _ in 0..<3 { policy.recordDismissal(.engagedUser) }
+        XCTAssertFalse(policy.canShow(.engagedUser, plan: .free, now: start.addingTimeInterval(30 * day)))
+    }
+
+    func testEngagedUserOnlyForFreePlan() {
+        let policy = UpsellPolicy(firstLaunch: start)
+        XCTAssertFalse(policy.canShow(.engagedUser, plan: .plus, now: start.addingTimeInterval(10 * day)))
+    }
+}

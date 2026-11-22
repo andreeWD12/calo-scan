@@ -7,6 +7,7 @@ import CaloScanCore
 final class AppState {
     let services: AppServices
     let toasts = ToastCenter()
+    let upsell = UpsellCenter()
     let router = DeepLinkRouter.shared
 
     private(set) var session: SessionState = .unknown
@@ -98,10 +99,22 @@ final class AppState {
         case .manual: "checkmark.circle.fill"
         }
         toasts.success(String(localized: "Aggiunto a \(type.title)"), subtitle: subtitle, symbol: symbol)
+        let usedAI = source == .scan || source == .description
+        Task {
+            await refreshEntitlements()
+            upsell.mealSaved(entitlements: entitlements, usedAIScan: usedAI)
+        }
+    }
+
+    /// Dopo ogni messaggio al coach: aggiorna i limiti e valuta l'invito all'upgrade.
+    func coachMessageSent() {
+        Task {
+            await refreshEntitlements()
+            upsell.coachMessageSent(entitlements: entitlements)
+        }
     }
 
     func diaryDidChange() {
         diaryRevision += 1
-        Task { await refreshEntitlements() }
     }
 }

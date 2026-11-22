@@ -32,6 +32,7 @@ struct MainTabView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: AppTab = .home
     @State private var showScanner = false
+    @State private var upsellPlan: Plan?
     @Namespace private var scannerZoom
 
     var body: some View {
@@ -43,6 +44,20 @@ struct MainTabView: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             TabBar(selection: $selection, zoomNamespace: scannerZoom, onScan: { showScanner = true })
+                .overlay(alignment: .top) {
+                    if let prompt = app.upsell.current, !showScanner {
+                        UpsellBanner(prompt: prompt,
+                                     onOpen: { app.upsell.accepted(); upsellPlan = prompt.target },
+                                     onDismiss: { withMotion(reduceMotion: reduceMotion) { app.upsell.dismiss() } })
+                            .padding(.horizontal, DS.Spacing.s)
+                            .alignmentGuide(.top) { $0[.bottom] + DS.Spacing.l }
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .animation(reduceMotion ? .easeInOut(duration: 0.2) : DS.Motion.bouncy, value: app.upsell.current)
+        }
+        .sheet(item: $upsellPlan) { plan in
+            PaywallView(services: app.services, highlight: plan)
         }
         .fullScreenCover(isPresented: $showScanner) {
             ScannerFlowView(services: app.services)

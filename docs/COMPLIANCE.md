@@ -49,6 +49,7 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 
 | Requisito | Dove | Stato |
 |---|---|---|
+| Pratiche commerciali (dir. 2005/29/CE) e dark pattern (DSA art. 25) negli inviti all'upgrade | Inviti legati a un limite reale o a un momento d'uso, nessuna urgenza finta o conto alla rovescia, chiusura sempre visibile, l'app resta usabile, massimo 2 a settimana, stop dopo 3 chiusure; nessun profilo inviato al server | ✅ |
 | Direttiva 2011/83/UE e Omnibus: prezzi chiari, rinnovo, recesso | Paywall: prezzo localizzato da StoreKit, periodo, rinnovo automatico, come disdire; il recesso è gestito da Apple | ✅ |
 | European Accessibility Act (dal 28/06/2025) | Dynamic Type, etichette VoiceOver, contrasti WCAG AA, target ≥ 44 pt, dark mode, animazioni che rispettano "Riduci movimento", popup annunciati da VoiceOver | ✅ base · ⏳ audit completo (Fase 10) |
 | Lingua | Interfaccia in italiano; localizzazioni aggiuntive in `Localizable.xcstrings` | 🟡 Fase 10 |

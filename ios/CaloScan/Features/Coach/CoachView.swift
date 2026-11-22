@@ -60,7 +60,7 @@ struct CoachView: View {
                     Text("Prova a chiedere").font(DS.Font.caption.weight(.semibold))
                         .foregroundStyle(DS.Palette.textSecondary)
                     ForEach(CoachViewModel.suggestions, id: \.self) { s in
-                        Button { Task { await model.send(s) } } label: {
+                        Button { Task { await model.send(s); app.coachMessageSent() } } label: {
                             Text(s).font(DS.Font.callout)
                                 .padding(.horizontal, DS.Spacing.s).padding(.vertical, DS.Spacing.xs)
                                 .background(DS.Palette.surface, in: .capsule)
@@ -92,7 +92,7 @@ struct CoachView: View {
                     .padding(.horizontal, DS.Spacing.s).padding(.vertical, 10)
                     .background(DS.Palette.surface, in: .rect(cornerRadius: DS.Radius.m))
                     .overlay(RoundedRectangle(cornerRadius: DS.Radius.m).strokeBorder(DS.Palette.separator))
-                Button { Task { await model.send() } } label: {
+                Button { Task { await model.send(); app.coachMessageSent() } } label: {
                     Image(systemName: "arrow.up.circle.fill").font(.system(size: 34))
                         .foregroundStyle(model.canSend ? DS.Palette.brand : DS.Palette.separator)
                 }

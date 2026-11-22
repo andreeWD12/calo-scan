@@ -136,6 +136,18 @@ Regole:
 
 Limiti in tabella `plan_limits` (modificabili senza rilasciare l'app). Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`; i prezzi si impostano in App Store Connect.
 
+### Inviti all'upgrade
+
+Schede compatte sopra la barra delle sezioni (`UpsellBanner`), mai a schermo intero e mai durante la fotocamera o un flusso in corso. Si chiudono con la X o da sole dopo 9 secondi. Compaiono 2,6 s dopo l'azione che le provoca, così non si sovrappongono al popup di conferma.
+
+| Momento | Chi lo vede | Messaggio |
+|---|---|---|
+| Dopo aver salvato un pasto analizzato dall'AI, se resta 1 scansione o nessuna | Free → Plus, Plus → Pro | "Ti resta 1 scansione AI oggi · Con Plus hai 20 scansioni al giorno" |
+| Dopo un messaggio al coach, se resta 1 messaggio o nessuno | Free → Plus, Plus → Pro | "Ultimo messaggio al coach per oggi · Con Plus hai 30 messaggi al giorno" |
+| Dal 10° pasto salvato (utente costante) | Solo Free | "Stai registrando con costanza · Con Plus vedi le statistiche mensili" |
+
+Regole (`UpsellPolicy`, testate in `UpsellPolicyTests`): mai per Pro; nessun invito nei primi 2 giorni dal primo avvio (tranne le scansioni in esaurimento, che è un'informazione utile); al massimo 1 al giorno e 2 a settimana; lo stesso invito al massimo una volta a settimana; dopo 3 chiusure con la X quel tipo di invito non compare più. Lo stato resta solo sul dispositivo (UserDefaults), senza tracciamento. Restano anche le schede fisse dove una funzione è riservata ai piani a pagamento (statistiche mensili, macronutrienti settimanali) e la schermata "Scansioni di oggi esaurite".
+
 Flusso: StoreKit 2 acquista → l'app invia la transazione firmata (JWS) a `verify-purchase` → il server verifica la firma con l'App Store Server Library, salva in `subscriptions` con `appAccountToken = user_id` → le notifiche V2 di Apple (rinnovi, rimborsi, scadenze) aggiornano lo stato. Ogni funzione AI legge il piano **dal database**, mai dal client.
 
 ## 9. Sicurezza e privacy
