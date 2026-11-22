@@ -3,7 +3,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  bmr, isSafeManualTarget, professionalPlanTargets, sanitizeFoodDescription, targets, validateProfessionalPlan,
+  bmr, isSafeManualTarget, professionalPlanTargets, rotationWeek, sanitizeFoodDescription, targets,
+  validateProfessionalPlan,
 } from "./nutrition.ts";
 
 test("BMR uomo", () => {
@@ -94,4 +95,21 @@ test("piano: pasti con grammature", () => {
   assert.deepEqual(validateProfessionalPlan(plan({ mealPlan: [day(2), day(2)] })), ["mealPlanInvalid"]);
   assert.deepEqual(validateProfessionalPlan(plan({ mealPlan: [day(null, 0)] })), ["mealPlanInvalid"]);
   assert.deepEqual(validateProfessionalPlan(plan({ mealPlan: [day(9)] })), ["mealPlanInvalid"]);
+});
+
+test("piano a rotazione: settimane alternate e validazione", () => {
+  // Ancora: domenica 22/11/2026 → settimana 1 = lun 16 – dom 22 novembre.
+  assert.equal(rotationWeek("2026-11-22", "2026-11-22", 2), 1);
+  assert.equal(rotationWeek("2026-11-23", "2026-11-22", 2), 2);
+  assert.equal(rotationWeek("2026-11-30", "2026-11-22", 2), 1);
+  assert.equal(rotationWeek("2026-12-09", "2026-11-22", 3), 1);
+  assert.equal(rotationWeek("2026-11-10", "2026-11-22", 2), 2); // prima dell'ancora
+  assert.equal(rotationWeek("2027-03-01", "2026-11-22", 1), 1);
+  const day = (week: number, weekday: number | null) => ({
+    week, weekday, meals: [{ type: "lunch" as const, foods: [{ id: "1", name: "Pasta integrale", grams: 80 }] }],
+  });
+  assert.deepEqual(validateProfessionalPlan(plan({ rotationWeeks: 2, mealPlan: [day(1, 2), day(2, 2)] })), []);
+  assert.deepEqual(validateProfessionalPlan(plan({ rotationWeeks: 2, mealPlan: [day(1, 2), day(1, 2)] })), ["mealPlanInvalid"]);
+  assert.deepEqual(validateProfessionalPlan(plan({ rotationWeeks: 2, mealPlan: [day(3, 2)] })), ["mealPlanInvalid"]);
+  assert.deepEqual(validateProfessionalPlan(plan({ rotationWeeks: 5, mealPlan: [] })), ["mealPlanInvalid"]);
 });

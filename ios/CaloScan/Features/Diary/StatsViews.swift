@@ -44,7 +44,8 @@ struct DayStatsView: View {
                 MealSectionCard(type: type, meals: log.meals(of: type), onAdd: { onAdd(type) }, onDelete: onDelete,
                                 planned: planned,
                                 onLogPlanned: planned.flatMap { p in onLogPlanned.map { handler in { handler(p) } } },
-                                onToggleCheat: onToggleCheat)
+                                onToggleCheat: onToggleCheat,
+                                plannedWeek: plan.flatMap { $0.rotationWeeks > 1 ? $0.rotationWeek(on: log.day) : nil })
             }
         }
     }

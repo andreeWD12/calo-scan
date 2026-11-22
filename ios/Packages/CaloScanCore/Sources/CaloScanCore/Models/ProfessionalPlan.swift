@@ -28,6 +28,10 @@ public struct ProfessionalPlan: Codable, Equatable, Sendable {
     public var confirmedAt: Date
     /// Pasti con alimenti e grammature, copiati dall'utente dal piano. Vuoto se non inseriti.
     public var mealPlan: [PlannedDay]
+    /// Settimane dopo cui il piano ricomincia (1 = ogni settimana uguale; 2 = settimana 1 e 2 alternate…).
+    public var rotationWeeks: Int
+    /// Una data che cade nella settimana 1 della rotazione. Nil = `startDate`.
+    public var rotationAnchor: Date?
 
     public static let calorieRange = 800...6000
     public static let macroRange = 0...1000
@@ -36,19 +40,22 @@ public struct ProfessionalPlan: Codable, Equatable, Sendable {
     /// Tolleranza tra le kcal dei macronutrienti indicati e l'obiettivo calorico (arrotondamenti del piano).
     public static let macroTolerance = 0.15
     public static let maxFoodsPerMeal = 30
+    public static let rotationRange = 1...4
 
     public init(professional: HealthProfessional, professionalName: String? = nil, calorieTarget: Int,
                 proteinG: Int? = nil, carbsG: Int? = nil, fatG: Int? = nil, notes: String? = nil,
-                startDate: Date, reviewDate: Date? = nil, confirmedAt: Date, mealPlan: [PlannedDay] = []) {
+                startDate: Date, reviewDate: Date? = nil, confirmedAt: Date, mealPlan: [PlannedDay] = [],
+                rotationWeeks: Int = 1, rotationAnchor: Date? = nil) {
         self.professional = professional; self.professionalName = professionalName
         self.calorieTarget = calorieTarget; self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG
         self.notes = notes; self.startDate = startDate; self.reviewDate = reviewDate; self.confirmedAt = confirmedAt
         self.mealPlan = mealPlan
+        self.rotationWeeks = rotationWeeks; self.rotationAnchor = rotationAnchor
     }
 
     private enum CodingKeys: String, CodingKey {
         case professional, professionalName, calorieTarget, proteinG, carbsG, fatG, notes, startDate, reviewDate
-        case confirmedAt, mealPlan
+        case confirmedAt, mealPlan, rotationWeeks, rotationAnchor
     }
 
     public init(from decoder: Decoder) throws {
@@ -64,6 +71,8 @@ public struct ProfessionalPlan: Codable, Equatable, Sendable {
         reviewDate = try c.decodeIfPresent(Date.self, forKey: .reviewDate)
         confirmedAt = try c.decode(Date.self, forKey: .confirmedAt)
         mealPlan = try c.decodeIfPresent([PlannedDay].self, forKey: .mealPlan) ?? []
+        rotationWeeks = try c.decodeIfPresent(Int.self, forKey: .rotationWeeks) ?? 1
+        rotationAnchor = try c.decodeIfPresent(Date.self, forKey: .rotationAnchor)
     }
 
     public enum Issue: String, Equatable, Sendable {
@@ -71,11 +80,37 @@ public struct ProfessionalPlan: Codable, Equatable, Sendable {
         case mealPlanInvalid
     }
 
-    /// Pasti previsti per una data: il giorno della settimana corrispondente, altrimenti quello valido ogni giorno.
+    /// Pasti previsti per una data: la settimana della rotazione, poi il giorno della settimana
+    /// corrispondente, altrimenti quello valido ogni giorno di quella settimana.
+    /// Il piano si ripete da solo: non va ricompilato a fine settimana.
     public func plannedMeals(on date: Date, calendar: Calendar = .current) -> [PlannedMeal] {
+        let week = rotationWeek(on: date, calendar: calendar)
         let weekday = calendar.component(.weekday, from: date)
-        let day = mealPlan.first { $0.weekday == weekday } ?? mealPlan.first { $0.weekday == nil }
+        let days = mealPlan.filter { $0.week == week }
+        let day = days.first { $0.weekday == weekday } ?? days.first { $0.weekday == nil }
         return day?.meals.filter { !$0.foods.isEmpty } ?? []
+    }
+
+    /// Settimana della rotazione (1…`rotationWeeks`) in cui cade `date`.
+    public func rotationWeek(on date: Date, calendar: Calendar = .current) -> Int {
+        Self.rotationWeek(on: date, anchor: rotationAnchor ?? startDate, weeks: rotationWeeks, calendar: calendar)
+    }
+
+    /// Calcolo identico a `rotationWeek` in `supabase/functions/_shared/nutrition.ts`
+    /// (settimane che iniziano dal `firstWeekday` del calendario; in Italia il lunedì).
+    public static func rotationWeek(on date: Date, anchor: Date, weeks: Int, calendar: Calendar = .current) -> Int {
+        guard weeks > 1,
+              let a = calendar.dateInterval(of: .weekOfYear, for: anchor)?.start,
+              let d = calendar.dateInterval(of: .weekOfYear, for: date)?.start,
+              let days = calendar.dateComponents([.day], from: a, to: d).day else { return 1 }
+        let elapsed = Int((Double(days) / 7).rounded(.down))
+        return ((elapsed % weeks) + weeks) % weeks + 1
+    }
+
+    /// Ancora che rende `week` la settimana della rotazione che contiene `date`.
+    public static func anchor(making week: Int, currentOn date: Date = .now, calendar: Calendar = .current) -> Date {
+        let start = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
+        return calendar.date(byAdding: .weekOfYear, value: -(week - 1), to: start) ?? start
     }
 
     public func plannedMeal(_ type: MealType, on date: Date, calendar: Calendar = .current) -> PlannedMeal? {
@@ -98,15 +133,16 @@ public struct ProfessionalPlan: Codable, Equatable, Sendable {
         if (notes?.count ?? 0) > Self.notesMaxLength { issues.append(.notesTooLong) }
         if (professionalName?.count ?? 0) > Self.nameMaxLength { issues.append(.nameTooLong) }
         if let reviewDate, reviewDate < startDate { issues.append(.reviewBeforeStart) }
-        if !Self.isValid(mealPlan: mealPlan) { issues.append(.mealPlanInvalid) }
+        if !Self.isValid(mealPlan: mealPlan, rotationWeeks: rotationWeeks) { issues.append(.mealPlanInvalid) }
         return issues
     }
 
-    static func isValid(mealPlan: [PlannedDay]) -> Bool {
-        guard mealPlan.count <= 8 else { return false }
-        let weekdays = mealPlan.map(\.weekday)
-        guard Set(weekdays).count == weekdays.count,
-              weekdays.allSatisfy({ $0.map { (1...7).contains($0) } ?? true }) else { return false }
+    static func isValid(mealPlan: [PlannedDay], rotationWeeks: Int = 1) -> Bool {
+        guard rotationRange.contains(rotationWeeks), mealPlan.count <= 8 * rotationWeeks else { return false }
+        let keys = mealPlan.map { "\($0.week)-\($0.weekday ?? 0)" }
+        guard Set(keys).count == keys.count,
+              mealPlan.allSatisfy({ (1...rotationWeeks).contains($0.week) }),
+              mealPlan.allSatisfy({ $0.weekday.map { (1...7).contains($0) } ?? true }) else { return false }
         for day in mealPlan {
             let types = day.meals.map(\.type)
             guard Set(types).count == types.count else { return false }
@@ -175,14 +211,24 @@ public struct PlannedMeal: Identifiable, Codable, Hashable, Sendable {
 }
 
 /// Pasti di un giorno del piano. `weekday` segue `Calendar` (1 = domenica … 7 = sabato);
-/// nil = valido per tutti i giorni.
+/// nil = valido per tutti i giorni. `week` è la settimana della rotazione (1 se il piano non ruota).
 public struct PlannedDay: Identifiable, Codable, Hashable, Sendable {
-    public var id: Int { weekday ?? 0 }
+    public var id: Int { week * 10 + (weekday ?? 0) }
+    public var week: Int
     public var weekday: Int?
     public var meals: [PlannedMeal]
 
-    public init(weekday: Int?, meals: [PlannedMeal] = MealType.allCases.map { PlannedMeal(type: $0) }) {
-        self.weekday = weekday; self.meals = meals
+    public init(week: Int = 1, weekday: Int?, meals: [PlannedMeal] = MealType.allCases.map { PlannedMeal(type: $0) }) {
+        self.week = week; self.weekday = weekday; self.meals = meals
+    }
+
+    private enum CodingKeys: String, CodingKey { case week, weekday, meals }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        week = try c.decodeIfPresent(Int.self, forKey: .week) ?? 1
+        weekday = try c.decodeIfPresent(Int.self, forKey: .weekday)
+        meals = try c.decode([PlannedMeal].self, forKey: .meals)
     }
 
     public var totals: Nutrients { meals.map(\.totals).total }

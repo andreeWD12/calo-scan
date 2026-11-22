@@ -116,6 +116,10 @@ export interface ProfessionalPlan {
   reviewDate?: string | null;
   confirmedAt: string;
   mealPlan?: PlannedDay[] | null;
+  /** Settimane dopo cui il piano ricomincia (1–4; 1 = ogni settimana uguale). */
+  rotationWeeks?: number | null;
+  /** Data (YYYY-MM-DD o ISO) che cade nella settimana 1 della rotazione; null = startDate. */
+  rotationAnchor?: string | null;
 }
 
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
@@ -132,8 +136,10 @@ export interface PlannedMeal {
   foods: PlannedFood[];
 }
 
-/** weekday come Calendar di Apple: 1 = domenica … 7 = sabato; null = ogni giorno. */
+/** weekday come Calendar di Apple: 1 = domenica … 7 = sabato; null = ogni giorno.
+ *  week = settimana della rotazione (assente = 1). */
 export interface PlannedDay {
+  week?: number | null;
   weekday: number | null;
   meals: PlannedMeal[];
 }
@@ -157,15 +163,20 @@ export const PROFESSIONAL_PLAN_LIMITS = {
   maxFoodsPerMeal: 30,
   minGrams: 1,
   maxGrams: 3000,
+  maxRotationWeeks: 4,
 } as const;
 
 const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
 
-export function isValidMealPlan(days: PlannedDay[]): boolean {
+export function isValidMealPlan(days: PlannedDay[], rotationWeeks = 1): boolean {
   const L = PROFESSIONAL_PLAN_LIMITS;
-  if (!Array.isArray(days) || days.length > 8) return false;
+  if (!Number.isInteger(rotationWeeks) || rotationWeeks < 1 || rotationWeeks > L.maxRotationWeeks) return false;
+  if (!Array.isArray(days) || days.length > 8 * rotationWeeks) return false;
+  const weeks = days.map((d) => d.week ?? 1);
+  if (weeks.some((w) => !Number.isInteger(w) || w < 1 || w > rotationWeeks)) return false;
   const weekdays = days.map((d) => d.weekday ?? null);
-  if (new Set(weekdays).size !== weekdays.length) return false;
+  const keys = days.map((_, i) => `${weeks[i]}-${weekdays[i] ?? 0}`);
+  if (new Set(keys).size !== keys.length) return false;
   if (weekdays.some((w) => w !== null && (!Number.isInteger(w) || w < 1 || w > 7))) return false;
   for (const day of days) {
     const types = day.meals.map((m) => m.type);
@@ -184,6 +195,21 @@ export function isValidMealPlan(days: PlannedDay[]): boolean {
 
 const chars = (s?: string | null) => (s ? [...s].length : 0);
 
+/** Lunedì (UTC) della settimana che contiene la data "YYYY-MM-DD…", in giorni dall'epoca. */
+const mondayIndex = (date: string) => {
+  const d = Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10)) / 86_400_000;
+  const dow = (((d + 3) % 7) + 7) % 7; // 0 = lunedì (1970-01-01 era giovedì)
+  return d - dow;
+};
+
+/** Settimana della rotazione (1…weeks) del giorno `date`, con settimane da lunedì.
+ *  Identica a `ProfessionalPlan.rotationWeek` in Swift con calendario italiano. */
+export function rotationWeek(date: string, anchor: string, weeks: number): number {
+  if (!Number.isInteger(weeks) || weeks <= 1) return 1;
+  const elapsed = Math.floor((mondayIndex(date) - mondayIndex(anchor)) / 7);
+  return (((elapsed % weeks) + weeks) % weeks) + 1;
+}
+
 export function validateProfessionalPlan(p: ProfessionalPlan): ProfessionalPlanIssue[] {
   const L = PROFESSIONAL_PLAN_LIMITS;
   const issues: ProfessionalPlanIssue[] = [];
@@ -201,7 +227,7 @@ export function validateProfessionalPlan(p: ProfessionalPlan): ProfessionalPlanI
   if (chars(p.notes) > L.notesMaxLength) issues.push("notesTooLong");
   if (chars(p.professionalName) > L.nameMaxLength) issues.push("nameTooLong");
   if (p.reviewDate && Date.parse(p.reviewDate) < Date.parse(p.startDate)) issues.push("reviewBeforeStart");
-  if (!isValidMealPlan(p.mealPlan ?? [])) issues.push("mealPlanInvalid");
+  if (!isValidMealPlan(p.mealPlan ?? [], p.rotationWeeks ?? 1)) issues.push("mealPlanInvalid");
   return issues;
 }
 

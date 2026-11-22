@@ -40,6 +40,8 @@ struct ProfessionalPlanView: View {
     @State private var reviewDate = Calendar.current.date(byAdding: .month, value: 1, to: .now) ?? .now
     @State private var confirmed = false
     @State private var mealPlan: [PlannedDay] = []
+    @State private var rotationWeeks = 1
+    @State private var rotationAnchor: Date?
     @State private var isSaving = false
     @State private var confirmRemoval = false
     @State private var error: APIError?
@@ -63,7 +65,9 @@ struct ProfessionalPlanView: View {
             startDate: Calendar.current.startOfDay(for: startDate),
             reviewDate: hasReview ? Calendar.current.startOfDay(for: reviewDate) : nil,
             confirmedAt: app.professionalPlan?.confirmedAt ?? .now,
-            mealPlan: mealPlan)
+            mealPlan: mealPlan,
+            rotationWeeks: rotationWeeks,
+            rotationAnchor: rotationWeeks > 1 ? rotationAnchor : nil)
     }
 
     private var issues: [ProfessionalPlan.Issue] { draft?.validate() ?? [] }
@@ -137,7 +141,8 @@ struct ProfessionalPlanView: View {
 
             Section {
                 NavigationLink {
-                    MealPlanEditorView(days: $mealPlan, services: app.services,
+                    MealPlanEditorView(days: $mealPlan, rotationWeeks: $rotationWeeks, rotationAnchor: $rotationAnchor,
+                                       startDate: Calendar.current.startOfDay(for: startDate), services: app.services,
                                        calorieTarget: calories.map { Int($0.rounded()) })
                 } label: {
                     LabeledContent {
@@ -220,12 +225,15 @@ struct ProfessionalPlanView: View {
         hasReview = p.reviewDate != nil
         if let r = p.reviewDate { reviewDate = r }
         mealPlan = p.mealPlan
+        rotationWeeks = p.rotationWeeks
+        rotationAnchor = p.rotationAnchor
         confirmed = true
     }
 
     private var mealPlanSummary: String {
         let foods = mealPlan.flatMap(\.meals).map(\.foods.count).reduce(0, +)
         guard foods > 0 else { return String(localized: "Nessuno") }
+        if rotationWeeks > 1 { return String(localized: "Ciclo di \(rotationWeeks) settimane") }
         let perDay = mealPlan.contains { $0.weekday != nil }
         return perDay ? String(localized: "\(mealPlan.count) giorni") : String(localized: "Ogni giorno, \(foods) alimenti")
     }

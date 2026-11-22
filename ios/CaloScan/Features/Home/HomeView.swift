@@ -109,7 +109,8 @@ struct HomeView: View {
                                 onDelete: { meal in Task { await model.delete(meal) } },
                                 planned: planned,
                                 onLogPlanned: planned.map { p in { loggingPlanned = p } },
-                                onToggleCheat: { meal in Task { await model.toggleCheat(meal) } })
+                                onToggleCheat: { meal in Task { await model.toggleCheat(meal) } },
+                                plannedWeek: app.professionalPlan.flatMap { $0.rotationWeeks > 1 ? $0.rotationWeek(on: .now) : nil })
                     .appear(index: 3 + index)
                     .cardScrollEffect()
             }
@@ -220,6 +221,8 @@ struct MealSectionCard: View {
     var planned: PlannedMeal? = nil
     var onLogPlanned: (() -> Void)? = nil
     var onToggleCheat: ((Meal) -> Void)? = nil
+    /// Settimana della rotazione del piano, mostrata solo se il piano ruota su più settimane.
+    var plannedWeek: Int? = nil
 
     private var totals: Nutrients { meals.map(\.totals).total }
     private struct Row: Identifiable {
@@ -248,7 +251,7 @@ struct MealSectionCard: View {
                 }
             }
             if items.isEmpty, let planned, let onLogPlanned {
-                PlannedMealPreview(meal: planned, action: onLogPlanned)
+                PlannedMealPreview(meal: planned, week: plannedWeek, action: onLogPlanned)
             } else if items.isEmpty {
                 Text("Nessun alimento registrato").font(DS.Font.callout).foregroundStyle(DS.Palette.textTertiary)
             } else {
@@ -305,11 +308,13 @@ struct CheatBadge: View {
 /// Anteprima del pasto previsto dal piano, con registrazione rapida.
 private struct PlannedMealPreview: View {
     let meal: PlannedMeal
+    var week: Int? = nil
     let action: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-            Label("Dal tuo piano", systemImage: "list.clipboard")
+            Label(week.map { String(localized: "Dal tuo piano · settimana \($0)") } ?? String(localized: "Dal tuo piano"),
+                  systemImage: "list.clipboard")
                 .font(DS.Font.caption.weight(.semibold)).foregroundStyle(DS.Palette.brand)
             Text(meal.foods.map { "\($0.name) \(Format.grams($0.grams))" }.formatted(.list(type: .and)))
                 .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)

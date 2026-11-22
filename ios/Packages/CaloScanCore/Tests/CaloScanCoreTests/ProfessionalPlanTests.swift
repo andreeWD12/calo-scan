@@ -107,4 +107,45 @@ final class ProfessionalPlanTests: XCTestCase {
         XCTAssertNil(FoodDescription.sanitize("123 456"))
         XCTAssertNil(FoodDescription.sanitize(String(repeating: "a", count: 501)))
     }
+
+    func testRotationWeeks() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Rome")!
+        cal.firstWeekday = 2   // lunedì, come in Italia
+        let d = { (s: String) in ISO8601DateFormatter().date(from: s + "T12:00:00Z")! }
+        let anchor = d("2026-11-22")   // domenica: settimana 1 = lun 16 – dom 22 novembre
+        XCTAssertEqual(ProfessionalPlan.rotationWeek(on: d("2026-11-22"), anchor: anchor, weeks: 2, calendar: cal), 1)
+        XCTAssertEqual(ProfessionalPlan.rotationWeek(on: d("2026-11-23"), anchor: anchor, weeks: 2, calendar: cal), 2)
+        XCTAssertEqual(ProfessionalPlan.rotationWeek(on: d("2026-11-30"), anchor: anchor, weeks: 2, calendar: cal), 1)
+        XCTAssertEqual(ProfessionalPlan.rotationWeek(on: d("2026-12-09"), anchor: anchor, weeks: 3, calendar: cal), 1)
+        XCTAssertEqual(ProfessionalPlan.rotationWeek(on: d("2026-11-10"), anchor: anchor, weeks: 2, calendar: cal), 2)
+        XCTAssertEqual(ProfessionalPlan.rotationWeek(on: d("2027-03-01"), anchor: anchor, weeks: 1, calendar: cal), 1)
+
+        // I pasti seguono la settimana della rotazione, senza ricompilare il piano.
+        func day(_ week: Int, _ weekday: Int?, _ grams: Double) -> PlannedDay {
+            PlannedDay(week: week, weekday: weekday, meals: [PlannedMeal(type: .lunch, foods: [PlannedFood(name: "Pasta integrale", grams: grams)])])
+        }
+        var p = plan()
+        p.rotationWeeks = 2
+        p.rotationAnchor = anchor
+        p.mealPlan = [day(1, nil, 80), day(2, nil, 60)]
+        XCTAssertEqual(p.validate(), [])
+        XCTAssertEqual(p.plannedMeal(.lunch, on: d("2026-11-23"), calendar: cal)?.foods.first?.grams, 60)
+        XCTAssertEqual(p.plannedMeal(.lunch, on: d("2026-11-30"), calendar: cal)?.foods.first?.grams, 80)
+
+        p.mealPlan = [day(1, 2, 80), day(1, 2, 60)]
+        XCTAssertEqual(p.validate(), [.mealPlanInvalid])
+        p.mealPlan = [day(3, 2, 80)]
+        XCTAssertEqual(p.validate(), [.mealPlanInvalid])
+        p.rotationWeeks = 5
+        p.mealPlan = []
+        XCTAssertEqual(p.validate(), [.mealPlanInvalid])
+    }
+
+    func testOldPlanDecodesAsSingleWeek() throws {
+        let json = #"{"professional":"doctor","calorieTarget":1600,"startDate":0,"confirmedAt":0,"mealPlan":[{"weekday":2,"meals":[]}]}"#
+        let p = try JSONDecoder().decode(ProfessionalPlan.self, from: Data(json.utf8))
+        XCTAssertEqual(p.rotationWeeks, 1)
+        XCTAssertEqual(p.mealPlan.first?.week, 1)
+    }
 }
