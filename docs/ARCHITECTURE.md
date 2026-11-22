@@ -261,3 +261,13 @@ Da Coach o da Profilo › Stile alimentare l'utente sceglie, con l'aiuto del coa
 
 **Dati**: `user_profiles.eating_style jsonb` (`EatingStyleChoice`: stile, finestra, data, promemoria). In Home, per i digiuni, il riquadro "Finestra alimentare aperta / Pausa dal cibo" con l'orario del prossimo cambio, senza conti alla rovescia o toni di sfida. Limite: Plus 3 richieste di proposte al giorno, Pro 10 (`plan_limits`).
 
+## Modalità gravidanza (gratuita)
+
+Sicurezza alimentare, non un piano a pagamento: disponibile per tutti da onboarding ("Sono in gravidanza", per sesso femminile o non indicato) e da Profilo › Gravidanza. Dati: `user_profiles.pregnancy jsonb` (`PregnancyInfo`: data presunta del parto, immunità alla toxoplasmosi facoltativa) — dato sanitario art. 9 GDPR, con il consenso già raccolto.
+
+- **Obiettivi** (`PregnancyNutrition` / `pregnancyTargets`, stessi test): mai in deficit. Mantenimento (Mifflin-St Jeor, obiettivo "mantieni") + energia EFSA 2013 per trimestre (+70 / +260 / +500 kcal) + proteine EFSA 2012 (+1 / +9 / +28 g); grassi 30%, carboidrati il resto. Il trimestre si aggiorna da solo dalla data presunta del parto. Il piano del professionista, se presente, ha la priorità. La modalità resta attiva fino a 2 settimane dopo la data presunta, poi l'app chiede di aggiornarla.
+- **Alimenti** (`PregnancyFoodSafety.check` / `checkPregnancyFood`, stessi test con casi di falsi allarmi): regole per parole chiave con eccezioni ("cotto", "analcolica", "pastorizzato", "al forno"…). *Da evitare*: alcol, carne cruda, salumi crudi (da limitare se immune alla toxoplasmosi, per la listeria), pesce crudo e affumicato a freddo, uova crude, latte crudo e formaggi molli/erborinati non cotti, fegato e paté, pesci predatori grandi, germogli crudi, energy drink. *Con moderazione*: caffeina (≤ 200 mg/giorno, EFSA 2015), tonno, liquirizia.
+- **Dove compare**: avviso accanto al nome in ricerca alimenti, risultati della scansione (nome + ingredienti, con spiegazione) e lista della spesa. I suggerimenti AI (lista della spesa, coach) escludono gli alimenti *da evitare* sul server (`filterForPregnancy`) e il prompt del coach riceve settimana e trimestre.
+- **Stili alimentari**: in gravidanza niente digiuni né stili restrittivi; attivando la modalità, uno stile restrittivo già scelto viene rimosso.
+- **Limiti dichiarati**: il riconoscimento per nome non è completo ("controlla l'etichetta"); integratori (es. acido folico), aumento di peso e dubbi clinici restano a ginecologo, ostetrica o medico. Fonti linkate in app (Ministero della Salute).
+

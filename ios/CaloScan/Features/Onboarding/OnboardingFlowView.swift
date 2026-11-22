@@ -217,6 +217,19 @@ private struct PersonalStep: View {
                     SelectionCard(title: option.title, isSelected: model.sex == option) { model.sex = option }
                 }
             }
+            if model.sex != nil && model.sex != .male {
+                VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+                    Toggle("Sono in gravidanza", isOn: $model.isPregnant.animation(DS.Motion.snappy))
+                        .font(DS.Font.headline)
+                    if model.isPregnant {
+                        DatePicker("Data presunta del parto", selection: $model.dueDate, in: model.dueDateRange,
+                                   displayedComponents: .date)
+                        Text("Non imposteremo mai un deficit calorico e ti avviseremo sugli alimenti da evitare. Segui sempre le indicazioni di ginecologo e ostetrica.")
+                            .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                    }
+                }
+                .tint(DS.Palette.brand)
+            }
         }
     }
 }
@@ -257,7 +270,9 @@ private struct GoalStep: View {
                     model.goal = goal
                 }
             }
-            if model.goal == .loseWeight && model.age < 18 {
+            if model.isPregnant && model.goal == .loseWeight {
+                EstimateNotice(text: "In gravidanza non impostiamo un deficit calorico: i tuoi obiettivi seguono il fabbisogno del trimestre. Per il peso, segui le indicazioni di ginecologo e ostetrica.")
+            } else if model.goal == .loseWeight && model.age < 18 {
                 EstimateNotice(text: "Sotto i 18 anni non impostiamo un deficit calorico: l'obiettivo sarà il mantenimento. Per perdere peso in sicurezza rivolgiti al tuo medico.")
             }
         }

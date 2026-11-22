@@ -68,6 +68,9 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | GDPR art. 9 – domande di sicurezza | Basate sul consenso ai dati sanitari già raccolto; risposte usate solo per la richiesta e non salvate; lo stile scelto è salvato come dato sanitario | ✅ Fase 2 (app) |
 | AI Act art. 50 – stile alimentare | Avviso che le proposte sono generate da un'AI e non sostituiscono il medico | ✅ Fase 2 |
 | App Store 1.4.1 – app per la salute | Nessuna promessa di risultati; avvertenze su sintomi (stanchezza, capogiri) e invito a interrompere e sentire il medico; digiuno escluso per minorenni | ✅ Fase 2 |
+| MDR – modalità gravidanza | Solo indicazioni pubbliche di sicurezza alimentare (Ministero della Salute, ISS, EFSA) e valori di riferimento EFSA; nessuna diagnosi, nessun integratore o dosaggio; rinvio a ginecologo/ostetrica; nessun deficit calorico | ✅ Fase 2 (app) |
+| GDPR art. 9 – gravidanza | Dato sanitario facoltativo, con il consenso ai dati sanitari; modificabile e cancellabile da Profilo › Gravidanza; incluso nell'export e cancellato con l'account | ✅ Fase 2 (app) / 🟡 Fase 4 (DB) |
+| App Store 1.4.1 – gravidanza | Avvisi informativi con fonti, limiti del riconoscimento dichiarati ("controlla l'etichetta"), nessuna promessa sulla salute | ✅ Fase 2 |
 | 3.1.1 / 3.2.2 Premi per gli inviti | Il premio è solo un codice offerta Apple (sconto sul primo mese), mai uno sblocco gestito dall'app; nessun obbligo di invitare per usare funzioni; nessun premio per recensioni o download di altre app | 🟡 Fase 8 |
 | GDPR art. 5(1)(c) Minimizzazione negli inviti | Niente accesso ai contatti; il referrer vede solo conteggi; righe cancellate con l'account; DeviceCheck senza identificatori | 🟡 Fase 4 |
 | Codice del Consumo (pratiche commerciali) | Regolamento dell'invito chiaro in app e nei Termini: premio unico non accumulabile, solo primo mese, scadenza, rinnovo a prezzo pieno; trasparenza sul prezzo dopo lo sconto | 🟡 Fase 8 |

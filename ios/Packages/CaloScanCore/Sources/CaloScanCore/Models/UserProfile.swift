@@ -85,18 +85,27 @@ public struct UserProfile: Codable, Equatable, Sendable {
     public var dietaryNotes: String?
     /// Stile alimentare scelto con il coach (Plus e Pro). Nil se non scelto.
     public var eatingStyle: EatingStyleChoice?
+    /// Modalità gravidanza (dato sanitario, art. 9 GDPR). Nil se non attiva.
+    public var pregnancy: PregnancyInfo?
 
     public init(
         displayName: String, birthDate: Date, sex: BiologicalSex, heightCm: Double, weightKg: Double,
         targetWeightKg: Double?, activity: ActivityLevel, goal: NutritionGoal, diet: DietPreference,
         otherDietNote: String? = nil, allergens: Set<Allergen> = [], otherAllergyNote: String? = nil,
-        dietaryNotes: String? = nil, eatingStyle: EatingStyleChoice? = nil
+        dietaryNotes: String? = nil, eatingStyle: EatingStyleChoice? = nil,
+        pregnancy: PregnancyInfo? = nil
     ) {
         self.displayName = displayName; self.birthDate = birthDate; self.sex = sex
         self.heightCm = heightCm; self.weightKg = weightKg; self.targetWeightKg = targetWeightKg
         self.activity = activity; self.goal = goal; self.diet = diet; self.otherDietNote = otherDietNote
         self.allergens = allergens; self.otherAllergyNote = otherAllergyNote; self.dietaryNotes = dietaryNotes
         self.eatingStyle = eatingStyle
+        self.pregnancy = pregnancy
+    }
+
+    /// Gravidanza in corso (fino a 2 settimane dopo la data presunta del parto).
+    public func activePregnancy(on date: Date = .now) -> PregnancyInfo? {
+        pregnancy.flatMap { $0.isActive(on: date) ? $0 : nil }
     }
 
     public var bmi: Double { EatingStyleSafety.bmi(weightKg: weightKg, heightCm: heightCm) }

@@ -50,6 +50,13 @@ final class OnboardingViewModel {
     var allergens: Set<Allergen> = []
     var otherAllergyNote = ""
     var dietaryNotes = ""
+    // Gravidanza (facoltativo): niente deficit e avvisi sugli alimenti da evitare.
+    var isPregnant = false
+    var dueDate: Date = Calendar.current.date(byAdding: .month, value: 6, to: .now) ?? .now
+    var dueDateRange: ClosedRange<Date> {
+        let today = Calendar.current.startOfDay(for: .now)
+        return today...(Calendar.current.date(byAdding: .day, value: 294, to: today) ?? today)
+    }
 
     // Personalizzazione obiettivi
     var customCalories: Int?
@@ -141,6 +148,10 @@ final class OnboardingViewModel {
 
     var computedTargets: DailyTargets? {
         guard let metrics, let activity, let goal else { return nil }
+        if isPregnant, sex != .male {
+            return PregnancyNutrition.targets(metrics: metrics, activity: activity, diet: diet,
+                                              trimester: PregnancyInfo(dueDate: dueDate).trimester())
+        }
         return EnergyCalculator.targets(metrics: metrics, activity: activity, goal: goal, diet: diet)
     }
 
@@ -179,7 +190,8 @@ final class OnboardingViewModel {
             heightCm: heightCm, weightKg: weightKg, targetWeightKg: targetWeightKg, activity: activity,
             goal: goal, diet: diet, otherDietNote: diet == .other ? clean(otherDietNote) : nil,
             allergens: allergens, otherAllergyNote: allergens.contains(.other) ? clean(otherAllergyNote) : nil,
-            dietaryNotes: clean(dietaryNotes))
+            dietaryNotes: clean(dietaryNotes),
+            pregnancy: isPregnant && sex != .male && PregnancyInfo.isValidDueDate(dueDate) ? PregnancyInfo(dueDate: dueDate) : nil)
     }
 
     /// Salva consensi, profilo, obiettivi e primo peso. Ritorna i dati salvati se tutto è andato a buon fine.

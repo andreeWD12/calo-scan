@@ -102,7 +102,7 @@ struct HomeView: View {
                     .appear(index: 2)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
-            if let window = app.profile?.eatingStyle?.window, app.entitlements.plan != .free {
+            if let window = app.profile?.eatingStyle?.window, app.entitlements.plan != .free, app.pregnancy == nil {
                 EatingWindowCard(window: window)
                     .appear(index: 3)
             }

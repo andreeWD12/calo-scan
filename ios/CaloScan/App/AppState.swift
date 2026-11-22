@@ -17,9 +17,18 @@ final class AppState {
     /// Piano indicato da un medico o dietista: se presente, prevale sugli obiettivi calcolati.
     private(set) var professionalPlan: ProfessionalPlan?
     /// Obiettivi effettivi usati da Home, Diario, Progressi e Coach.
+    /// Ordine: piano del professionista › gravidanza (mai in deficit, EFSA per trimestre) › obiettivi calcolati.
     var targets: DailyTargets? {
-        professionalPlan.map { $0.dailyTargets(fallback: computedTargets) } ?? computedTargets
+        if let professionalPlan { return professionalPlan.dailyTargets(fallback: computedTargets) }
+        if let profile, let pregnancy = profile.activePregnancy(), let metrics = try? profile.metrics() {
+            return PregnancyNutrition.targets(metrics: metrics, activity: profile.activity, diet: profile.diet,
+                                              trimester: pregnancy.trimester())
+        }
+        return computedTargets
     }
+
+    /// Gravidanza attiva: abilita gli avvisi sugli alimenti in tutta l'app.
+    var pregnancy: PregnancyInfo? { profile?.activePregnancy() }
     private(set) var entitlements: Entitlements = .free
     /// Incrementato quando il diario cambia, così Home e Diario ricaricano i dati.
     private(set) var diaryRevision = 0

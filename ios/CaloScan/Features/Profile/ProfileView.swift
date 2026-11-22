@@ -1,7 +1,7 @@
 import SwiftUI
 import CaloScanCore
 
-enum ProfileRoute: Hashable { case editProfile, editTargets, professionalPlan, subscription, settings, privacy, coach, shopping, referral, eatingStyle }
+enum ProfileRoute: Hashable { case editProfile, editTargets, professionalPlan, subscription, settings, privacy, coach, shopping, referral, eatingStyle, pregnancy }
 
 /// Profilo personale: dati, obiettivi, piano, impostazioni.
 struct ProfileView: View {
@@ -75,6 +75,15 @@ struct ProfileView: View {
                             Label("Stile alimentare", systemImage: "fork.knife")
                         }
                     }
+                    if app.profile?.sex != .male {
+                        NavigationLink(value: ProfileRoute.pregnancy) {
+                            LabeledContent {
+                                if let p = app.pregnancy { Text("Settimana \(p.week())") } else { Text("Non attiva") }
+                            } label: {
+                                Label("Gravidanza", systemImage: "heart.circle")
+                            }
+                        }
+                    }
                     NavigationLink(value: ProfileRoute.shopping) { Label("Lista della spesa", systemImage: "cart") }
                     NavigationLink(value: ProfileRoute.subscription) { Label("Abbonamento", systemImage: "crown") }
                     NavigationLink(value: ProfileRoute.referral) { Label("Invita un amico", systemImage: "person.2") }
@@ -107,6 +116,7 @@ struct ProfileView: View {
                 case .shopping: ShoppingListView(services: app.services)
                 case .referral: ReferralView(services: app.services)
                 case .eatingStyle: EatingStyleView(services: app.services)
+                case .pregnancy: PregnancyView()
                 }
             }
         }

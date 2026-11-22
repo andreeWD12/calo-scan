@@ -274,7 +274,12 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
             (ShoppingSuggestion(name: "Pasta integrale", quantity: "500 g", reason: "Carboidrati complessi per i pranzi"), .gluten),
             (ShoppingSuggestion(name: "Mele", quantity: "1 kg", reason: "Frutta per gli spuntini"), nil),
         ]
+        let pregnancy = profile?.activePregnancy()
         return all.filter { item in item.1.map { !allergens.contains($0) } ?? true }.map(\.0)
+            .filter { s in
+                guard let pregnancy else { return true }
+                return PregnancyFoodSafety.check(s.name, toxoplasmosisImmune: pregnancy.toxoplasmosisImmune)?.level != .avoid
+            }
     }
 
     // MARK: Stile alimentare

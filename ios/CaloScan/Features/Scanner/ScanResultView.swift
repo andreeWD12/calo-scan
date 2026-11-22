@@ -162,6 +162,8 @@ private struct DraftItemRow: View {
                     Text(item.ingredients.joined(separator: ", "))
                         .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary).lineLimit(2)
                 }
+                PregnancyFoodBadge(name: ([item.food?.name ?? item.detectedName] + item.ingredients).joined(separator: " , "),
+                                   showsAdvice: true)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {

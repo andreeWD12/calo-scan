@@ -162,6 +162,7 @@ struct ShoppingListView: View {
                     Text(item.name)
                         .strikethrough(item.isChecked)
                         .foregroundStyle(item.isChecked ? DS.Palette.textTertiary : DS.Palette.textPrimary)
+                    PregnancyFoodBadge(name: item.name)
                     if item.source != .manual {
                         Label(item.source == .ai ? "Suggerito dall'AI" : "Dal piano",
                               systemImage: item.source == .ai ? "sparkles" : "list.clipboard")

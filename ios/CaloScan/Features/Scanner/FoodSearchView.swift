@@ -84,6 +84,7 @@ struct FoodRow: View {
                 Text(food.name).font(DS.Font.callout.weight(.medium)).foregroundStyle(DS.Palette.textPrimary)
                 Text([food.brand, food.source.label].compactMap { $0 }.joined(separator: " · "))
                     .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
+                PregnancyFoodBadge(name: food.name)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
