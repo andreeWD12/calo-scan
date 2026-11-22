@@ -18,7 +18,7 @@ final class ReferralTests: XCTestCase {
     }
 
     func testRedeemURLOnlyWithOfferCode() {
-        var s = ReferralStatus(code: "ABCD2345", shareURL: URL(string: "https://caloscan.app/i/ABCD2345")!, discountLabel: "50%")
+        var s = ReferralStatus(code: "ABCD2345", shareURL: URL(string: "https://caloscan.app/i/ABCD2345")!, discountLabel: "30%")
         XCTAssertNil(s.redeemURL(appStoreID: "123"))
         s.reward = .available
         s.offerCode = "XYZ123"

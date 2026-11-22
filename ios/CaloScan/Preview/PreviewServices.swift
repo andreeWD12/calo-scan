@@ -19,7 +19,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     private var professionalPlan: ProfessionalPlan?
     private var shoppingItems: [ShoppingItem] = []
     private var referral = ReferralStatus(code: "KMRT7QX4", shareURL: URL(string: "https://caloscan.app/i/KMRT7QX4")!,
-                                          invitedCount: 1, discountLabel: "50%", canEnterCode: true)
+                                          invitedCount: 1, discountLabel: "30%", canEnterCode: true)
     private var meals: [Meal] = []
     private var weights: [WeightEntry] = []
     private var bodyMeasurements: [BodyMeasurement] = []

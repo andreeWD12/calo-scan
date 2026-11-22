@@ -48,7 +48,7 @@ public struct ReferralStatus: Codable, Equatable, Sendable {
     /// Codice offerta Apple monouso, presente solo con `reward == .available`.
     public var offerCode: String?
     public var offerExpiresAt: Date?
-    /// Sconto del primo mese come lo mostra il server, es. "50%".
+    /// Sconto del primo mese come lo mostra il server, es. "30%".
     public var discountLabel: String
     /// `true` se l'utente può ancora inserire il codice di un amico che lo ha invitato.
     public var canEnterCode: Bool
