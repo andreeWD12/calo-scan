@@ -1,7 +1,7 @@
 import SwiftUI
 import CaloScanCore
 
-enum ProfileRoute: Hashable { case editProfile, editTargets, professionalPlan, subscription, settings, privacy, coach, shopping }
+enum ProfileRoute: Hashable { case editProfile, editTargets, professionalPlan, subscription, settings, privacy, coach, shopping, referral }
 
 /// Profilo personale: dati, obiettivi, piano, impostazioni.
 struct ProfileView: View {
@@ -70,6 +70,7 @@ struct ProfileView: View {
                     NavigationLink(value: ProfileRoute.coach) { Label("AI Nutrition Coach", systemImage: "sparkles") }
                     NavigationLink(value: ProfileRoute.shopping) { Label("Lista della spesa", systemImage: "cart") }
                     NavigationLink(value: ProfileRoute.subscription) { Label("Abbonamento", systemImage: "crown") }
+                    NavigationLink(value: ProfileRoute.referral) { Label("Invita un amico", systemImage: "person.2") }
                     NavigationLink(value: ProfileRoute.settings) { Label("Impostazioni", systemImage: "gearshape") }
                     NavigationLink(value: ProfileRoute.privacy) { Label("Privacy e account", systemImage: "hand.raised") }
                 }
@@ -97,6 +98,7 @@ struct ProfileView: View {
                 case .privacy: PrivacyAccountView()
                 case .coach: CoachView(services: app.services)
                 case .shopping: ShoppingListView(services: app.services)
+                case .referral: ReferralView(services: app.services)
                 }
             }
         }

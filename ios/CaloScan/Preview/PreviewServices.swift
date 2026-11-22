@@ -7,7 +7,7 @@ import CaloScanCore
 /// I valori nutrizionali d'esempio sono approssimazioni di USDA FoodData Central (SR Legacy).
 actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchService, ScanService,
                     CoachService, WeightRepository, EntitlementService, PurchaseService, AccountService,
-                    PushTokenService, ShoppingListService {
+                    PushTokenService, ShoppingListService, ReferralService {
 
     nonisolated let stateStream: AsyncStream<SessionState>
     private nonisolated let continuation: AsyncStream<SessionState>.Continuation
@@ -18,6 +18,8 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     private var targets: DailyTargets?
     private var professionalPlan: ProfessionalPlan?
     private var shoppingItems: [ShoppingItem] = []
+    private var referral = ReferralStatus(code: "KMRT7QX4", shareURL: URL(string: "https://caloscan.app/i/KMRT7QX4")!,
+                                          invitedCount: 1, discountLabel: "50%", canEnterCode: true)
     private var meals: [Meal] = []
     private var weights: [WeightEntry] = []
     private var bodyMeasurements: [BodyMeasurement] = []
@@ -275,6 +277,24 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
         return all.filter { item in item.1.map { !allergens.contains($0) } ?? true }.map(\.0)
     }
 
+    // MARK: Inviti
+
+    /// Anteprima: nessun codice offerta reale. Il premio resta "in attesa" finché un amico non completa i requisiti.
+    func referralStatus() async throws -> ReferralStatus {
+        var s = referral
+        if plan != .free, s.reward == .waiting { s.reward = .notEligible }
+        return s
+    }
+
+    func applyReferral(code: String) async throws -> ReferralApplyResult {
+        guard let c = ReferralCode.normalize(code) else { return .invalidCode }
+        guard referral.canEnterCode else { return .alreadyReferred }
+        if c == referral.code { return .ownCode }
+        referral.canEnterCode = false
+        referral.wasReferred = true
+        return .applied
+    }
+
     func deleteAccount() async throws {
         profile = nil; targets = nil; meals = []; weights = []; messages = []
         set(.signedOut)
@@ -287,7 +307,7 @@ extension AppServices {
         let store = PreviewStore(startOnboarding: startOnboarding)
         return AppServices(auth: store, profile: store, meals: store, foods: store, scanner: store, coach: store,
                            weight: store, entitlements: store, purchases: store, account: store, push: store,
-                           shopping: store)
+                           shopping: store, referrals: store)
     }
 }
 #endif

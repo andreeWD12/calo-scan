@@ -63,6 +63,9 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | 2.1 Completezza: niente funzioni finte | Nessun pulsante decorativo; i servizi non ancora collegati mostrano un errore esplicito | ✅ |
 | 3.1.1 Acquisti in-app per contenuti digitali | Solo StoreKit 2, nessun link a pagamenti esterni | 🟡 Fase 8 |
 | 3.1.1 Codici promozionali | Nessun codice gestito dall'app: solo codici offerta di Apple creati in App Store Connect, riscattati con il foglio di sistema ("Riscatta un codice" in paywall e Abbonamento) | 🟡 Fase 8 |
+| 3.1.1 / 3.2.2 Premi per gli inviti | Il premio è solo un codice offerta Apple (sconto sul primo mese), mai uno sblocco gestito dall'app; nessun obbligo di invitare per usare funzioni; nessun premio per recensioni o download di altre app | 🟡 Fase 8 |
+| GDPR art. 5(1)(c) Minimizzazione negli inviti | Niente accesso ai contatti; il referrer vede solo conteggi; righe cancellate con l'account; DeviceCheck senza identificatori | 🟡 Fase 4 |
+| Codice del Consumo (pratiche commerciali) | Regolamento dell'invito chiaro in app e nei Termini: premio unico non accumulabile, solo primo mese, scadenza, rinnovo a prezzo pieno; trasparenza sul prezzo dopo lo sconto | 🟡 Fase 8 |
 | 3.1.2 Abbonamenti: titolo, durata, prezzo, link a Termini/EULA e Privacy, ripristino acquisti | Paywall | ✅ UI |
 | 4.8 Sign in with Apple quando c'è un login di terze parti | Apple mostrato per primo accanto a Google | ✅ |
 | 5.1.1(i) Informativa privacy accessibile in app e in App Store Connect | Link in più punti | ✅ |

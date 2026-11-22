@@ -177,6 +177,16 @@ protocol AccountService: Sendable {
     func deleteAccount() async throws
 }
 
+// MARK: - Inviti
+
+/// Programma "Invita un amico". Tutte le regole (validità del codice, requisiti dell'invito,
+/// premio unico non accumulabile) sono applicate dal server: l'app mostra solo lo stato.
+protocol ReferralService: Sendable {
+    func referralStatus() async throws -> ReferralStatus
+    /// Codice dell'amico che ha invitato l'utente (una sola volta, entro 14 giorni dall'iscrizione).
+    func applyReferral(code: String) async throws -> ReferralApplyResult
+}
+
 // MARK: - Contenitore
 
 /// Tutti i servizi dell'app, iniettati nei ViewModel.
@@ -193,4 +203,5 @@ struct AppServices: Sendable {
     let account: any AccountService
     let push: any PushTokenService
     let shopping: any ShoppingListService
+    let referrals: any ReferralService
 }

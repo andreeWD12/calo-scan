@@ -7,7 +7,7 @@ import CaloScanCore
 /// completo, questo file viene eliminato.
 struct NotConnectedService: AuthService, ProfileRepository, MealRepository, FoodSearchService, ScanService,
                             CoachService, WeightRepository, EntitlementService, PurchaseService, AccountService,
-                            PushTokenService, ShoppingListService {
+                            PushTokenService, ShoppingListService, ReferralService {
 
     private func fail() -> APIError { .notConnected }
 
@@ -64,6 +64,9 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func save(_ items: [ShoppingItem]) async throws { throw fail() }
     func delete(itemIDs: [UUID]) async throws { throw fail() }
     func suggest(request: String?) async throws -> [ShoppingSuggestion] { throw fail() }
+
+    func referralStatus() async throws -> ReferralStatus { throw fail() }
+    func applyReferral(code: String) async throws -> ReferralApplyResult { throw fail() }
 }
 
 extension AppServices {
@@ -72,6 +75,6 @@ extension AppServices {
         let pending = NotConnectedService()
         return AppServices(auth: pending, profile: pending, meals: pending, foods: pending, scanner: pending,
                            coach: pending, weight: pending, entitlements: pending, purchases: pending,
-                           account: pending, push: pending, shopping: pending)
+                           account: pending, push: pending, shopping: pending, referrals: pending)
     }
 }

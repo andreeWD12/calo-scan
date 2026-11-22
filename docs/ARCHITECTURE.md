@@ -219,3 +219,29 @@ Questo progetto viene scritto in un ambiente Linux: non è possibile eseguire Xc
 
 I codici si creano in **App Store Connect** (Abbonamenti › Codici offerta): codici singoli o personalizzati (es. `CALOSCAN30`), con mesi gratuiti o prezzo scontato, anche solo per nuovi clienti. L'app non ha un sistema di codici proprio (linea guida 3.1.1): il pulsante "Riscatta un codice" (paywall e Profilo › Abbonamento) apre il foglio di Apple (`offerCodeRedemption`, iOS 17.2+; `AppStore.presentOfferCodeRedeemSheet` su 17.0–17.1). La transazione risultante passa dalla stessa verifica server degli acquisti (`verify-purchase`, App Store Server Notifications con `offerType` / `offerIdentifier`). I codici si possono riscattare anche dal link `https://apps.apple.com/redeem?ctx=offercodes&id=<APP_ID>&code=<CODICE>`.
 
+## Inviti ("Invita un amico")
+
+**Premio**: chi invita riceve **uno sconto sul primo mese** di Plus o Pro (es. 50%), **uno solo e non accumulabile**, anche se invita più amici. Lo sconto non viene applicato dall'app: è un **codice offerta Apple monouso** (linea guida 3.1.1).
+
+**Configurazione in App Store Connect** (una volta, e ricaricando il lotto quando serve):
+1. Abbonamenti › Plus mensile (e Pro mensile) › Codici offerta › nuovo codice: idoneità "Nuovi clienti", tipo "pay as you go" (prezzo scontato per il primo periodo), 1 mese allo sconto scelto.
+2. Genera **codici monouso** (rispettando i limiti trimestrali e le scadenze indicati da App Store Connect) e scarica il CSV.
+3. Importa il CSV nella tabella `offer_code_pool` (solo service_role).
+
+**Regole** (`supabase/functions/_shared/referral.ts`, testate):
+- Ogni utente ha un codice personale di 8 caratteri (`generateReferralCode`, alfabeto senza 0/O/1/I/L, CSPRNG); l'app lo mostra come `ABCD-2345`.
+- L'amico lo inserisce nell'onboarding (passo "Come ti chiami?", facoltativo) o da Profilo › Invita un amico, **entro 14 giorni** dall'iscrizione e **una sola volta**; non vale il proprio codice (`evaluateApply`).
+- L'invito diventa **valido** quando l'amico completa l'onboarding e registra almeno un pasto (`isQualified`), non al semplice download. Contro gli account multipli sullo stesso iPhone si usa **DeviceCheck** (2 bit per dispositivo, nessun identificatore salvato).
+- Al primo invito valido il server assegna al referrer un codice del lotto (`decideReward`): niente se ha già avuto un premio (non accumulabile) o se è già stato abbonato (lo sconto è sul primo mese). Il codice vale 60 giorni; l'utente lo riscatta con il link Apple precompilato (`https://apps.apple.com/redeem?ctx=offercodes&id=APP_STORE_ID&code=…`) o con il foglio "Riscatta un codice".
+- Notifica push al referrer quando il premio è pronto (Fase 9).
+
+**Tabelle** (RLS: ogni utente legge solo le proprie righe; scrittura solo dalla Edge Function `referral`):
+- `referral_codes` (user_id PK → users ON DELETE CASCADE, code UNIQUE).
+- `referrals` (referred_id PK → users ON DELETE CASCADE, referrer_id → users ON DELETE SET NULL, created_at, qualified_at). Un amico ha al massimo un referrer.
+- `referral_rewards` (referrer_id PK → users ON DELETE CASCADE ⇒ **un premio per utente per sempre**, offer_code, assigned_at, expires_at, redeemed_at da App Store Server Notifications `offerIdentifier`).
+- `offer_code_pool` (code PK, offer_id, expires_at, assigned_to NULL) — solo service_role.
+
+**Edge Function `referral`**: `GET` stato (`ReferralStatus`), `POST {code}` → `ReferralApplyResult`. La qualificazione la valuta un trigger su `meals` (primo pasto) + flag onboarding. Rate limit: 10 tentativi di inserimento codice al giorno per utente.
+
+**Privacy**: l'app non legge la rubrica; la condivisione è il foglio di sistema. Il referrer vede solo i conteggi (amici iscritti, inviti validi), mai nomi o email degli amici.
+

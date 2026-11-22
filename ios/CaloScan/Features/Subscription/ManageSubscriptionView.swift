@@ -33,7 +33,7 @@ struct ManageSubscriptionView: View {
                 if e.plan != .free {
                     Button("Gestisci o disdici su App Store") { showManageSheet = true }
                 }
-                RedeemCodeButton {
+                RedeemCodeButton(style: .row) {
                     app.toasts.success(String(localized: "Codice riscattato"),
                                        subtitle: String(localized: "Ora hai CaloScan \(app.entitlements.plan.displayName)"), symbol: "gift.fill")
                 }

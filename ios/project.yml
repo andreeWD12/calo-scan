@@ -55,6 +55,7 @@ targets:
         PRIVACY_POLICY_URL: "$(PRIVACY_POLICY_URL)"
         TERMS_URL: "$(TERMS_URL)"
         SUPPORT_URL: "$(SUPPORT_URL)"
+        APP_STORE_ID: "$(APP_STORE_ID)"
         CFBundleURLTypes:
           - CFBundleURLSchemes: ["$(GOOGLE_REVERSED_CLIENT_ID)", "caloscan"]
     entitlements:

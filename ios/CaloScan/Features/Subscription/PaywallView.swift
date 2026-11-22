@@ -73,6 +73,8 @@ struct PaywallContent: View {
                     }
                     purchaseSection
                 }
+                // Sempre visibile, anche se i piani non si caricano: il codice si riscatta comunque con Apple.
+                RedeemCodeButton(style: .prominent, onRedeemed: onPurchased)
             }
             .padding(DS.Spacing.screen)
         }
@@ -108,9 +110,6 @@ struct PaywallContent: View {
                     Link("Privacy", destination: LegalLinks.privacyPolicy)
                 }
                 .font(DS.Font.caption.weight(.semibold))
-                RedeemCodeButton(onRedeemed: onPurchased)
-                    .font(DS.Font.caption.weight(.semibold))
-                    .frame(maxWidth: .infinity)
             }
         }
     }

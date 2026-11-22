@@ -170,14 +170,27 @@ private struct ConsentStep: View {
 }
 
 private struct NameStep: View {
+    @Environment(AppState.self) private var app
     @Bindable var model: OnboardingViewModel
+    @State private var showInvite = false
 
     var body: some View {
-        LabeledField(label: "Nome") {
-            TextField("Il tuo nome", text: $model.name)
-                .textContentType(.givenName)
-                .submitLabel(.next)
-                .onSubmit { model.next() }
+        VStack(alignment: .leading, spacing: DS.Spacing.l) {
+            LabeledField(label: "Nome") {
+                TextField("Il tuo nome", text: $model.name)
+                    .textContentType(.givenName)
+                    .submitLabel(.next)
+                    .onSubmit { model.next() }
+            }
+            // Facoltativo: il codice di chi ha invitato l'utente. Si può inserire anche dopo, dal Profilo.
+            DisclosureGroup(isExpanded: $showInvite.animation(DS.Motion.snappy)) {
+                InviteCodeEntry(services: app.services)
+                    .padding(.top, DS.Spacing.xs)
+            } label: {
+                Label("Hai un codice invito?", systemImage: "person.2")
+                    .font(DS.Font.callout.weight(.semibold))
+            }
+            .tint(DS.Palette.brand)
         }
     }
 }
