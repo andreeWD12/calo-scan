@@ -108,6 +108,9 @@ struct PaywallContent: View {
                     Link("Privacy", destination: LegalLinks.privacyPolicy)
                 }
                 .font(DS.Font.caption.weight(.semibold))
+                RedeemCodeButton(onRedeemed: onPurchased)
+                    .font(DS.Font.caption.weight(.semibold))
+                    .frame(maxWidth: .infinity)
             }
         }
     }

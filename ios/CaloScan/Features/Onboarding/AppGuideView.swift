@@ -207,6 +207,8 @@ struct GuidePage: Identifiable {
                          text: "100 scansioni al giorno, coach avanzato, piani pasto, ricette, lista della spesa e report avanzati."),
                     Item(symbol: "arrow.clockwise", title: "Ripristina acquisti",
                          text: "Se cambi iPhone, l'abbonamento si recupera dalla schermata dei piani."),
+                    Item(symbol: "giftcard", title: "Riscatta un codice",
+                         text: "Hai un codice offerta? Inseriscilo dalla schermata dei piani o da Profilo › Abbonamento."),
                   ]),
     ]
 }

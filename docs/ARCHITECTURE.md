@@ -214,3 +214,8 @@ Requisiti GDPR, AI Act, MDR, consumatori, accessibilità e App Store, con lo sta
 ## 14. Limiti noti dell'ambiente di sviluppo
 
 Questo progetto viene scritto in un ambiente Linux: non è possibile eseguire Xcode, il simulatore o compilare SwiftUI qui. La logica server (TypeScript) viene testata in questo ambiente; il codice Swift va compilato e verificato sul tuo Mac.
+
+## Codici offerta
+
+I codici si creano in **App Store Connect** (Abbonamenti › Codici offerta): codici singoli o personalizzati (es. `CALOSCAN30`), con mesi gratuiti o prezzo scontato, anche solo per nuovi clienti. L'app non ha un sistema di codici proprio (linea guida 3.1.1): il pulsante "Riscatta un codice" (paywall e Profilo › Abbonamento) apre il foglio di Apple (`offerCodeRedemption`, iOS 17.2+; `AppStore.presentOfferCodeRedeemSheet` su 17.0–17.1). La transazione risultante passa dalla stessa verifica server degli acquisti (`verify-purchase`, App Store Server Notifications con `offerType` / `offerIdentifier`). I codici si possono riscattare anche dal link `https://apps.apple.com/redeem?ctx=offercodes&id=<APP_ID>&code=<CODICE>`.
+

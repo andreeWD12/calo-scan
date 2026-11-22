@@ -33,8 +33,12 @@ struct ManageSubscriptionView: View {
                 if e.plan != .free {
                     Button("Gestisci o disdici su App Store") { showManageSheet = true }
                 }
+                RedeemCodeButton {
+                    app.toasts.success(String(localized: "Codice riscattato"),
+                                       subtitle: String(localized: "Ora hai CaloScan \(app.entitlements.plan.displayName)"), symbol: "gift.fill")
+                }
             } footer: {
-                Text("Gli abbonamenti sono gestiti da Apple. La disdetta ha effetto alla fine del periodo già pagato.")
+                Text("Gli abbonamenti sono gestiti da Apple. La disdetta ha effetto alla fine del periodo già pagato. I codici offerta si riscattano tramite Apple.")
             }
         }
         .navigationTitle("Abbonamento")
