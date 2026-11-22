@@ -45,22 +45,17 @@ struct SplashView: View {
     }
 }
 
-/// Logo dell'app disegnato in SwiftUI (nitido a ogni dimensione, segue light/dark).
+/// Logo dell'app: mela nel mirino dello scanner. Asset vettoriale (Assets.xcassets/Logo)
+/// con variante per la dark mode; sorgenti in design/logo/.
 struct AppMark: View {
     var size: CGFloat = 64
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.28).fill(DS.Palette.brand)
-            Image(systemName: "viewfinder")
-                .font(.system(size: size * 0.62, weight: .light))
-                .foregroundStyle(DS.Palette.onBrand.opacity(0.9))
-            Image(systemName: "leaf.fill")
-                .font(.system(size: size * 0.3, weight: .semibold))
-                .foregroundStyle(DS.Palette.onBrand)
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+        Image("Logo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
     }
 }
 
