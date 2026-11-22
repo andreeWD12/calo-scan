@@ -136,7 +136,7 @@ Regole:
 | Plus | 20 | consigli personalizzati (30 msg/giorno) | settimanali + mensili complete |
 | Pro | 100 | coach avanzato, piani pasto, ricette, lista spesa (150 msg/giorno) | report mensili avanzati |
 
-Limiti in tabella `plan_limits` (modificabili senza rilasciare l'app). Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`; i prezzi si impostano in App Store Connect.
+Limiti in tabella `plan_limits` (modificabili senza rilasciare l'app). Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`, più `caloscan.plus.monthly.pregnancy` (Plus, solo per l'offerta gravidanza); i prezzi si impostano in App Store Connect.
 
 ### Lista della spesa
 
@@ -261,13 +261,19 @@ Da Coach o da Profilo › Stile alimentare l'utente sceglie, con l'aiuto del coa
 
 **Dati**: `user_profiles.eating_style jsonb` (`EatingStyleChoice`: stile, finestra, data, promemoria). In Home, per i digiuni, il riquadro "Finestra alimentare aperta / Pausa dal cibo" con l'orario del prossimo cambio, senza conti alla rovescia o toni di sfida. Limite: Plus 3 richieste di proposte al giorno, Pro 10 (`plan_limits`).
 
-## Modalità gravidanza (gratuita)
+## Modalità gravidanza (tutele per tutti, dieta completa con Plus)
 
-Sicurezza alimentare, non un piano a pagamento: disponibile per tutti da onboarding ("Sono in gravidanza", per sesso femminile o non indicato) e da Profilo › Gravidanza. Dati: `user_profiles.pregnancy jsonb` (`PregnancyInfo`: data presunta del parto, immunità alla toxoplasmosi facoltativa) — dato sanitario art. 9 GDPR, con il consenso già raccolto.
+| Funzione | Piano |
+|---|---|
+| Mai deficit calorico (almeno mantenimento), niente digiuni né stili restrittivi, elenco degli alimenti da evitare in Profilo › Gravidanza | Tutti (Free compreso): sono tutele di sicurezza e non si vendono |
+| Fabbisogno per trimestre (EFSA), avvisi automatici su ricerca, scansioni e lista della spesa, suggerimenti AI filtrati | Plus e Pro (`AppState.hasPregnancyPlan`) |
 
-- **Obiettivi** (`PregnancyNutrition` / `pregnancyTargets`, stessi test): mai in deficit. Mantenimento (Mifflin-St Jeor, obiettivo "mantieni") + energia EFSA 2013 per trimestre (+70 / +260 / +500 kcal) + proteine EFSA 2012 (+1 / +9 / +28 g); grassi 30%, carboidrati il resto. Il trimestre si aggiorna da solo dalla data presunta del parto. Il piano del professionista, se presente, ha la priorità. La modalità resta attiva fino a 2 settimane dopo la data presunta, poi l'app chiede di aggiornarla.
+Attivabile da onboarding ("Sono in gravidanza", per sesso femminile o non indicato) e da Profilo › Gravidanza. Dati: `user_profiles.pregnancy jsonb` (`PregnancyInfo`: data presunta del parto, immunità alla toxoplasmosi facoltativa) — dato sanitario art. 9 GDPR, con il consenso già raccolto.
+
+- **Obiettivi** (`PregnancyNutrition` / `pregnancyTargets`, stessi test): mai in deficit. Mantenimento (Mifflin-St Jeor, obiettivo "mantieni") + energia EFSA 2013 per trimestre (+70 / +260 / +500 kcal) + proteine EFSA 2012 (+1 / +9 / +28 g); grassi 30%, carboidrati il resto. Il trimestre si aggiorna da solo dalla data presunta del parto. Il piano del professionista, se presente, ha la priorità. Con Free: `max(obiettivo calcolato, mantenimento)`; l'onboarding salva il mantenimento e il trimestre si aggiunge in `AppState.targets` solo con Plus o Pro. La modalità resta attiva fino a 2 settimane dopo la data presunta, poi l'app chiede di aggiornarla.
 - **Alimenti** (`PregnancyFoodSafety.check` / `checkPregnancyFood`, stessi test con casi di falsi allarmi): regole per parole chiave con eccezioni ("cotto", "analcolica", "pastorizzato", "al forno"…). *Da evitare*: alcol, carne cruda, salumi crudi (da limitare se immune alla toxoplasmosi, per la listeria), pesce crudo e affumicato a freddo, uova crude, latte crudo e formaggi molli/erborinati non cotti, fegato e paté, pesci predatori grandi, germogli crudi, energy drink. *Con moderazione*: caffeina (≤ 200 mg/giorno, EFSA 2015), tonno, liquirizia.
 - **Dove compare**: avviso accanto al nome in ricerca alimenti, risultati della scansione (nome + ingredienti, con spiegazione) e lista della spesa. I suggerimenti AI (lista della spesa, coach) escludono gli alimenti *da evitare* sul server (`filterForPregnancy`) e il prompt del coach riceve settimana e trimestre.
 - **Stili alimentari**: in gravidanza niente digiuni né stili restrittivi; attivando la modalità, uno stile restrittivo già scelto viene rimosso.
+- **Offerta gravidanza** (−30% per 3 mesi): se nell'onboarding è attivo "Sono in gravidanza", la scelta del piano mostra in cima una card Plus dedicata (anche da Profilo › Gravidanza › "Scopri l'offerta"). Prodotto `caloscan.plus.monthly.pregnancy` nello **stesso gruppo** di abbonamenti, stesso prezzo di Plus mensile, con **offerta introduttiva** Apple *Pay as you go*, 3 periodi da 1 mese al 70% del prezzo (es. 3,49 € invece di 4,99 €). StoreKit: `PlanOffer.audience = .pregnancy`, `introPrice` e `introMonths` da `product.subscription.introductoryOffer`, `isEligibleForIntro` da `Product.SubscriptionInfo.isEligibleForIntroOffer(for: groupID)`. Apple concede **una sola offerta introduttiva per gruppo** e Apple ID: chi ha già usato i 7 giorni gratis dell'annuale (o l'offerta stessa) non vede la card e resta il paywall normale. Il server tratta il prodotto come Plus (mappa `product_id → plan` delle funzioni di verifica e delle notifiche). Nessun dato di gravidanza va ad Apple: il prodotto è scelto in app. La card dice prezzo scontato, durata, prezzo successivo e rinnovo automatico; "Continua con il piano Free" resta sempre visibile.
 - **Limiti dichiarati**: il riconoscimento per nome non è completo ("controlla l'etichetta"); integratori (es. acido folico), aumento di peso e dubbi clinici restano a ginecologo, ostetrica o medico. Fonti linkate in app (Ministero della Salute).
 

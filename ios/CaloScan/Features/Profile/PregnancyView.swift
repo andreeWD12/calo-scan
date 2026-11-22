@@ -24,7 +24,7 @@ struct PregnancyFoodBadge: View {
     var showsAdvice = false
 
     var body: some View {
-        if let pregnancy = app.pregnancy,
+        if let pregnancy = app.pregnancy, app.hasPregnancyPlan,
            let flag = PregnancyFoodSafety.check(name, toxoplasmosisImmune: pregnancy.toxoplasmosisImmune) {
             VStack(alignment: .leading, spacing: 2) {
                 Label(flag.level == .avoid ? "Da evitare in gravidanza" : "Con moderazione in gravidanza",
@@ -40,9 +40,12 @@ struct PregnancyFoodBadge: View {
     }
 }
 
-/// Profilo › Gravidanza. Gratuita: è sicurezza alimentare, non un piano a pagamento.
+/// Profilo › Gravidanza.
+/// Per tutti (tutela di sicurezza): mai deficit, niente digiuni, elenco degli alimenti da evitare.
+/// Con Plus o Pro (dieta per la gravidanza): fabbisogno per trimestre e avvisi automatici sugli alimenti.
 struct PregnancyView: View {
     @Environment(AppState.self) private var app
+    @State private var showPaywall = false
     @State private var enabled = false
     @State private var dueDate = Calendar.current.date(byAdding: .month, value: 6, to: .now) ?? .now
     @State private var immune: Bool?
@@ -73,7 +76,7 @@ struct PregnancyView: View {
             } footer: {
                 Text(enabled
                      ? "L'esito del test sulla toxoplasmosi è nei tuoi esami del primo trimestre. Se non lo sai, consideriamo i salumi crudi da evitare."
-                     : "Con la modalità gravidanza CaloScan non imposta mai un deficit calorico, ti avvisa sugli alimenti da evitare ed esclude dai suggerimenti quelli non adatti. È gratuita.")
+                     : "Con la modalità gravidanza CaloScan non imposta mai un deficit calorico né digiuni e ti mostra gli alimenti da evitare. Con Plus anche il fabbisogno per trimestre e gli avvisi automatici sugli alimenti.")
             }
 
             if let draft {
@@ -85,6 +88,10 @@ struct PregnancyView: View {
                     if app.professionalPlan != nil {
                         Label("Vale il piano del tuo medico o dietista per calorie e macronutrienti.", systemImage: "stethoscope")
                             .font(DS.Font.callout)
+                    } else if !app.hasPregnancyPlan {
+                        Label("Obiettivo di mantenimento: nessun deficit calorico.", systemImage: "checkmark.shield")
+                            .font(DS.Font.callout)
+                        pregnancyPlusCard(trimester: tri)
                     } else {
                         LabeledContent("Energia in più al giorno", value: "+\(PregnancyNutrition.extraKcal(trimester: tri)) kcal")
                         LabeledContent("Proteine in più al giorno", value: "+\(PregnancyNutrition.extraProteinG(trimester: tri)) g")
@@ -92,7 +99,9 @@ struct PregnancyView: View {
                 } header: {
                     Text("Il tuo fabbisogno")
                 } footer: {
-                    Text("Valori di riferimento EFSA aggiunti al tuo fabbisogno di mantenimento. Non è prevista alcuna dieta dimagrante. L'aumento di peso adatto a te lo stabiliscono ginecologo e ostetrica.")
+                    Text(app.hasPregnancyPlan
+                         ? "Valori di riferimento EFSA aggiunti al tuo fabbisogno di mantenimento. Non è prevista alcuna dieta dimagrante. L'aumento di peso adatto a te lo stabiliscono ginecologo e ostetrica."
+                         : "Non è prevista alcuna dieta dimagrante. L'aumento di peso adatto a te lo stabiliscono ginecologo e ostetrica.")
                 }
 
                 Section("Da evitare") {
@@ -113,7 +122,9 @@ struct PregnancyView: View {
                     foodGroup("Frutta e verdura crude", "leaf", "Lavale con cura sotto l'acqua corrente.")
                 }
                 Section {
-                    Text("Gli avvisi su scansioni, ricerca alimenti e lista della spesa si basano sul nome dell'alimento e non possono riconoscere tutto: controlla sempre l'etichetta. Integratori (come l'acido folico) e dubbi specifici vanno discussi con ginecologo, ostetrica o medico di base.")
+                    Text(app.hasPregnancyPlan
+                         ? "Gli avvisi su scansioni, ricerca alimenti e lista della spesa si basano sul nome dell'alimento e non possono riconoscere tutto: controlla sempre l'etichetta. Integratori (come l'acido folico) e dubbi specifici vanno discussi con ginecologo, ostetrica o medico di base."
+                         : "Controlla sempre l'etichetta. Integratori (come l'acido folico) e dubbi specifici vanno discussi con ginecologo, ostetrica o medico di base.")
                         .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
                     Link("Fonte: Ministero della Salute (sezione Salute della donna › Gravidanza)",
                          destination: URL(string: "https://www.salute.gov.it/")!)
@@ -136,9 +147,25 @@ struct PregnancyView: View {
                 enabled = true; dueDate = p.dueDate; immune = p.toxoplasmosisImmune
             }
         }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(services: app.services, highlight: .plus, showsPregnancyOffer: true)
+        }
         .alert("Salvataggio non riuscito",
                isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } }),
                presenting: error) { _ in Button("OK", role: .cancel) {} } message: { Text($0.localizedDescription) }
+    }
+
+    /// Invito a Plus per il piano Free. L'offerta del 30% compare nel paywall solo se Apple la concede.
+    private func pregnancyPlusCard(trimester: Int) -> some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            Label("Dieta per la gravidanza con Plus", systemImage: "lock.fill")
+                .font(DS.Font.callout.weight(.semibold))
+            Text("Fabbisogno del \(trimester)º trimestre (+\(PregnancyNutrition.extraKcal(trimester: trimester)) kcal e +\(PregnancyNutrition.extraProteinG(trimester: trimester)) g di proteine al giorno), avvisi automatici su scansioni, ricerca e lista della spesa, suggerimenti AI senza gli alimenti da evitare.")
+                .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+            Button("Scopri l'offerta") { showPaywall = true }
+                .font(DS.Font.callout.weight(.semibold))
+        }
+        .padding(.vertical, DS.Spacing.xs)
     }
 
     private func foodGroup(_ title: LocalizedStringKey, _ symbol: String, _ text: String) -> some View {

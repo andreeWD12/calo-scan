@@ -28,14 +28,24 @@ final class PaywallViewModel {
     }
 
     func offer(for plan: Plan) -> PlanOffer? {
-        offers.value?.first { $0.plan == plan && $0.period == period }
+        offers.value?.first { $0.plan == plan && $0.period == period && $0.audience == .standard }
+    }
+
+    /// Offerta gravidanza, solo se Apple la concede a questo Apple ID. Altrimenti resta il paywall normale.
+    var pregnancyOffer: PlanOffer? {
+        offers.value?.first { $0.audience == .pregnancy && $0.isEligibleForIntro && $0.introPrice != nil }
     }
 
     var selectedOffer: PlanOffer? { offer(for: selectedPlan) }
 
     /// Ritorna `true` quando l'acquisto è completato e verificato dal server.
     func purchaseSelected() async -> Bool {
-        guard let offer = selectedOffer, purchasingID == nil else { return false }
+        guard let offer = selectedOffer else { return false }
+        return await purchase(offer)
+    }
+
+    func purchase(_ offer: PlanOffer) async -> Bool {
+        guard purchasingID == nil else { return false }
         purchasingID = offer.id
         defer { purchasingID = nil }
         do {
@@ -71,7 +81,8 @@ extension Plan {
             ["Più scansioni AI ogni giorno", "Analisi dettagliata dei macronutrienti",
              "Statistiche settimanali e mensili complete", "Consigli nutrizionali personalizzati",
              "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI",
-             "Stile alimentare scelto con il coach, anche digiuno intermittente"]
+             "Stile alimentare scelto con il coach, anche digiuno intermittente",
+             "Dieta per la gravidanza: fabbisogno per trimestre e avvisi sugli alimenti"]
         case .pro:
             ["Tutto di Plus", "Scansioni AI con limiti molto più alti", "AI Nutrition Coach avanzato",
              "Piano dei pasti settimanale e idee ricette", "Lista della spesa AI senza limiti settimanali",

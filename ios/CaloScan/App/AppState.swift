@@ -17,18 +17,27 @@ final class AppState {
     /// Piano indicato da un medico o dietista: se presente, prevale sugli obiettivi calcolati.
     private(set) var professionalPlan: ProfessionalPlan?
     /// Obiettivi effettivi usati da Home, Diario, Progressi e Coach.
-    /// Ordine: piano del professionista › gravidanza (mai in deficit, EFSA per trimestre) › obiettivi calcolati.
+    /// Ordine: piano del professionista › gravidanza › obiettivi calcolati.
+    /// Gravidanza: con Plus o Pro fabbisogno EFSA per trimestre; con Free almeno il mantenimento.
+    /// Il "mai in deficit" vale per tutti i piani: è una tutela di sicurezza, non una funzione a pagamento.
     var targets: DailyTargets? {
         if let professionalPlan { return professionalPlan.dailyTargets(fallback: computedTargets) }
         if let profile, let pregnancy = profile.activePregnancy(), let metrics = try? profile.metrics() {
-            return PregnancyNutrition.targets(metrics: metrics, activity: profile.activity, diet: profile.diet,
-                                              trimester: pregnancy.trimester())
+            if hasPregnancyPlan {
+                return PregnancyNutrition.targets(metrics: metrics, activity: profile.activity, diet: profile.diet,
+                                                  trimester: pregnancy.trimester())
+            }
+            let maintenance = EnergyCalculator.targets(metrics: metrics, activity: profile.activity, goal: .maintain, diet: profile.diet)
+            if let computedTargets, computedTargets.calorieTarget >= maintenance.calorieTarget { return computedTargets }
+            return maintenance
         }
         return computedTargets
     }
 
-    /// Gravidanza attiva: abilita gli avvisi sugli alimenti in tutta l'app.
+    /// Gravidanza attiva (tutti i piani): niente deficit, niente digiuni o stili restrittivi.
     var pregnancy: PregnancyInfo? { profile?.activePregnancy() }
+    /// Dieta per la gravidanza completa (Plus e Pro): fabbisogno per trimestre, avvisi automatici sugli alimenti.
+    var hasPregnancyPlan: Bool { entitlements.plan != .free }
     private(set) var entitlements: Entitlements = .free
     /// Incrementato quando il diario cambia, così Home e Diario ricaricano i dati.
     private(set) var diaryRevision = 0

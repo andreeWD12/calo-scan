@@ -148,9 +148,10 @@ final class OnboardingViewModel {
 
     var computedTargets: DailyTargets? {
         guard let metrics, let activity, let goal else { return nil }
+        // In gravidanza mai un deficit: qui il mantenimento (vale anche per Free).
+        // L'energia in più del trimestre la aggiunge AppState solo con Plus o Pro.
         if isPregnant, sex != .male {
-            return PregnancyNutrition.targets(metrics: metrics, activity: activity, diet: diet,
-                                              trimester: PregnancyInfo(dueDate: dueDate).trimester())
+            return EnergyCalculator.targets(metrics: metrics, activity: activity, goal: .maintain, diet: diet)
         }
         return EnergyCalculator.targets(metrics: metrics, activity: activity, goal: goal, diet: diet)
     }

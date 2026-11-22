@@ -20,7 +20,8 @@ struct OnboardingFlowView: View {
             } else {
             header
             if model.step == .plan {
-                PlanChoiceView(services: app.services, onContinueFree: finish, onPurchased: finish)
+                PlanChoiceView(services: app.services, isPregnant: model.isPregnant && model.sex != .male,
+                               onContinueFree: finish, onPurchased: finish)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: DS.Spacing.l) {
@@ -224,7 +225,7 @@ private struct PersonalStep: View {
                     if model.isPregnant {
                         DatePicker("Data presunta del parto", selection: $model.dueDate, in: model.dueDateRange,
                                    displayedComponents: .date)
-                        Text("Non imposteremo mai un deficit calorico e ti avviseremo sugli alimenti da evitare. Segui sempre le indicazioni di ginecologo e ostetrica.")
+                        Text("Non imposteremo mai un deficit calorico né digiuni. Con Plus avrai il fabbisogno per trimestre e gli avvisi sugli alimenti da evitare. Segui sempre le indicazioni di ginecologo e ostetrica.")
                             .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
                     }
                 }
@@ -271,7 +272,7 @@ private struct GoalStep: View {
                 }
             }
             if model.isPregnant && model.goal == .loseWeight {
-                EstimateNotice(text: "In gravidanza non impostiamo un deficit calorico: i tuoi obiettivi seguono il fabbisogno del trimestre. Per il peso, segui le indicazioni di ginecologo e ostetrica.")
+                EstimateNotice(text: "In gravidanza non impostiamo un deficit calorico: il tuo obiettivo sarà almeno il mantenimento. Per il peso, segui le indicazioni di ginecologo e ostetrica.")
             } else if model.goal == .loseWeight && model.age < 18 {
                 EstimateNotice(text: "Sotto i 18 anni non impostiamo un deficit calorico: l'obiettivo sarà il mantenimento. Per perdere peso in sicurezza rivolgiti al tuo medico.")
             }

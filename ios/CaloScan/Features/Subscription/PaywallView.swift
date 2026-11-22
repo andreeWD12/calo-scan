@@ -6,17 +6,19 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: PaywallViewModel
     var highlight: Plan = .plus
+    var showsPregnancyOffer = false
     var onPurchased: (() -> Void)?
 
-    init(services: AppServices, highlight: Plan = .plus, onPurchased: (() -> Void)? = nil) {
+    init(services: AppServices, highlight: Plan = .plus, showsPregnancyOffer: Bool = false, onPurchased: (() -> Void)? = nil) {
         _model = State(initialValue: PaywallViewModel(purchases: services.purchases))
         self.highlight = highlight
+        self.showsPregnancyOffer = showsPregnancyOffer
         self.onPurchased = onPurchased
     }
 
     var body: some View {
         NavigationStack {
-            PaywallContent(model: model, onPurchased: purchased)
+            PaywallContent(model: model, showsPregnancyOffer: showsPregnancyOffer, onPurchased: purchased)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Chiudi") { dismiss() }
@@ -40,6 +42,8 @@ struct PaywallView: View {
 /// Contenuto riutilizzato sia nel paywall sia nella scelta del piano in onboarding.
 struct PaywallContent: View {
     @Bindable var model: PaywallViewModel
+    /// Chi ha indicato la gravidanza vede in cima l'offerta Plus dedicata (se Apple gliela concede).
+    var showsPregnancyOffer = false
     let onPurchased: () -> Void
 
     var body: some View {
@@ -66,6 +70,12 @@ struct PaywallContent: View {
                                    message: "Al momento non è possibile acquistare abbonamenti. Riprova più tardi.",
                                    systemImage: "bag")
                 case .loaded:
+                    if showsPregnancyOffer, let offer = model.pregnancyOffer {
+                        PregnancyOfferCard(offer: offer, isPurchasing: model.purchasingID == offer.id) {
+                            Task { if await model.purchase(offer) { onPurchased() } }
+                        }
+                        Text("Oppure scegli un altro piano").font(DS.Font.headline).padding(.top, DS.Spacing.s)
+                    }
                     ForEach([Plan.plus, .pro], id: \.self) { plan in
                         PlanCard(plan: plan, offer: model.offer(for: plan), isSelected: model.selectedPlan == plan) {
                             model.selectedPlan = plan
@@ -113,6 +123,51 @@ struct PaywallContent: View {
             }
         }
     }
+}
+
+/// Offerta Plus per la gravidanza: offerta introduttiva Apple del 30% per 3 mesi su un prodotto dedicato.
+/// Prezzo scontato, durata e prezzo successivo sono scritti accanto al pulsante (linea guida 3.1.2,
+/// Codice del Consumo art. 17-bis: lo sconto è calcolato sul prezzo normale di Plus mensile, che non cambia).
+private struct PregnancyOfferCard: View {
+    let offer: PlanOffer
+    let isPurchasing: Bool
+    let action: () -> Void
+
+    private var months: Int { offer.introMonths ?? 3 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.s) {
+            Label("Offerta per la gravidanza", systemImage: "heart.fill")
+                .font(DS.Font.caption.weight(.semibold))
+                .foregroundStyle(DS.Palette.brand)
+            Text("Plus a \(offer.introPrice ?? "") al mese per i primi \(months) mesi")
+                .font(DS.Font.headline)
+            Text("Invece di \(offer.displayPrice) al mese: il 30% in meno.")
+                .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
+            ForEach(Array(Self.features.enumerated()), id: \.offset) { _, feature in
+                Label { Text(feature).font(DS.Font.callout) } icon: {
+                    Image(systemName: "checkmark").foregroundStyle(DS.Palette.brand)
+                }
+                .labelStyle(BrandLabelStyle())
+            }
+            LoadingButton(title: "Attiva l'offerta", isLoading: isPurchasing, action: action)
+            Text("\(offer.introPrice ?? "") al mese per i primi \(months) mesi, poi \(offer.displayPrice) al mese. L'abbonamento si rinnova automaticamente salvo disdetta almeno 24 ore prima della scadenza. L'addebito avviene sul tuo account Apple; puoi disdire in qualsiasi momento nelle impostazioni dell'account App Store.")
+                .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
+            Text("Ti proponiamo questa offerta perché hai indicato di essere in gravidanza. Il dato resta nel tuo profilo e non viene usato per pubblicità.")
+                .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
+        }
+        .padding(DS.Spacing.m)
+        .background(DS.Palette.brandSoft, in: .rect(cornerRadius: DS.Radius.l))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.l).strokeBorder(DS.Palette.brand, lineWidth: 1.5))
+        .accessibilityElement(children: .contain)
+    }
+
+    static let features: [LocalizedStringKey] = [
+        "Fabbisogno di energia e proteine per trimestre (EFSA)",
+        "Avvisi automatici su scansioni, ricerca e lista della spesa",
+        "Suggerimenti AI senza gli alimenti da evitare",
+        "Tutte le funzioni di Plus",
+    ]
 }
 
 private struct PlanCard: View {
@@ -163,26 +218,30 @@ private struct PlanCard: View {
 /// Scelta del piano al termine dell'onboarding: il piano Free è sempre selezionabile.
 struct PlanChoiceView: View {
     @State private var model: PaywallViewModel
+    let isPregnant: Bool
     let onContinueFree: () -> Void
     let onPurchased: () -> Void
     @Environment(AppState.self) private var app
 
-    init(services: AppServices, onContinueFree: @escaping () -> Void, onPurchased: @escaping () -> Void) {
+    init(services: AppServices, isPregnant: Bool = false, onContinueFree: @escaping () -> Void, onPurchased: @escaping () -> Void) {
         _model = State(initialValue: PaywallViewModel(purchases: services.purchases))
+        self.isPregnant = isPregnant
         self.onContinueFree = onContinueFree
         self.onPurchased = onPurchased
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            PaywallContent(model: model) {
+            PaywallContent(model: model, showsPregnancyOffer: isPregnant) {
                 Task { await app.refreshEntitlements() }
                 onPurchased()
             }
             VStack(spacing: DS.Spacing.xs) {
                 Button("Continua con il piano Free", action: onContinueFree)
                     .buttonStyle(.secondary)
-                Text("Il piano Free include diario, inserimento manuale, calcolo del fabbisogno e alcune scansioni AI al giorno.")
+                Text(isPregnant
+                     ? "Con il piano Free in gravidanza: obiettivo di mantenimento (mai in deficit), niente digiuni e l'elenco degli alimenti da evitare."
+                     : "Il piano Free include diario, inserimento manuale, calcolo del fabbisogno e alcune scansioni AI al giorno.")
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Palette.textSecondary)
                     .multilineTextAlignment(.center)
