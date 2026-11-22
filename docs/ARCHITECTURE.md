@@ -246,3 +246,18 @@ I codici si creano in **App Store Connect** (Abbonamenti › Codici offerta): co
 
 **Privacy**: l'app non legge la rubrica; la condivisione è il foglio di sistema. Il referrer vede solo i conteggi (amici iscritti, inviti validi), mai nomi o email degli amici.
 
+## Stile alimentare scelto con il coach (Plus e Pro)
+
+Da Coach o da Profilo › Stile alimentare l'utente sceglie, con l'aiuto del coach AI, uno stile da un **catalogo chiuso** (`EatingStyle`, Swift / `EATING_STYLES`, TS): equilibrata, mediterranea, ricca di proteine, pochi carboidrati (moderata), vegetariana, vegana, digiuno intermittente 12:12, 14:10, 16:8. Esclusi per scelta: digiuni oltre 16 ore, 5:2, digiuni di giorni interi, chetogenica, diete a bassissimo contenuto calorico. Gli obiettivi calorici restano quelli calcolati (con le soglie minime) o del professionista: lo stile cambia *come* si distribuiscono i pasti, non abbassa le calorie.
+
+**Flusso**: 4 domande di sicurezza obbligatorie (gravidanza/allattamento, farmaci per il diabete, disturbi alimentari, altre condizioni seguite dal medico) → abitudini (pasti al giorno, quando si ha fame, allenamento, nota) → Edge Function `coach-eating-style` → fino a 3 proposte con motivazione e primi passi → scelta → per i digiuni, orario della finestra e promemoria facoltativi (spenti di default, locali).
+
+**Sicurezza** (`EatingStyleSafety` / `styleBlocks`, stessi test):
+- Digiuni: esclusi sotto i 18 anni e con BMI < 18,5.
+- Stili restrittivi (digiuni e pochi carboidrati): esclusi con una qualsiasi risposta "Sì" alle domande di sicurezza.
+- Con un piano del professionista nessuno stile è selezionabile: vale il piano.
+- Il server calcola gli stili ammessi e passa al modello **solo quelli**; l'output è filtrato da `sanitizeProposals` (solo stili ammessi, max 3, niente doppioni, testo ripulito, claim sulla salute vietati sostituiti con la descrizione neutra del catalogo — Reg. UE 1924/2006).
+- L'app ricontrolla le regole prima di salvare. Le risposte di sicurezza **non vengono salvate**: servono solo per la richiesta.
+
+**Dati**: `user_profiles.eating_style jsonb` (`EatingStyleChoice`: stile, finestra, data, promemoria). In Home, per i digiuni, il riquadro "Finestra alimentare aperta / Pausa dal cibo" con l'orario del prossimo cambio, senza conti alla rovescia o toni di sfida. Limite: Plus 3 richieste di proposte al giorno, Pro 10 (`plan_limits`).
+

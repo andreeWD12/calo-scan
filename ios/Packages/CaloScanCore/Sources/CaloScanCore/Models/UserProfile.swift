@@ -83,18 +83,23 @@ public struct UserProfile: Codable, Equatable, Sendable {
     public var otherAllergyNote: String?
     /// Note libere su esigenze alimentari. Trattate come dato sanitario (art. 9 GDPR).
     public var dietaryNotes: String?
+    /// Stile alimentare scelto con il coach (Plus e Pro). Nil se non scelto.
+    public var eatingStyle: EatingStyleChoice?
 
     public init(
         displayName: String, birthDate: Date, sex: BiologicalSex, heightCm: Double, weightKg: Double,
         targetWeightKg: Double?, activity: ActivityLevel, goal: NutritionGoal, diet: DietPreference,
         otherDietNote: String? = nil, allergens: Set<Allergen> = [], otherAllergyNote: String? = nil,
-        dietaryNotes: String? = nil
+        dietaryNotes: String? = nil, eatingStyle: EatingStyleChoice? = nil
     ) {
         self.displayName = displayName; self.birthDate = birthDate; self.sex = sex
         self.heightCm = heightCm; self.weightKg = weightKg; self.targetWeightKg = targetWeightKg
         self.activity = activity; self.goal = goal; self.diet = diet; self.otherDietNote = otherDietNote
         self.allergens = allergens; self.otherAllergyNote = otherAllergyNote; self.dietaryNotes = dietaryNotes
+        self.eatingStyle = eatingStyle
     }
+
+    public var bmi: Double { EatingStyleSafety.bmi(weightKg: weightKg, heightCm: heightCm) }
 
     public func ageYears(on date: Date = .now) -> Int { BodyMetrics.age(birthDate: birthDate, on: date) }
 

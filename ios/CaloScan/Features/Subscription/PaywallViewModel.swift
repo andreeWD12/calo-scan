@@ -70,7 +70,8 @@ extension Plan {
         case .plus:
             ["Più scansioni AI ogni giorno", "Analisi dettagliata dei macronutrienti",
              "Statistiche settimanali e mensili complete", "Consigli nutrizionali personalizzati",
-             "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI"]
+             "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI",
+             "Stile alimentare scelto con il coach, anche digiuno intermittente"]
         case .pro:
             ["Tutto di Plus", "Scansioni AI con limiti molto più alti", "AI Nutrition Coach avanzato",
              "Piano dei pasti settimanale e idee ricette", "Lista della spesa AI senza limiti settimanali",

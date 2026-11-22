@@ -277,6 +277,33 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
         return all.filter { item in item.1.map { !allergens.contains($0) } ?? true }.map(\.0)
     }
 
+    // MARK: Stile alimentare
+
+    /// Anteprima: proposte fisse scelte tra gli stili ammessi, con le stesse regole di sicurezza del server.
+    func proposeEatingStyles(_ request: EatingStyleRequest) async throws -> [EatingStyleProposal] {
+        guard plan != .free else { throw APIError.planRequired(minimum: "Plus") }
+        try await Task.sleep(for: .seconds(1.2))
+        guard let profile else { return [] }
+        let allowed = EatingStyleSafety.allowedStyles(ageYears: profile.ageYears(), bmi: profile.bmi,
+                                                      screening: request.screening,
+                                                      hasProfessionalPlan: professionalPlan != nil)
+        var order: [EatingStyle] = [.mediterranean]
+        if request.hunger == .evening || request.mealsPerDay == .two { order.insert(.fasting14, at: 0) }
+        if request.trainsRegularly { order.append(.highProtein) }
+        order += [.balanced, .fasting12]
+        let reasons: [EatingStyle: String] = [
+            .fasting14: "Dici di avere poca fame al mattino: una finestra di 10 ore, per esempio dalle 10 alle 20, si adatta alle tue abitudini.",
+            .mediterranean: "È lo stile più vario e facile da mantenere nel tempo, e si adatta bene alle tue preferenze.",
+            .highProtein: "Ti alleni con regolarità: distribuire le proteine nei pasti aiuta a raggiungere il tuo obiettivo.",
+            .balanced: "Un'alimentazione varia con tutti i gruppi di alimenti, semplice da seguire ogni giorno.",
+            .fasting12: "Una pausa notturna di 12 ore è il modo più graduale per provare il digiuno intermittente.",
+        ]
+        var seen = Set<EatingStyle>()
+        return order.filter { allowed.contains($0) && seen.insert($0).inserted }.prefix(3).map {
+            EatingStyleProposal(style: $0, reason: reasons[$0] ?? "", firstSteps: ["Inizia con 2-3 giorni a settimana", "Bevi acqua durante la giornata"])
+        }
+    }
+
     // MARK: Inviti
 
     /// Anteprima: nessun codice offerta reale. Il premio resta "in attesa" finché un amico non completa i requisiti.

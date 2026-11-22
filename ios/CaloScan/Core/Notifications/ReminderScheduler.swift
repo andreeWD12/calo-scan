@@ -1,5 +1,6 @@
 import Foundation
 import UserNotifications
+import CaloScanCore
 
 /// Promemoria locali (nessun dato lascia il dispositivo). Tutti disattivati di default;
 /// al massimo un promemoria per tipo, con orari scelti dall'utente.
@@ -64,6 +65,32 @@ enum ReminderScheduler {
         components.hour = 10
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         try? await center.add(UNNotificationRequest(identifier: reviewID, content: content, trigger: trigger))
+    }
+
+    private static let windowIDs = ["reminder.window.open", "reminder.window.close"]
+
+    /// Promemoria di inizio e fine della finestra alimentare (digiuno intermittente), solo se l'utente li attiva.
+    /// Toni neutri: nessun invito a "resistere" o a saltare pasti. Con `nil` li rimuove.
+    static func scheduleEatingWindow(_ window: EatingWindow?) async {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: windowIDs)
+        guard let window else { return }
+        let items = [
+            (windowIDs[0], window.startMinute, String(localized: "Finestra alimentare aperta"),
+             String(localized: "Da ora puoi fare il tuo primo pasto, se ne hai voglia.")),
+            (windowIDs[1], (window.endMinute - 30 + 1440) % 1440, String(localized: "Finestra alimentare"),
+             String(localized: "Tra 30 minuti si chiude la finestra di oggi.")),
+        ]
+        for (id, minute, title, body) in items {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            var components = DateComponents()
+            components.hour = minute / 60
+            components.minute = minute % 60
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+            try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+        }
     }
 
     /// Sostituisce tutti i promemoria con quelli attivi nelle impostazioni.

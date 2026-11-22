@@ -63,6 +63,11 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | 2.1 Completezza: niente funzioni finte | Nessun pulsante decorativo; i servizi non ancora collegati mostrano un errore esplicito | ✅ |
 | 3.1.1 Acquisti in-app per contenuti digitali | Solo StoreKit 2, nessun link a pagamenti esterni | 🟡 Fase 8 |
 | 3.1.1 Codici promozionali | Nessun codice gestito dall'app: solo codici offerta di Apple creati in App Store Connect, riscattati con il foglio di sistema ("Riscatta un codice" in paywall e Abbonamento) | 🟡 Fase 8 |
+| MDR (Reg. UE 2017/745) – stile alimentare | Catalogo chiuso di stili di benessere, nessuna dieta terapeutica, nessuna diagnosi; esclusi gli stili restrittivi con condizioni a rischio; il piano del professionista ha sempre la priorità | ✅ Fase 2 (app) / 🟡 Fase 7 (server) |
+| Reg. UE 1924/2006 – indicazioni sulla salute | Descrizioni neutre; il server sostituisce le motivazioni del modello con claim vietati ("brucia grassi", "detox", "previene", "cura"…) | 🟡 Fase 7 |
+| GDPR art. 9 – domande di sicurezza | Basate sul consenso ai dati sanitari già raccolto; risposte usate solo per la richiesta e non salvate; lo stile scelto è salvato come dato sanitario | ✅ Fase 2 (app) |
+| AI Act art. 50 – stile alimentare | Avviso che le proposte sono generate da un'AI e non sostituiscono il medico | ✅ Fase 2 |
+| App Store 1.4.1 – app per la salute | Nessuna promessa di risultati; avvertenze su sintomi (stanchezza, capogiri) e invito a interrompere e sentire il medico; digiuno escluso per minorenni | ✅ Fase 2 |
 | 3.1.1 / 3.2.2 Premi per gli inviti | Il premio è solo un codice offerta Apple (sconto sul primo mese), mai uno sblocco gestito dall'app; nessun obbligo di invitare per usare funzioni; nessun premio per recensioni o download di altre app | 🟡 Fase 8 |
 | GDPR art. 5(1)(c) Minimizzazione negli inviti | Niente accesso ai contatti; il referrer vede solo conteggi; righe cancellate con l'account; DeviceCheck senza identificatori | 🟡 Fase 4 |
 | Codice del Consumo (pratiche commerciali) | Regolamento dell'invito chiaro in app e nei Termini: premio unico non accumulabile, solo primo mese, scadenza, rinnovo a prezzo pieno; trasparenza sul prezzo dopo lo sconto | 🟡 Fase 8 |

@@ -102,6 +102,10 @@ struct HomeView: View {
                     .appear(index: 2)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
+            if let window = app.profile?.eatingStyle?.window, app.entitlements.plan != .free {
+                EatingWindowCard(window: window)
+                    .appear(index: 3)
+            }
             ForEach(Array(MealType.allCases.enumerated()), id: \.element) { index, type in
                 let planned = app.professionalPlan?.plannedMeal(type, on: .now)
                 MealSectionCard(type: type, meals: day.meals(of: type),

@@ -95,6 +95,10 @@ protocol CoachService: Sendable {
     func dailyInsights() async throws -> [CoachInsight]
     func history() async throws -> [CoachMessage]
     func send(_ text: String) async throws -> CoachMessage
+    /// Fino a 3 stili del catalogo adatti all'utente (solo Plus e Pro, controllo sul server).
+    /// Il server esclude gli stili non sicuri per età, BMI, risposte di sicurezza e piano del professionista,
+    /// e filtra l'output del modello con `sanitizeProposals`.
+    func proposeEatingStyles(_ request: EatingStyleRequest) async throws -> [EatingStyleProposal]
 }
 
 // MARK: - Progressi

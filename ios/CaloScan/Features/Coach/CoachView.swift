@@ -16,6 +16,12 @@ struct CoachView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: DS.Spacing.s) {
                     AIDisclosure()
+                    NavigationLink {
+                        EatingStyleView(services: app.services)
+                    } label: {
+                        EatingStyleEntry(plan: app.entitlements.plan, current: app.profile?.eatingStyle?.style)
+                    }
+                    .buttonStyle(.pressable)
                     ForEach(model.insights) { InsightRow(insight: $0) }
                     conversation
                     if model.isSending { TypingIndicator().id("typing") }
@@ -111,6 +117,36 @@ struct CoachView: View {
 }
 
 /// Trasparenza sull'uso dell'AI (Regolamento UE 2024/1689, art. 50) e limiti dei consigli.
+/// Accesso alla scelta dello stile alimentare (Plus e Pro; per Free mostra il lucchetto).
+private struct EatingStyleEntry: View {
+    let plan: Plan
+    let current: EatingStyle?
+
+    var body: some View {
+        HStack(spacing: DS.Spacing.s) {
+            Image(systemName: "fork.knife").font(.title3).foregroundStyle(DS.Palette.brand)
+                .frame(width: 36, height: 36).background(DS.Palette.brandSoft, in: .circle)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Scegli lo stile alimentare").font(DS.Font.callout.weight(.semibold))
+                    .foregroundStyle(DS.Palette.textPrimary)
+                Text(current?.title ?? String(localized: "Mediterranea, proteica, digiuno intermittente…"))
+                    .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+            }
+            Spacer()
+            if plan == .free {
+                Label("Plus", systemImage: "lock.fill").font(.caption.weight(.bold))
+                    .foregroundStyle(DS.Palette.brand)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(DS.Palette.brandSoft, in: .capsule)
+            } else {
+                Image(systemName: "chevron.right").foregroundStyle(DS.Palette.textTertiary)
+            }
+        }
+        .padding(DS.Spacing.s)
+        .background(DS.Palette.surface, in: .rect(cornerRadius: DS.Radius.m))
+    }
+}
+
 private struct AIDisclosure: View {
     var body: some View {
         EstimateNotice(text: "Stai parlando con un assistente basato sull'intelligenza artificiale. I suoi consigli sono informativi, possono contenere errori e non sostituiscono un medico, un dietista o un nutrizionista. Non fornisce diagnosi né diete terapeutiche.")

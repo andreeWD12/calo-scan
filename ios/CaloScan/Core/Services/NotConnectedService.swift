@@ -66,6 +66,7 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func suggest(request: String?) async throws -> [ShoppingSuggestion] { throw fail() }
 
     func referralStatus() async throws -> ReferralStatus { throw fail() }
+    func proposeEatingStyles(_ request: EatingStyleRequest) async throws -> [EatingStyleProposal] { throw fail() }
     func applyReferral(code: String) async throws -> ReferralApplyResult { throw fail() }
 }
 

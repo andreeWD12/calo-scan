@@ -209,6 +209,8 @@ struct GuidePage: Identifiable {
                          text: "Se cambi iPhone, l'abbonamento si recupera dalla schermata dei piani."),
                     Item(symbol: "giftcard", title: "Riscatta un codice",
                          text: "Hai un codice offerta? Inseriscilo dalla schermata dei piani o da Profilo › Abbonamento."),
+                    Item(symbol: "fork.knife", title: "Stile alimentare (Plus e Pro)",
+                         text: "Dal Coach o dal Profilo scegli con il coach lo stile più adatto: mediterranea, proteica, vegetariana, digiuno intermittente e altri. Prima rispondi a poche domande di sicurezza."),
                     Item(symbol: "person.2", title: "Invita un amico",
                          text: "Da Profilo › Invita un amico condividi il tuo codice: quando un amico inizia a usare CaloScan ricevi uno sconto sul primo mese (uno solo, non accumulabile)."),
                   ]),
