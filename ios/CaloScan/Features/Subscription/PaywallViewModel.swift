@@ -82,7 +82,7 @@ extension Plan {
              "Statistiche settimanali e mensili complete", "Consigli nutrizionali personalizzati",
              "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI",
              "Stile alimentare scelto con il coach, anche digiuno intermittente",
-             "Dieta per la gravidanza: fabbisogno per trimestre e avvisi sugli alimenti"]
+             "Dieta per la gravidanza che si adatta alla tua settimana"]
         case .pro:
             ["Tutto di Plus", "Scansioni AI con limiti molto più alti", "AI Nutrition Coach avanzato",
              "Piano dei pasti settimanale e idee ricette", "Lista della spesa AI senza limiti settimanali",

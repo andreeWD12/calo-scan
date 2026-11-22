@@ -176,7 +176,7 @@ struct EatingStyleView: View {
             } else if app.pregnancy != nil {
                 Section {
                     Label("Sei in modalità gravidanza", systemImage: "heart.circle").font(DS.Font.headline)
-                    Text("In gravidanza non proponiamo digiuni o stili restrittivi. Gli obiettivi seguono il fabbisogno del trimestre e ti avvisiamo sugli alimenti da evitare.")
+                    Text("In gravidanza non proponiamo digiuni o stili restrittivi. Gli obiettivi si adattano alla tua settimana di gravidanza e ti avvisiamo sugli alimenti da evitare.")
                         .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
                     NavigationLink("Alimentazione in gravidanza") { PregnancyView() }
                 }

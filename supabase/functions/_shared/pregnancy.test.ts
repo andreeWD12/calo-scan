@@ -2,7 +2,7 @@
 // Stessi casi di PregnancyTests.swift.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkPregnancyFood, filterForPregnancy, isValidDueDate, pregnancyTargets, pregnancyWeek, trimester } from "./pregnancy.ts";
+import { checkPregnancyFood, dueDateFromWeek, filterForPregnancy, isValidDueDate, pregnancyWeekPlan, pregnancyTargets, pregnancyWeek, trimester } from "./pregnancy.ts";
 
 test("gravidanza: alimenti da evitare", () => {
   const avoid: [string, string][] = [
@@ -44,8 +44,23 @@ test("gravidanza: settimane e trimestri", () => {
   assert.equal(pregnancyWeek("2027-02-14", "2026-11-22"), 28);
   assert.deepEqual([13, 14, 27, 28].map(trimester), [1, 2, 2, 3]);
   assert.equal(isValidDueDate("2027-05-01", "2026-11-22"), true);
-  assert.equal(isValidDueDate("2026-11-21", "2026-11-22"), false);
+  assert.equal(isValidDueDate("2026-11-08", "2026-11-22"), true);
+  assert.equal(isValidDueDate("2026-11-07", "2026-11-22"), false);
   assert.equal(isValidDueDate("2027-09-20", "2026-11-22"), false);
+});
+
+test("gravidanza: data presunta dalle settimane, piano della settimana", () => {
+  assert.equal(dueDateFromWeek(17, 0, "2026-11-22"), "2027-05-02");
+  assert.equal(pregnancyWeek(dueDateFromWeek(17, 0, "2026-11-22"), "2026-11-22"), 17);
+  assert.equal(pregnancyWeek(dueDateFromWeek(17, 6, "2026-11-22"), "2026-11-22"), 17);
+  assert.equal(pregnancyWeek(dueDateFromWeek(17, 6, "2026-11-22"), "2026-11-23"), 18);
+  assert.equal(dueDateFromWeek(41, 6, "2026-11-22"), "2026-11-09");
+  assert.equal(isValidDueDate(dueDateFromWeek(41, 6, "2026-11-22"), "2026-11-22"), true);
+  assert.equal(dueDateFromWeek(0, 0, "2026-11-22"), dueDateFromWeek(1, 0, "2026-11-22"));
+  assert.deepEqual(pregnancyWeekPlan(13), { week: 13, trimester: 1, phase: "early", extraKcal: 70, extraProteinG: 1, nextChangeWeek: 14, nextExtraKcal: 260 });
+  assert.deepEqual(pregnancyWeekPlan(14), { week: 14, trimester: 2, phase: "middle", extraKcal: 260, extraProteinG: 9, nextChangeWeek: 28, nextExtraKcal: 500 });
+  assert.deepEqual(pregnancyWeekPlan(30), { week: 30, trimester: 3, phase: "late", extraKcal: 500, extraProteinG: 28, nextChangeWeek: null, nextExtraKcal: null });
+  assert.equal(pregnancyWeekPlan(37).phase, "term");
 });
 
 test("gravidanza: obiettivi mai in deficit, EFSA per trimestre", () => {

@@ -86,7 +86,29 @@ export function trimester(week: number): 1 | 2 | 3 {
 
 export function isValidDueDate(dueDate: string, today: string): boolean {
   const days = dayIndex(dueDate) - dayIndex(today);
-  return days >= 0 && days <= 294;
+  return days >= -14 && days <= 294;
+}
+
+/** Data presunta del parto da "settimana N (+ giorni)", settimane 1…41. Identico a `PregnancyInfo.dueDate(week:days:)`. */
+export function dueDateFromWeek(week: number, days: number, today: string): string {
+  const elapsed = Math.min(Math.max(week, 1), 41) * 7 + Math.min(Math.max(days, 0), 6);
+  return new Date((dayIndex(today) + 280 - elapsed) * DAY).toISOString().slice(0, 10);
+}
+
+export type PregnancyPhase = "early" | "middle" | "late" | "term";
+export interface PregnancyWeekPlan {
+  week: number; trimester: 1 | 2 | 3; phase: PregnancyPhase; extraKcal: number; extraProteinG: number;
+  nextChangeWeek: number | null; nextExtraKcal: number | null;
+}
+
+/** Piano della settimana. Identico a `PregnancyNutrition.weekPlan`. */
+export function pregnancyWeekPlan(rawWeek: number): PregnancyWeekPlan {
+  const week = Math.min(Math.max(rawWeek, 1), 42);
+  const tri = trimester(week);
+  const phase: PregnancyPhase = week <= 13 ? "early" : week <= 27 ? "middle" : week <= 36 ? "late" : "term";
+  const next = tri === 1 ? 14 : tri === 2 ? 28 : null;
+  return { week, trimester: tri, phase, extraKcal: EXTRA_KCAL[tri - 1], extraProteinG: EXTRA_PROTEIN_G[tri - 1],
+    nextChangeWeek: next, nextExtraKcal: next === null ? null : EXTRA_KCAL[tri] };
 }
 
 export const EXTRA_KCAL = [70, 260, 500] as const;

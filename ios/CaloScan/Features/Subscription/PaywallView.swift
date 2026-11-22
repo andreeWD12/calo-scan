@@ -163,7 +163,7 @@ private struct PregnancyOfferCard: View {
     }
 
     static let features: [LocalizedStringKey] = [
-        "Fabbisogno di energia e proteine per trimestre (EFSA)",
+        "Energia, proteine e consigli per la tua settimana di gravidanza (EFSA)",
         "Avvisi automatici su scansioni, ricerca e lista della spesa",
         "Suggerimenti AI senza gli alimenti da evitare",
         "Tutte le funzioni di Plus",

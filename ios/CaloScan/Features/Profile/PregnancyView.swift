@@ -17,6 +17,44 @@ extension PregnancyFoodFlag.Risk {
     }
 }
 
+extension PregnancyWeekPlan.Phase {
+    /// Consigli della fase, da indicazioni pubbliche (Ministero della Salute, ISS). Nessun integratore o dosaggio.
+    var advice: String {
+        switch self {
+        case .early: String(localized: "Contro la nausea aiutano pasti piccoli e frequenti, anche pane secco o cracker. L'acido folico va preso già da prima del concepimento: dose e durata le indica il medico. Se non conosci l'esito del test sulla toxoplasmosi, chiedilo.")
+        case .middle: String(localized: "Il fabbisogno aumenta, ma non serve \"mangiare per due\": basta uno spuntino in più. Ferro da legumi, carne ben cotta e verdure a foglia verde, insieme a frutta ricca di vitamina C. Calcio da latte e yogurt pastorizzati e formaggi a pasta dura.")
+        case .late: String(localized: "È il periodo con il fabbisogno più alto. Pasti più piccoli e frequenti aiutano con reflusso e pesantezza. Pesce a basso contenuto di mercurio (salmone, sardine, merluzzo) 2-3 volte a settimana, sempre ben cotto.")
+        case .term: String(localized: "Nessuna dieta: pasti regolari, acqua a sufficienza e fibre (frutta, verdura, cereali integrali) contro la stitichezza. Per le ultime settimane segui le indicazioni dell'ostetrica.")
+        }
+    }
+}
+
+/// Come indicare la gravidanza: a che settimana sei (predefinito) oppure la data presunta del parto.
+/// In entrambi i casi si salva la data, così la settimana avanza da sola.
+struct PregnancyDatingFields: View {
+    @Binding var byWeek: Bool
+    @Binding var week: Int
+    @Binding var dueDate: Date
+    let dueDateRange: ClosedRange<Date>
+
+    var body: some View {
+        Group {
+            Picker("Come vuoi indicarlo", selection: $byWeek) {
+                Text("Settimana").tag(true)
+                Text("Data del parto").tag(false)
+            }
+            .pickerStyle(.segmented)
+            if byWeek {
+                Stepper(value: $week, in: PregnancyInfo.weekRange) {
+                    LabeledContent("A che settimana sei?", value: String(localized: "\(week)ª settimana"))
+                }
+            } else {
+                DatePicker("Data presunta del parto", selection: $dueDate, in: dueDateRange, displayedComponents: .date)
+            }
+        }
+    }
+}
+
 /// Avviso accanto al nome di un alimento, visibile solo con la modalità gravidanza attiva.
 struct PregnancyFoodBadge: View {
     @Environment(AppState.self) private var app
@@ -42,23 +80,23 @@ struct PregnancyFoodBadge: View {
 
 /// Profilo › Gravidanza.
 /// Per tutti (tutela di sicurezza): mai deficit, niente digiuni, elenco degli alimenti da evitare.
-/// Con Plus o Pro (dieta per la gravidanza): fabbisogno per trimestre e avvisi automatici sugli alimenti.
+/// Con Plus o Pro (dieta per la gravidanza): energia, proteine e consigli della settimana, avvisi automatici sugli alimenti.
 struct PregnancyView: View {
     @Environment(AppState.self) private var app
     @State private var showPaywall = false
     @State private var enabled = false
     @State private var dueDate = Calendar.current.date(byAdding: .month, value: 6, to: .now) ?? .now
+    @State private var byWeek = true
+    @State private var week = 12
+    /// Giorni oltre la settimana compiuta, per non spostare la data salvata se l'utente non cambia la settimana.
+    @State private var extraDays = 0
     @State private var immune: Bool?
     @State private var isSaving = false
     @State private var error: APIError?
     @State private var loaded = false
 
-    private var dueRange: ClosedRange<Date> {
-        let today = Calendar.current.startOfDay(for: .now)
-        return today...(Calendar.current.date(byAdding: .day, value: 294, to: today) ?? today)
-    }
-
-    private var draft: PregnancyInfo? { enabled ? PregnancyInfo(dueDate: dueDate, toxoplasmosisImmune: immune) : nil }
+    private var effectiveDueDate: Date { byWeek ? PregnancyInfo.dueDate(week: week, days: extraDays) : dueDate }
+    private var draft: PregnancyInfo? { enabled ? PregnancyInfo(dueDate: effectiveDueDate, toxoplasmosisImmune: immune) : nil }
     private var hasChanges: Bool { draft != app.profile?.pregnancy }
 
     var body: some View {
@@ -66,7 +104,10 @@ struct PregnancyView: View {
             Section {
                 Toggle("Sono in gravidanza", isOn: $enabled.animation(DS.Motion.snappy))
                 if enabled {
-                    DatePicker("Data presunta del parto", selection: $dueDate, in: dueRange, displayedComponents: .date)
+                    PregnancyDatingFields(byWeek: $byWeek,
+                                          // Se l'utente cambia la settimana, si conta dall'inizio di quella settimana.
+                                          week: Binding(get: { week }, set: { week = $0; extraDays = 0 }),
+                                          dueDate: $dueDate, dueDateRange: PregnancyInfo.dueDateRange())
                     Picker("Immune alla toxoplasmosi", selection: $immune) {
                         Text("Non lo so").tag(Bool?.none)
                         Text("Sì").tag(Bool?.some(true))
@@ -80,10 +121,10 @@ struct PregnancyView: View {
             }
 
             if let draft {
-                let week = draft.week()
-                let tri = draft.trimester()
+                let plan = PregnancyNutrition.weekPlan(week: draft.week())
+                let tri = plan.trimester
                 Section {
-                    LabeledContent("Settimana", value: "\(week)")
+                    LabeledContent("Settimana", value: "\(plan.week)ª")
                     LabeledContent("Trimestre", value: "\(tri)º")
                     if app.professionalPlan != nil {
                         Label("Vale il piano del tuo medico o dietista per calorie e macronutrienti.", systemImage: "stethoscope")
@@ -93,8 +134,13 @@ struct PregnancyView: View {
                             .font(DS.Font.callout)
                         pregnancyPlusCard(trimester: tri)
                     } else {
-                        LabeledContent("Energia in più al giorno", value: "+\(PregnancyNutrition.extraKcal(trimester: tri)) kcal")
-                        LabeledContent("Proteine in più al giorno", value: "+\(PregnancyNutrition.extraProteinG(trimester: tri)) g")
+                        LabeledContent("Energia in più al giorno", value: "+\(plan.extraKcal) kcal")
+                        LabeledContent("Proteine in più al giorno", value: "+\(plan.extraProteinG) g")
+                        if let next = plan.nextChangeWeek, let kcal = plan.nextExtraKcal {
+                            Label("Dalla settimana \(next): +\(kcal) kcal al giorno. Gli obiettivi si aggiornano da soli.",
+                                  systemImage: "calendar.badge.clock")
+                                .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                        }
                     }
                 } header: {
                     Text("Il tuo fabbisogno")
@@ -102,6 +148,12 @@ struct PregnancyView: View {
                     Text(app.hasPregnancyPlan
                          ? "Valori di riferimento EFSA aggiunti al tuo fabbisogno di mantenimento. Non è prevista alcuna dieta dimagrante. L'aumento di peso adatto a te lo stabiliscono ginecologo e ostetrica."
                          : "Non è prevista alcuna dieta dimagrante. L'aumento di peso adatto a te lo stabiliscono ginecologo e ostetrica.")
+                }
+
+                if app.hasPregnancyPlan {
+                    Section("Settimana \(plan.week): cosa conta adesso") {
+                        Text(plan.phase.advice).font(DS.Font.callout)
+                    }
                 }
 
                 Section("Da evitare") {
@@ -137,7 +189,7 @@ struct PregnancyView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Salva") { Task { await save() } }
-                    .disabled(!hasChanges || isSaving || (enabled && !PregnancyInfo.isValidDueDate(dueDate)))
+                    .disabled(!hasChanges || isSaving || (enabled && !PregnancyInfo.isValidDueDate(effectiveDueDate)))
             }
         }
         .onAppear {
@@ -145,6 +197,18 @@ struct PregnancyView: View {
             loaded = true
             if let p = app.profile?.pregnancy {
                 enabled = true; dueDate = p.dueDate; immune = p.toxoplasmosisImmune
+                week = min(max(p.week(), PregnancyInfo.weekRange.lowerBound), PregnancyInfo.weekRange.upperBound)
+                extraDays = p.extraDays()
+            }
+        }
+        .onChange(of: byWeek) { _, isWeek in
+            // Passando da un modo all'altro si parte dalla stessa gravidanza.
+            if isWeek {
+                let p = PregnancyInfo(dueDate: dueDate)
+                week = min(max(p.week(), PregnancyInfo.weekRange.lowerBound), PregnancyInfo.weekRange.upperBound)
+                extraDays = p.extraDays()
+            } else {
+                dueDate = PregnancyInfo.dueDate(week: week, days: extraDays)
             }
         }
         .sheet(isPresented: $showPaywall) {
@@ -160,7 +224,7 @@ struct PregnancyView: View {
         VStack(alignment: .leading, spacing: DS.Spacing.xs) {
             Label("Dieta per la gravidanza con Plus", systemImage: "lock.fill")
                 .font(DS.Font.callout.weight(.semibold))
-            Text("Fabbisogno del \(trimester)º trimestre (+\(PregnancyNutrition.extraKcal(trimester: trimester)) kcal e +\(PregnancyNutrition.extraProteinG(trimester: trimester)) g di proteine al giorno), avvisi automatici su scansioni, ricerca e lista della spesa, suggerimenti AI senza gli alimenti da evitare.")
+            Text("Energia, proteine e consigli per la tua settimana, che si aggiornano da soli (ora +\(PregnancyNutrition.extraKcal(trimester: trimester)) kcal e +\(PregnancyNutrition.extraProteinG(trimester: trimester)) g di proteine al giorno), avvisi automatici su scansioni, ricerca e lista della spesa, suggerimenti AI senza gli alimenti da evitare.")
                 .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
             Button("Scopri l'offerta") { showPaywall = true }
                 .font(DS.Font.callout.weight(.semibold))

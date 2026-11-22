@@ -223,9 +223,9 @@ private struct PersonalStep: View {
                     Toggle("Sono in gravidanza", isOn: $model.isPregnant.animation(DS.Motion.snappy))
                         .font(DS.Font.headline)
                     if model.isPregnant {
-                        DatePicker("Data presunta del parto", selection: $model.dueDate, in: model.dueDateRange,
-                                   displayedComponents: .date)
-                        Text("Non imposteremo mai un deficit calorico né digiuni. Con Plus avrai il fabbisogno per trimestre e gli avvisi sugli alimenti da evitare. Segui sempre le indicazioni di ginecologo e ostetrica.")
+                        PregnancyDatingFields(byWeek: $model.pregnancyByWeek, week: $model.pregnancyWeek,
+                                              dueDate: $model.dueDate, dueDateRange: model.dueDateRange)
+                        Text("Da qui la settimana avanza da sola e la dieta si adatta. Non imposteremo mai un deficit calorico né digiuni. Con Plus avrai energia, proteine e consigli per la tua settimana e gli avvisi sugli alimenti da evitare. Segui sempre le indicazioni di ginecologo e ostetrica.")
                             .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
                     }
                 }

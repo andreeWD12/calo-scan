@@ -266,7 +266,11 @@ Da Coach o da Profilo › Stile alimentare l'utente sceglie, con l'aiuto del coa
 | Funzione | Piano |
 |---|---|
 | Mai deficit calorico (almeno mantenimento), niente digiuni né stili restrittivi, elenco degli alimenti da evitare in Profilo › Gravidanza | Tutti (Free compreso): sono tutele di sicurezza e non si vendono |
-| Fabbisogno per trimestre (EFSA), avvisi automatici su ricerca, scansioni e lista della spesa, suggerimenti AI filtrati | Plus e Pro (`AppState.hasPregnancyPlan`) |
+| Dieta per settimana (energia e proteine EFSA, consigli della fase, prossimo cambio), avvisi automatici su ricerca, scansioni e lista della spesa, suggerimenti AI filtrati | Plus e Pro (`AppState.hasPregnancyPlan`) |
+
+**Datazione**: si chiede *a che settimana sei* (1–41, predefinito) oppure la data presunta del parto; si salva sempre la data (`PregnancyInfo.dueDate(week:days:)` / `dueDateFromWeek`, 280 giorni = 40 settimane), così la settimana avanza da sola ogni 7 giorni. Date valide: da 14 giorni fa (oltre il termine) a 294 giorni da oggi.
+
+**Piano della settimana** (`PregnancyNutrition.weekPlan` / `pregnancyWeekPlan`, stessi test): dalla settimana derivano trimestre, energia e proteine in più, la settimana del prossimo cambio (14 e 28) e la fase dei consigli (1–13 nausea e acido folico dal medico; 14–27 ferro e calcio; 28–36 pasti piccoli e pesce a basso mercurio; 37+ nessuna dieta, idratazione e fibre). I valori di energia e proteine restano quelli ufficiali EFSA per trimestre: non inventiamo valori intermedi settimana per settimana.
 
 Attivabile da onboarding ("Sono in gravidanza", per sesso femminile o non indicato) e da Profilo › Gravidanza. Dati: `user_profiles.pregnancy jsonb` (`PregnancyInfo`: data presunta del parto, immunità alla toxoplasmosi facoltativa) — dato sanitario art. 9 GDPR, con il consenso già raccolto.
 

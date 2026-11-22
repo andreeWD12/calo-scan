@@ -1,6 +1,7 @@
 import Foundation
 
-/// Modalità gravidanza. Gratuita per tutti: è una funzione di sicurezza alimentare, non un piano dietetico.
+/// Modalità gravidanza. Tutele per tutti (mai deficit, niente digiuni, alimenti da evitare);
+/// dieta completa per settimana di gravidanza con Plus e Pro.
 ///
 /// Fonti: Ministero della Salute e ISS (alimentazione e sicurezza alimentare in gravidanza),
 /// EFSA (valori di riferimento per energia 2013 e proteine 2012; caffeina 2015).
@@ -16,10 +17,34 @@ public struct PregnancyInfo: Codable, Equatable, Sendable {
         self.dueDate = dueDate; self.toxoplasmosisImmune = toxoplasmosisImmune
     }
 
-    /// La data presunta del parto deve cadere tra oggi e 42 settimane da oggi.
+    /// Settimane selezionabili quando l'utente indica a che settimana è (invece della data presunta del parto).
+    public static let weekRange = 1...41
+
+    /// La data presunta del parto deve cadere tra 14 giorni fa (gravidanza oltre il termine, fino a 42 settimane)
+    /// e 42 settimane da oggi.
     public static func isValidDueDate(_ date: Date, today: Date = .now, calendar: Calendar = .current) -> Bool {
         let days = daysUntil(date, from: today, calendar: calendar)
-        return days >= 0 && days <= 294
+        return days >= -14 && days <= 294
+    }
+
+    /// Intervallo selezionabile per la data presunta del parto (coerente con `isValidDueDate`).
+    public static func dueDateRange(today: Date = .now, calendar: Calendar = .current) -> ClosedRange<Date> {
+        let start = calendar.startOfDay(for: today)
+        return (calendar.date(byAdding: .day, value: -14, to: start) ?? start)...(calendar.date(byAdding: .day, value: 294, to: start) ?? start)
+    }
+
+    /// Giorni oltre le settimane compiute (0…6), per ricostruire la stessa data da settimana + giorni.
+    public func extraDays(on date: Date = .now, calendar: Calendar = .current) -> Int {
+        let elapsed = 280 - Self.daysUntil(dueDate, from: date, calendar: calendar)
+        return min(max(elapsed - week(on: date, calendar: calendar) * 7, 0), 6)
+    }
+
+    /// Data presunta del parto da "sono alla settimana N (+ giorni)": 40 settimane = 280 giorni.
+    /// Salviamo la data, così la settimana avanza da sola. Identico a `dueDateFromWeek` (TS).
+    public static func dueDate(week: Int, days: Int = 0, today: Date = .now, calendar: Calendar = .current) -> Date {
+        let elapsed = min(max(week, weekRange.lowerBound), weekRange.upperBound) * 7 + min(max(days, 0), 6)
+        let start = calendar.startOfDay(for: today)
+        return calendar.date(byAdding: .day, value: 280 - elapsed, to: start) ?? start
     }
 
     static func daysUntil(_ date: Date, from: Date, calendar: Calendar) -> Int {
@@ -44,7 +69,41 @@ public struct PregnancyInfo: Codable, Equatable, Sendable {
     }
 }
 
+/// Piano della settimana: cosa vale adesso e quando cambia. La settimana guida tutto:
+/// energia e proteine (EFSA per trimestre) e i consigli della fase. Identico a `pregnancyWeekPlan` (TS).
+public struct PregnancyWeekPlan: Equatable, Sendable {
+    /// Fasi dei consigli alimentari (Ministero della Salute / ISS), per intervalli di settimane.
+    public enum Phase: String, Sendable {
+        /// 1–13: nausea, acido folico (dal medico), test della toxoplasmosi.
+        case early
+        /// 14–27: fabbisogno in aumento, ferro e calcio.
+        case middle
+        /// 28–36: fabbisogno massimo, pasti piccoli e frequenti contro reflusso e pesantezza.
+        case late
+        /// 37+: termine; idratazione, fibre, nessuna dieta.
+        case term
+    }
+    public let week: Int
+    public let trimester: Int
+    public let phase: Phase
+    public let extraKcal: Int
+    public let extraProteinG: Int
+    /// Settimana in cui cambiano energia e proteine (14 o 28); nil nel terzo trimestre.
+    public let nextChangeWeek: Int?
+    public let nextExtraKcal: Int?
+}
+
 public enum PregnancyNutrition {
+    public static func weekPlan(week rawWeek: Int) -> PregnancyWeekPlan {
+        let week = min(max(rawWeek, 1), 42)
+        let tri = week <= 13 ? 1 : (week <= 27 ? 2 : 3)
+        let phase: PregnancyWeekPlan.Phase = week <= 13 ? .early : week <= 27 ? .middle : week <= 36 ? .late : .term
+        let next: Int? = tri == 1 ? 14 : (tri == 2 ? 28 : nil)
+        return PregnancyWeekPlan(week: week, trimester: tri, phase: phase,
+                                 extraKcal: extraKcal(trimester: tri), extraProteinG: extraProteinG(trimester: tri),
+                                 nextChangeWeek: next, nextExtraKcal: next.map { _ in extraKcal(trimester: tri + 1) })
+    }
+
     /// Energia aggiuntiva al giorno per trimestre (EFSA 2013).
     public static func extraKcal(trimester: Int) -> Int { [70, 260, 500][min(max(trimester, 1), 3) - 1] }
     /// Proteine aggiuntive al giorno per trimestre (EFSA 2012).

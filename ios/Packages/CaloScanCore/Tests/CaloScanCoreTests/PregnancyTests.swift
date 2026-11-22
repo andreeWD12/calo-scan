@@ -48,10 +48,36 @@ final class PregnancyTests: XCTestCase {
         XCTAssertEqual(PregnancyInfo(dueDate: d(2027, 2, 14)).week(on: today, calendar: cal), 28)
         XCTAssertEqual(PregnancyInfo(dueDate: d(2027, 2, 14)).trimester(on: today, calendar: cal), 3)
         XCTAssertTrue(PregnancyInfo.isValidDueDate(d(2027, 5, 1), today: today, calendar: cal))
-        XCTAssertFalse(PregnancyInfo.isValidDueDate(d(2026, 11, 21), today: today, calendar: cal))
+        XCTAssertTrue(PregnancyInfo.isValidDueDate(d(2026, 11, 8), today: today, calendar: cal))
+        XCTAssertFalse(PregnancyInfo.isValidDueDate(d(2026, 11, 7), today: today, calendar: cal))
         XCTAssertFalse(PregnancyInfo.isValidDueDate(d(2027, 9, 20), today: today, calendar: cal))
         XCTAssertTrue(PregnancyInfo(dueDate: d(2026, 11, 10)).isActive(on: today, calendar: cal))
         XCTAssertFalse(PregnancyInfo(dueDate: d(2026, 11, 1)).isActive(on: today, calendar: cal))
+    }
+
+    func testDueDateFromWeeksAndWeekPlan() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Rome")!
+        let d = { (y: Int, m: Int, day: Int) in cal.date(from: DateComponents(year: y, month: m, day: day, hour: 12))! }
+        let today = d(2026, 11, 22)
+        let due17 = PregnancyInfo.dueDate(week: 17, today: today, calendar: cal)
+        XCTAssertEqual(cal.dateComponents([.year, .month, .day], from: due17), DateComponents(year: 2027, month: 5, day: 2))
+        XCTAssertEqual(PregnancyInfo(dueDate: due17).week(on: today, calendar: cal), 17)
+        let due17p6 = PregnancyInfo.dueDate(week: 17, days: 6, today: today, calendar: cal)
+        XCTAssertEqual(PregnancyInfo(dueDate: due17p6).week(on: today, calendar: cal), 17)
+        XCTAssertEqual(PregnancyInfo(dueDate: due17p6).week(on: d(2026, 11, 23), calendar: cal), 18)
+        let due41 = PregnancyInfo.dueDate(week: 41, days: 6, today: today, calendar: cal)
+        XCTAssertEqual(cal.dateComponents([.year, .month, .day], from: due41), DateComponents(year: 2026, month: 11, day: 9))
+        XCTAssertTrue(PregnancyInfo.isValidDueDate(due41, today: today, calendar: cal))
+        XCTAssertEqual(PregnancyInfo.dueDate(week: 0, today: today, calendar: cal), PregnancyInfo.dueDate(week: 1, today: today, calendar: cal))
+
+        XCTAssertEqual(PregnancyNutrition.weekPlan(week: 13),
+                       PregnancyWeekPlan(week: 13, trimester: 1, phase: .early, extraKcal: 70, extraProteinG: 1, nextChangeWeek: 14, nextExtraKcal: 260))
+        XCTAssertEqual(PregnancyNutrition.weekPlan(week: 14),
+                       PregnancyWeekPlan(week: 14, trimester: 2, phase: .middle, extraKcal: 260, extraProteinG: 9, nextChangeWeek: 28, nextExtraKcal: 500))
+        XCTAssertEqual(PregnancyNutrition.weekPlan(week: 30),
+                       PregnancyWeekPlan(week: 30, trimester: 3, phase: .late, extraKcal: 500, extraProteinG: 28, nextChangeWeek: nil, nextExtraKcal: nil))
+        XCTAssertEqual(PregnancyNutrition.weekPlan(week: 37).phase, .term)
     }
 
     func testTargetsNeverInDeficit() throws {

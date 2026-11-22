@@ -52,10 +52,14 @@ final class OnboardingViewModel {
     var dietaryNotes = ""
     // Gravidanza (facoltativo): niente deficit e avvisi sugli alimenti da evitare.
     var isPregnant = false
+    /// Si chiede a che settimana è (più semplice da sapere); in alternativa la data presunta del parto.
+    var pregnancyByWeek = true
+    var pregnancyWeek = 12
     var dueDate: Date = Calendar.current.date(byAdding: .month, value: 6, to: .now) ?? .now
+    /// Data salvata nel profilo: da qui la settimana avanza da sola e la dieta si adatta.
+    var effectiveDueDate: Date { pregnancyByWeek ? PregnancyInfo.dueDate(week: pregnancyWeek) : dueDate }
     var dueDateRange: ClosedRange<Date> {
-        let today = Calendar.current.startOfDay(for: .now)
-        return today...(Calendar.current.date(byAdding: .day, value: 294, to: today) ?? today)
+        PregnancyInfo.dueDateRange()
     }
 
     // Personalizzazione obiettivi
@@ -192,7 +196,7 @@ final class OnboardingViewModel {
             goal: goal, diet: diet, otherDietNote: diet == .other ? clean(otherDietNote) : nil,
             allergens: allergens, otherAllergyNote: allergens.contains(.other) ? clean(otherAllergyNote) : nil,
             dietaryNotes: clean(dietaryNotes),
-            pregnancy: isPregnant && sex != .male && PregnancyInfo.isValidDueDate(dueDate) ? PregnancyInfo(dueDate: dueDate) : nil)
+            pregnancy: isPregnant && sex != .male && PregnancyInfo.isValidDueDate(effectiveDueDate) ? PregnancyInfo(dueDate: effectiveDueDate) : nil)
     }
 
     /// Salva consensi, profilo, obiettivi e primo peso. Ritorna i dati salvati se tutto è andato a buon fine.
