@@ -43,10 +43,10 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 14. Pagine pubbliche per **Informativa privacy** e **Termini di servizio** (URL richiesti da App Store Connect).
     Consigliato un controllo legale: l'app tratta dati relativi alla salute (art. 9 GDPR).
-    **Pagina di assistenza** (GitHub Pages, gratis perché il repository è pubblico): dopo il merge su `main`, vai su
-    GitHub › Settings › Pages › *Build and deployment* › Source: **GitHub Actions**. Il workflow `.github/workflows/pages.yml`
-    pubblica la cartella `site/` su `https://andreewd12.github.io/calo-scan/support/` (Actions › "Sito pubblico" per rilanciarlo a mano).
-    Con un dominio tuo: Settings › Pages › *Custom domain*, poi aggiorna `SUPPORT_URL`. Privacy e termini andranno nella stessa cartella.
+    **Pagina di assistenza** (GitHub Pages, gratis perché il repository è pubblico): GitHub › Settings › Pages ›
+    *Deploy from a branch*, branch `main`, cartella `/ (root)`. La pagina è `support/index.html` e risponde su
+    `https://andreewd12.github.io/calo-scan/support/` (la radice del sito mostra il README). Si aggiorna da sola a ogni modifica su `main`.
+    Con un dominio tuo: Settings › Pages › *Custom domain*, poi aggiorna `SUPPORT_URL`. Privacy e termini andranno in `privacy/` e `terms/`.
     In `Secrets.xcconfig` imposta anche `SUPPORT_URL` (pagina di assistenza, richiesta da App Store Connect come *Support URL*,
     con un modo per contattarti) e `SUPPORT_EMAIL` (usata da Impostazioni › Assistenza › "Scrivici"; è visibile agli utenti).
 15. Chiave APNs (.p8) per le notifiche push remote: Apple Developer → Keys → nuova chiave con *Apple Push Notifications service*. Serve anche la capability *Push Notifications* sull'App ID (già dichiarata in `project.yml`). I promemoria locali funzionano senza.
