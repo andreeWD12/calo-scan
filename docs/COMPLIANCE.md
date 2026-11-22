@@ -40,6 +40,8 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 - avvertenza "non è un dispositivo medico" in onboarding, profilo e coach ✅
 - nessun obiettivo terapeutico generato dall'app; le "esigenze alimentari" sono note libere, non piani clinici ✅
 - piano indicato da un professionista: l'app **registra e mostra** i valori inseriti dall'utente (funzione di archivio e visualizzazione, esclusa dall'MDR secondo le linee guida MDCG 2019-11); non li calcola, non li corregge, non dà indicazioni cliniche. Conferma esplicita che i valori vengono da un professionista e avviso sotto le soglie dell'app ✅
+- pasti e grammature del piano: copiati dall'utente, mai generati o adattati dall'app; la registrazione "come da piano" salva le quantità realmente mangiate ✅
+- sgarri: etichetta facoltativa scelta dall'utente, linguaggio neutro e nessun invito a compensare (prevenzione dei disturbi alimentari, coerente con le avvertenze del coach) ✅
 - il coach rifiuta diagnosi e diete terapeutiche (prompt e filtri lato server, Fase 7) 🟡
 - soglie di sicurezza: mai sotto 1.200/1.500 kcal né sotto il BMR, nessun deficit per i minori, peso obiettivo non sotto BMI 18,5 ✅
 

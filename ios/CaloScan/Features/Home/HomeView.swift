@@ -8,6 +8,7 @@ struct HomeView: View {
     @Environment(AppState.self) private var app
     @State private var model: HomeViewModel
     @State private var addingTo: MealType?
+    @State private var loggingPlanned: PlannedMeal?
     @State private var path: [HomeRoute] = []
     let onScan: () -> Void
 
@@ -42,6 +43,11 @@ struct HomeView: View {
             .sheet(item: $addingTo) { type in
                 AddFoodFlowView(services: app.services, mealType: type) {
                     app.mealSaved(type)
+                }
+            }
+            .sheet(item: $loggingPlanned) { planned in
+                PlannedMealLogSheet(meal: planned, services: app.services) {
+                    app.mealSaved(planned.type, source: .plan)
                 }
             }
         }
@@ -83,9 +89,13 @@ struct HomeView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
             ForEach(Array(MealType.allCases.enumerated()), id: \.element) { index, type in
+                let planned = app.professionalPlan?.plannedMeal(type, on: .now)
                 MealSectionCard(type: type, meals: day.meals(of: type),
                                 onAdd: { addingTo = type },
-                                onDelete: { meal in Task { await model.delete(meal) } })
+                                onDelete: { meal in Task { await model.delete(meal) } },
+                                planned: planned,
+                                onLogPlanned: planned.map { p in { loggingPlanned = p } },
+                                onToggleCheat: { meal in Task { await model.toggleCheat(meal) } })
                     .appear(index: 3 + index)
                     .cardScrollEffect()
             }
@@ -192,6 +202,10 @@ struct MealSectionCard: View {
     let meals: [Meal]
     var onAdd: (() -> Void)?
     var onDelete: ((Meal) -> Void)?
+    /// Pasto previsto dal piano del professionista per questo giorno.
+    var planned: PlannedMeal? = nil
+    var onLogPlanned: (() -> Void)? = nil
+    var onToggleCheat: ((Meal) -> Void)? = nil
 
     private var totals: Nutrients { meals.map(\.totals).total }
     private struct Row: Identifiable {
@@ -219,7 +233,9 @@ struct MealSectionCard: View {
                     .accessibilityLabel(Text("Aggiungi a \(type.title)"))
                 }
             }
-            if items.isEmpty {
+            if items.isEmpty, let planned, let onLogPlanned {
+                PlannedMealPreview(meal: planned, action: onLogPlanned)
+            } else if items.isEmpty {
                 Text("Nessun alimento registrato").font(DS.Font.callout).foregroundStyle(DS.Palette.textTertiary)
             } else {
                 MacroInline(protein: totals.proteinG, carbs: totals.carbsG, fat: totals.fatG)
@@ -229,13 +245,24 @@ struct MealSectionCard: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.food.name).font(DS.Font.callout)
-                            Text(Format.grams(item.grams)).font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                            HStack(spacing: DS.Spacing.xxs) {
+                                Text(Format.grams(item.grams)).font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                                if row.meal.isCheatMeal { CheatBadge() }
+                                if row.meal.source == .plan {
+                                    Image(systemName: "list.clipboard").font(.caption2).foregroundStyle(DS.Palette.brand)
+                                        .accessibilityLabel(Text("Dal piano"))
+                                }
+                            }
                         }
                         Spacer()
                         Text(Format.kcal(item.nutrients.kcal)).font(DS.Font.callout.monospacedDigit())
                     }
                     .accessibilityElement(children: .combine)
                     .contextMenu {
+                        if let onToggleCheat {
+                            Button(row.meal.isCheatMeal ? "Non è uno sgarro" : "Segna come sgarro",
+                                   systemImage: row.meal.isCheatMeal ? "xmark.circle" : "party.popper") { onToggleCheat(row.meal) }
+                        }
                         if let onDelete {
                             Button("Elimina pasto", systemImage: "trash", role: .destructive) { onDelete(row.meal) }
                         }
@@ -246,5 +273,40 @@ struct MealSectionCard: View {
             }
         }
         .animation(DS.Motion.standard, value: items.map(\.id))
+    }
+}
+
+/// Etichetta discreta per gli sgarri: informa senza giudicare.
+struct CheatBadge: View {
+    var body: some View {
+        Label("Sgarro", systemImage: "party.popper.fill")
+            .labelStyle(.titleAndIcon)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(DS.Palette.fat)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(DS.Palette.fat.opacity(0.12), in: .capsule)
+    }
+}
+
+/// Anteprima del pasto previsto dal piano, con registrazione rapida.
+private struct PlannedMealPreview: View {
+    let meal: PlannedMeal
+    let action: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            Label("Dal tuo piano", systemImage: "list.clipboard")
+                .font(DS.Font.caption.weight(.semibold)).foregroundStyle(DS.Palette.brand)
+            Text(meal.foods.map { "\($0.name) \(Format.grams($0.grams))" }.formatted(.list(type: .and)))
+                .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
+            Button(action: action) {
+                Label("Registra come da piano", systemImage: "checkmark.circle.fill")
+                    .font(DS.Font.callout.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.pressable)
+            .foregroundStyle(DS.Palette.brand)
+            .background(DS.Palette.brandSoft, in: .rect(cornerRadius: DS.Radius.m))
+        }
     }
 }

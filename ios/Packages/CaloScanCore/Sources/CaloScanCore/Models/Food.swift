@@ -37,7 +37,8 @@ public struct MealItem: Identifiable, Codable, Hashable, Sendable {
 }
 
 /// `description`: alimenti riconosciuti dall'AI a partire da una descrizione scritta dall'utente.
-public enum MealSource: String, Codable, Sendable { case scan, description, manual }
+/// `plan`: pasto registrato dal piano del professionista.
+public enum MealSource: String, Codable, Sendable { case scan, description, manual, plan }
 
 public struct Meal: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
@@ -46,11 +47,27 @@ public struct Meal: Identifiable, Codable, Hashable, Sendable {
     public var items: [MealItem]
     public var source: MealSource
     public var scanID: UUID?
+    /// Sgarro (pasto fuori dal piano o dalle abitudini). Conta nelle calorie del giorno
+    /// come ogni altro pasto; le statistiche lo mostrano anche a parte.
+    public var isCheatMeal: Bool
 
     public init(id: UUID = UUID(), type: MealType, loggedAt: Date, items: [MealItem],
-                source: MealSource, scanID: UUID? = nil) {
+                source: MealSource, scanID: UUID? = nil, isCheatMeal: Bool = false) {
         self.id = id; self.type = type; self.loggedAt = loggedAt; self.items = items
-        self.source = source; self.scanID = scanID
+        self.source = source; self.scanID = scanID; self.isCheatMeal = isCheatMeal
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, type, loggedAt, items, source, scanID, isCheatMeal }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        type = try c.decode(MealType.self, forKey: .type)
+        loggedAt = try c.decode(Date.self, forKey: .loggedAt)
+        items = try c.decode([MealItem].self, forKey: .items)
+        source = try c.decode(MealSource.self, forKey: .source)
+        scanID = try c.decodeIfPresent(UUID.self, forKey: .scanID)
+        isCheatMeal = try c.decodeIfPresent(Bool.self, forKey: .isCheatMeal) ?? false
     }
 
     public var totals: Nutrients { items.map(\.nutrients).total }

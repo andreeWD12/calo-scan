@@ -9,6 +9,9 @@ struct DayStatsView: View {
     let targets: DailyTargets
     let onAdd: (MealType) -> Void
     let onDelete: (Meal) -> Void
+    var plan: ProfessionalPlan? = nil
+    var onLogPlanned: ((PlannedMeal) -> Void)? = nil
+    var onToggleCheat: ((Meal) -> Void)? = nil
 
     var body: some View {
         let totals = log.totals
@@ -27,8 +30,21 @@ struct DayStatsView: View {
                     MealDistributionChart(distribution: DiaryViewModel.mealDistribution([log]))
                 }
             }
+            let cheats = NutritionStats.cheatMeals([log])
+            if cheats.count > 0 {
+                HStack {
+                    CheatBadge()
+                    Text("\(cheats.count) oggi · \(Format.kcal(cheats.kcal))")
+                        .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                    Spacer()
+                }
+            }
             ForEach(MealType.allCases) { type in
-                MealSectionCard(type: type, meals: log.meals(of: type), onAdd: { onAdd(type) }, onDelete: onDelete)
+                let planned = plan?.plannedMeal(type, on: log.day)
+                MealSectionCard(type: type, meals: log.meals(of: type), onAdd: { onAdd(type) }, onDelete: onDelete,
+                                planned: planned,
+                                onLogPlanned: planned.flatMap { p in onLogPlanned.map { handler in { handler(p) } } },
+                                onToggleCheat: onToggleCheat)
             }
         }
     }
@@ -95,6 +111,7 @@ struct WeekStatsView: View {
                     StatTile(title: "Sopra", value: "\(stats.daysOver)", tint: DS.Palette.warning)
                     StatTile(title: "Sotto", value: "\(stats.daysUnder)", tint: DS.Palette.protein)
                 }
+                CheatSummaryRow(summary: NutritionStats.cheatMeals(logs))
                 Text("Calcolato sui \(stats.loggedDays) giorni registrati, con una tolleranza del ±10% sull'obiettivo.")
                     .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
             }
@@ -203,6 +220,7 @@ struct MonthStatsView: View {
                     StatTile(title: "Media giornaliera", value: Format.kcal(stats.average.kcal))
                     StatTile(title: "Giorni registrati", value: "\(stats.loggedDays)")
                 }
+                CheatSummaryRow(summary: NutritionStats.cheatMeals(logs))
             }
             Card {
                 SectionHeader(title: "Costanza")
@@ -236,6 +254,21 @@ struct MonthStatsView: View {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/// Sgarri del periodo: numero, calorie e quota sul totale. Testo neutro, senza giudizi.
+struct CheatSummaryRow: View {
+    let summary: CheatMealSummary
+
+    var body: some View {
+        if summary.count > 0 {
+            HStack(spacing: DS.Spacing.xs) {
+                StatTile(title: "Sgarri", value: "\(summary.count)", tint: DS.Palette.fat)
+                StatTile(title: "Calorie da sgarri", value: Format.kcal(summary.kcal), tint: DS.Palette.fat)
+                StatTile(title: "Sul totale", value: Format.percent(summary.shareOfTotal), tint: DS.Palette.fat)
             }
         }
     }

@@ -69,6 +69,14 @@ struct ScanResultView: View {
                 Picker("Pasto", selection: $model.mealType) {
                     ForEach(MealType.allCases) { Text($0.title).tag($0) }
                 }
+                Toggle(isOn: $model.isCheatMeal.animation(DS.Motion.snappy)) {
+                    Label("Segna come sgarro", systemImage: "party.popper")
+                }
+                .tint(DS.Palette.fat)
+            } footer: {
+                if model.isCheatMeal {
+                    Text("Gli sgarri contano nelle calorie della giornata come ogni pasto; nelle statistiche li vedi anche a parte.")
+                }
             }
         }
         .listStyle(.insetGrouped)

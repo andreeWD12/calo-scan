@@ -36,6 +36,8 @@ final class ScannerViewModel {
     var descriptionDraft = ""
     var items: [DraftItem] = []
     var mealType: MealType = .suggested()
+    /// L'utente segna il pasto come sgarro: conta nelle calorie e compare a parte nelle statistiche.
+    var isCheatMeal = false
     var saveError: APIError?
 
     private let services: AppServices
@@ -145,7 +147,8 @@ final class ScannerViewModel {
         isSaving = true
         defer { isSaving = false }
         let mealItems = items.compactMap { item in item.food.map { MealItem(food: $0, grams: item.grams) } }
-        let meal = Meal(type: mealType, loggedAt: .now, items: mealItems, source: mealSource, scanID: scanID)
+        let meal = Meal(type: mealType, loggedAt: .now, items: mealItems, source: mealSource, scanID: scanID,
+                        isCheatMeal: isCheatMeal)
         do {
             try await services.meals.save(meal)
             return true

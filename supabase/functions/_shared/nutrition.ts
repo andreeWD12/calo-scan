@@ -115,6 +115,27 @@ export interface ProfessionalPlan {
   startDate: string; // ISO 8601
   reviewDate?: string | null;
   confirmedAt: string;
+  mealPlan?: PlannedDay[] | null;
+}
+
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export interface PlannedFood {
+  id: string;
+  name: string;
+  grams: number;
+  food?: { id: string } | null; // corrispondenza nel database alimenti
+}
+
+export interface PlannedMeal {
+  type: MealType;
+  foods: PlannedFood[];
+}
+
+/** weekday come Calendar di Apple: 1 = domenica … 7 = sabato; null = ogni giorno. */
+export interface PlannedDay {
+  weekday: number | null;
+  meals: PlannedMeal[];
 }
 
 export type ProfessionalPlanIssue =
@@ -123,7 +144,8 @@ export type ProfessionalPlanIssue =
   | "macrosDoNotMatchCalories"
   | "notesTooLong"
   | "nameTooLong"
-  | "reviewBeforeStart";
+  | "reviewBeforeStart"
+  | "mealPlanInvalid";
 
 export const PROFESSIONAL_PLAN_LIMITS = {
   minKcal: 800,
@@ -132,7 +154,33 @@ export const PROFESSIONAL_PLAN_LIMITS = {
   notesMaxLength: 1000,
   nameMaxLength: 80,
   macroTolerance: 0.15,
+  maxFoodsPerMeal: 30,
+  minGrams: 1,
+  maxGrams: 3000,
 } as const;
+
+const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+
+export function isValidMealPlan(days: PlannedDay[]): boolean {
+  const L = PROFESSIONAL_PLAN_LIMITS;
+  if (!Array.isArray(days) || days.length > 8) return false;
+  const weekdays = days.map((d) => d.weekday ?? null);
+  if (new Set(weekdays).size !== weekdays.length) return false;
+  if (weekdays.some((w) => w !== null && (!Number.isInteger(w) || w < 1 || w > 7))) return false;
+  for (const day of days) {
+    const types = day.meals.map((m) => m.type);
+    if (new Set(types).size !== types.length || types.some((t) => !MEAL_TYPES.includes(t))) return false;
+    for (const meal of day.meals) {
+      if (meal.foods.length > L.maxFoodsPerMeal) return false;
+      for (const f of meal.foods) {
+        const name = typeof f.name === "string" ? f.name.trim() : "";
+        if (!name || chars(name) > L.nameMaxLength) return false;
+        if (typeof f.grams !== "number" || f.grams < L.minGrams || f.grams > L.maxGrams) return false;
+      }
+    }
+  }
+  return true;
+}
 
 const chars = (s?: string | null) => (s ? [...s].length : 0);
 
@@ -153,6 +201,7 @@ export function validateProfessionalPlan(p: ProfessionalPlan): ProfessionalPlanI
   if (chars(p.notes) > L.notesMaxLength) issues.push("notesTooLong");
   if (chars(p.professionalName) > L.nameMaxLength) issues.push("nameTooLong");
   if (p.reviewDate && Date.parse(p.reviewDate) < Date.parse(p.startDate)) issues.push("reviewBeforeStart");
+  if (!isValidMealPlan(p.mealPlan ?? [])) issues.push("mealPlanInvalid");
   return issues;
 }
 

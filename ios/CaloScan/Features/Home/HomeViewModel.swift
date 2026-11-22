@@ -24,6 +24,19 @@ final class HomeViewModel {
         insights = (try? await services.coach.dailyInsights()) ?? []
     }
 
+
+    /// Segna o toglie lo sgarro su un pasto già registrato.
+    func toggleCheat(_ meal: Meal) async {
+        var updated = meal
+        updated.isCheatMeal.toggle()
+        do {
+            try await services.meals.save(updated)
+            await load()
+        } catch {
+            today = .failed(APIError.from(error))
+        }
+    }
+
     func delete(_ meal: Meal) async {
         do {
             try await services.meals.delete(mealID: meal.id)

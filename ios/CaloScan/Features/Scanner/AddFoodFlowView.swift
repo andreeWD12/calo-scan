@@ -11,6 +11,7 @@ struct AddFoodFlowView: View {
     @State private var mealType: MealType
     @State private var selected: FoodItem?
     @State private var grams: Double?
+    @State private var isCheatMeal = false
     @State private var isSaving = false
     @State private var error: APIError?
     @Environment(\.dismiss) private var dismiss
@@ -49,6 +50,8 @@ struct AddFoodFlowView: View {
                 Picker("Pasto", selection: $mealType) {
                     ForEach(MealType.allCases) { Text($0.title).tag($0) }
                 }
+                Toggle(isOn: $isCheatMeal) { Label("Segna come sgarro", systemImage: "party.popper") }
+                    .tint(DS.Palette.fat)
             }
             if valid, let g = grams {
                 let n = food.per100g.scaled(per100gTo: g)
@@ -81,7 +84,8 @@ struct AddFoodFlowView: View {
         // Per un giorno passato il pasto viene registrato a mezzogiorno di quel giorno.
         let loggedAt = cal.isDateInToday(day) ? Date.now
             : (cal.date(bySettingHour: 12, minute: 0, second: 0, of: day) ?? day)
-        let meal = Meal(type: mealType, loggedAt: loggedAt, items: [MealItem(food: food, grams: g)], source: .manual)
+        let meal = Meal(type: mealType, loggedAt: loggedAt, items: [MealItem(food: food, grams: g)], source: .manual,
+                        isCheatMeal: isCheatMeal)
         do {
             try await services.meals.save(meal)
             onSaved()

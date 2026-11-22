@@ -85,3 +85,13 @@ test("descrizione del pasto ripulita e validata", () => {
   assert.equal(sanitizeFoodDescription("a".repeat(501)), null);
   assert.equal(sanitizeFoodDescription(42), null);
 });
+
+test("piano: pasti con grammature", () => {
+  const day = (weekday: number | null, grams = 80) => ({
+    weekday, meals: [{ type: "lunch" as const, foods: [{ id: "1", name: "Pasta integrale", grams }] }],
+  });
+  assert.deepEqual(validateProfessionalPlan(plan({ mealPlan: [day(null), day(2)] })), []);
+  assert.deepEqual(validateProfessionalPlan(plan({ mealPlan: [day(2), day(2)] })), ["mealPlanInvalid"]);
+  assert.deepEqual(validateProfessionalPlan(plan({ mealPlan: [day(null, 0)] })), ["mealPlanInvalid"]);
+  assert.deepEqual(validateProfessionalPlan(plan({ mealPlan: [day(9)] })), ["mealPlanInvalid"]);
+});

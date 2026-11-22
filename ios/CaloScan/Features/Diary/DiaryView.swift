@@ -7,6 +7,7 @@ struct DiaryView: View {
     @State private var model: DiaryViewModel
     @State private var showCalendar = false
     @State private var addingTo: MealType?
+    @State private var loggingPlanned: PlannedMeal?
 
     init(services: AppServices) {
         _model = State(initialValue: DiaryViewModel(services: services))
@@ -50,6 +51,11 @@ struct DiaryView: View {
                     app.mealSaved(type)
                 }
             }
+            .sheet(item: $loggingPlanned) { planned in
+                PlannedMealLogSheet(meal: planned, services: app.services, day: model.selectedDate) {
+                    app.mealSaved(planned.type, source: .plan)
+                }
+            }
         }
         .task(id: "\(model.mode.rawValue)-\(model.selectedDate.timeIntervalSince1970)-\(app.diaryRevision)") {
             await model.load()
@@ -81,7 +87,10 @@ struct DiaryView: View {
                 case .loaded(let log):
                     DayStatsView(log: log, targets: targets,
                                  onAdd: { addingTo = $0 },
-                                 onDelete: { meal in Task { await model.delete(meal) } })
+                                 onDelete: { meal in Task { await model.delete(meal) } },
+                                 plan: app.professionalPlan,
+                                 onLogPlanned: { loggingPlanned = $0 },
+                                 onToggleCheat: { meal in Task { await model.toggleCheat(meal) } })
                 }
             case .week, .month:
                 switch model.period {

@@ -14,7 +14,23 @@ public struct PeriodStats: Equatable, Sendable {
     public var consistency: Double { loggedDays == 0 ? 0 : Double(daysOnTarget) / Double(loggedDays) }
 }
 
+/// Sgarri di un periodo: quanti, quante calorie e che quota delle calorie totali.
+public struct CheatMealSummary: Equatable, Sendable {
+    public let count: Int
+    public let kcal: Double
+    /// Quota delle calorie del periodo arrivata dagli sgarri (0…1).
+    public let shareOfTotal: Double
+}
+
 public enum NutritionStats {
+    public static func cheatMeals(_ days: [DayLog]) -> CheatMealSummary {
+        let meals = days.flatMap(\.meals)
+        let cheats = meals.filter(\.isCheatMeal)
+        let kcal = cheats.map(\.totals.kcal).reduce(0, +)
+        let total = meals.map(\.totals.kcal).reduce(0, +)
+        return CheatMealSummary(count: cheats.count, kcal: kcal, shareOfTotal: total > 0 ? kcal / total : 0)
+    }
+
     /// - Parameter tolerance: scarto ammesso rispetto all'obiettivo (default ±10%).
     public static func summarize(_ days: [DayLog], calorieTarget: Int, tolerance: Double = 0.10) -> PeriodStats {
         let logged = days.filter { !$0.isEmpty }

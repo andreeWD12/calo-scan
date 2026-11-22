@@ -88,11 +88,13 @@ final class AppState {
         let subtitle: String? = switch source {
         case .scan: String(localized: "Valori stimati dalla foto")
         case .description: String(localized: "Valori stimati dalla descrizione")
+        case .plan: String(localized: "Come da piano")
         case .manual: nil
         }
         let symbol = switch source {
         case .scan: "camera.viewfinder"
         case .description: "text.bubble"
+        case .plan: "list.clipboard"
         case .manual: "checkmark.circle.fill"
         }
         toasts.success(String(localized: "Aggiunto a \(type.title)"), subtitle: subtitle, symbol: symbol)

@@ -39,6 +39,7 @@ struct ProfessionalPlanView: View {
     @State private var hasReview = false
     @State private var reviewDate = Calendar.current.date(byAdding: .month, value: 1, to: .now) ?? .now
     @State private var confirmed = false
+    @State private var mealPlan: [PlannedDay] = []
     @State private var isSaving = false
     @State private var confirmRemoval = false
     @State private var error: APIError?
@@ -61,7 +62,8 @@ struct ProfessionalPlanView: View {
             notes: text.isEmpty ? nil : text,
             startDate: Calendar.current.startOfDay(for: startDate),
             reviewDate: hasReview ? Calendar.current.startOfDay(for: reviewDate) : nil,
-            confirmedAt: app.professionalPlan?.confirmedAt ?? .now)
+            confirmedAt: app.professionalPlan?.confirmedAt ?? .now,
+            mealPlan: mealPlan)
     }
 
     private var issues: [ProfessionalPlan.Issue] { draft?.validate() ?? [] }
@@ -134,6 +136,28 @@ struct ProfessionalPlanView: View {
             }
 
             Section {
+                NavigationLink {
+                    MealPlanEditorView(days: $mealPlan, services: app.services,
+                                       calorieTarget: calories.map { Int($0.rounded()) })
+                } label: {
+                    LabeledContent {
+                        Text(mealPlanSummary).foregroundStyle(DS.Palette.textSecondary)
+                    } label: {
+                        Label("Pasti e grammature", systemImage: "list.clipboard")
+                    }
+                }
+            } header: {
+                Text("Pasti del piano")
+            } footer: {
+                if issues.contains(.mealPlanInvalid) {
+                    Text("Controlla i pasti: ogni alimento deve avere un nome e una grammatura tra 1 e 3000 g.")
+                        .foregroundStyle(DS.Palette.danger)
+                } else {
+                    Text("Facoltativo. Inserisci colazione, pranzo, cena e spuntini con le grammature del piano: nel diario li registri con un tocco.")
+                }
+            }
+
+            Section {
                 DatePicker("In vigore dal", selection: $startDate, displayedComponents: .date)
                 Toggle("Prossimo controllo", isOn: $hasReview.animation(DS.Motion.snappy))
                 if hasReview {
@@ -195,7 +219,15 @@ struct ProfessionalPlanView: View {
         startDate = p.startDate
         hasReview = p.reviewDate != nil
         if let r = p.reviewDate { reviewDate = r }
+        mealPlan = p.mealPlan
         confirmed = true
+    }
+
+    private var mealPlanSummary: String {
+        let foods = mealPlan.flatMap(\.meals).map(\.foods.count).reduce(0, +)
+        guard foods > 0 else { return String(localized: "Nessuno") }
+        let perDay = mealPlan.contains { $0.weekday != nil }
+        return perDay ? String(localized: "\(mealPlan.count) giorni") : String(localized: "Ogni giorno, \(foods) alimenti")
     }
 
     private func save() async {

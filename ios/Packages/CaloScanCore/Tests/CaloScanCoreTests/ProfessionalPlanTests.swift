@@ -47,6 +47,60 @@ final class ProfessionalPlanTests: XCTestCase {
         XCTAssertFalse(plan(kcal: 1600).isBelowAppFloor(for: .male))
     }
 
+    func testMealPlanValidation() {
+        func day(_ weekday: Int?, grams: Double = 80) -> PlannedDay {
+            PlannedDay(weekday: weekday, meals: [PlannedMeal(type: .lunch, foods: [PlannedFood(name: "Pasta integrale", grams: grams)])])
+        }
+        var p = plan()
+        p.mealPlan = [day(nil), day(2)]
+        XCTAssertEqual(p.validate(), [])
+        p.mealPlan = [day(2), day(2)]
+        XCTAssertEqual(p.validate(), [.mealPlanInvalid])
+        p.mealPlan = [day(nil, grams: 0)]
+        XCTAssertEqual(p.validate(), [.mealPlanInvalid])
+        p.mealPlan = [day(9)]
+        XCTAssertEqual(p.validate(), [.mealPlanInvalid])
+    }
+
+    func testPlannedMealsForDate() {
+        let pasta = FoodItem(name: "Pasta", per100g: Nutrients(kcal: 350, proteinG: 12, carbsG: 72, fatG: 1.5), source: .usda)
+        var p = plan()
+        p.mealPlan = [
+            PlannedDay(weekday: nil, meals: [PlannedMeal(type: .lunch, foods: [PlannedFood(name: "Pasta", grams: 80, food: pasta)])]),
+            PlannedDay(weekday: 2, meals: [PlannedMeal(type: .lunch, foods: [PlannedFood(name: "Pasta", grams: 60, food: pasta),
+                                                                            PlannedFood(name: "Verdure", grams: 200)])]),
+        ]
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Europe/Rome")!
+        let monday = ISO8601DateFormatter().date(from: "2026-11-23T12:00:00Z")!   // lunedì → weekday 2
+        let tuesday = ISO8601DateFormatter().date(from: "2026-11-24T12:00:00Z")!
+        let mondayLunch = p.plannedMeal(.lunch, on: monday, calendar: cal)
+        XCTAssertEqual(mondayLunch?.foods.count, 2)
+        XCTAssertEqual(mondayLunch?.unmatchedCount, 1)
+        XCTAssertEqual(mondayLunch?.mealItems().count, 1)
+        XCTAssertEqual(mondayLunch?.totals.kcal ?? 0, 210, accuracy: 0.001)
+        XCTAssertEqual(p.plannedMeal(.lunch, on: tuesday, calendar: cal)?.foods.first?.grams, 80)
+        XCTAssertNil(p.plannedMeal(.dinner, on: tuesday, calendar: cal))
+    }
+
+    func testCheatMealSummary() {
+        let pizza = FoodItem(name: "Pizza", per100g: Nutrients(kcal: 270, proteinG: 11, carbsG: 33, fatG: 10), source: .usda)
+        let day = DayLog(day: start, meals: [
+            Meal(type: .lunch, loggedAt: start, items: [MealItem(food: pizza, grams: 100)], source: .manual),
+            Meal(type: .dinner, loggedAt: start, items: [MealItem(food: pizza, grams: 300)], source: .scan, isCheatMeal: true),
+        ])
+        let s = NutritionStats.cheatMeals([day])
+        XCTAssertEqual(s.count, 1)
+        XCTAssertEqual(s.kcal, 810, accuracy: 0.001)
+        XCTAssertEqual(s.shareOfTotal, 0.75, accuracy: 0.001)
+    }
+
+    func testMealDecodesWithoutCheatFlag() throws {
+        let json = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","type":"lunch","loggedAt":0,"items":[],"source":"manual"}"#
+        let meal = try JSONDecoder().decode(Meal.self, from: Data(json.utf8))
+        XCTAssertFalse(meal.isCheatMeal)
+    }
+
     func testFoodDescriptionSanitizing() {
         XCTAssertEqual(FoodDescription.sanitize("  pasta al pomodoro\n\t 80 g  "), "pasta al pomodoro 80 g")
         XCTAssertNil(FoodDescription.sanitize("ok"))
