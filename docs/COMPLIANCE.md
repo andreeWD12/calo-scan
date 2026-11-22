@@ -16,6 +16,7 @@ Legenda stato: ✅ implementato · 🟡 parziale (completato nella fase indicata
 | Informativa (art. 13) | Link in Welcome, Registrazione, Onboarding, Paywall, Impostazioni | ✅ link · ⏳ testo dell'informativa (a cura tua) |
 | Età minima per il consenso digitale (art. 8) | 16 anni, la soglia più alta nell'UE (`AgePolicy.minimumAccountAge`) | ✅ |
 | Piano del medico/dietista e descrizioni dei pasti: dati sanitari | Coperti dal consenso art. 9 dell'onboarding; inclusi in esportazione e cancellazione; nome del professionista facoltativo; nessun documento o ricetta caricato | ✅ UI · 🟡 tabella `professional_plans` (Fase 4) |
+| Lista della spesa AI | Richiesta facoltativa dell'utente e dati necessari inviati solo dal server; allergeni esclusi due volte (prompt + filtro `filterSuggestions`); avviso di controllare le etichette | ✅ UI · 🟡 `shopping-suggest` (Fase 7) |
 | Descrizione testuale inviata al fornitore AI | Informativa nel foglio "Descrivi il piatto"; nessun addestramento; disponibile anche senza consenso alle foto, perché non invia immagini | ✅ UI · 🟡 `analyze-food` (Fase 5) |
 | Minimizzazione (art. 5(1)(c)) | Sesso biologico facoltativo; foto ridimensionate e senza EXIF/GPS; nessun SDK di tracciamento | ✅ |
 | Limitazione della conservazione (art. 5(1)(e)) | Foto cancellate dopo `SCAN_IMAGE_RETENTION_DAYS` (default 30) | 🟡 Fase 4/5 |

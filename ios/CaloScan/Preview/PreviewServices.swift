@@ -7,7 +7,7 @@ import CaloScanCore
 /// I valori nutrizionali d'esempio sono approssimazioni di USDA FoodData Central (SR Legacy).
 actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchService, ScanService,
                     CoachService, WeightRepository, EntitlementService, PurchaseService, AccountService,
-                    PushTokenService {
+                    PushTokenService, ShoppingListService {
 
     nonisolated let stateStream: AsyncStream<SessionState>
     private nonisolated let continuation: AsyncStream<SessionState>.Continuation
@@ -17,6 +17,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     private var profile: UserProfile?
     private var targets: DailyTargets?
     private var professionalPlan: ProfessionalPlan?
+    private var shoppingItems: [ShoppingItem] = []
     private var meals: [Meal] = []
     private var weights: [WeightEntry] = []
     private var bodyMeasurements: [BodyMeasurement] = []
@@ -243,6 +244,37 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     func register(deviceToken: String, environment: PushEnvironment) async throws {}
     func unregister() async throws {}
 
+    // MARK: Lista della spesa
+
+    func items() async throws -> [ShoppingItem] { shoppingItems }
+
+    func save(_ items: [ShoppingItem]) async throws {
+        for item in items {
+            if let i = shoppingItems.firstIndex(where: { $0.id == item.id }) { shoppingItems[i] = item }
+            else { shoppingItems.append(item) }
+        }
+    }
+
+    func delete(itemIDs: [UUID]) async throws { shoppingItems.removeAll { itemIDs.contains($0.id) } }
+
+    /// Anteprima: proposte fisse filtrate con le allergie del profilo, come farà il server.
+    func suggest(request: String?) async throws -> [ShoppingSuggestion] {
+        guard plan != .free else { throw APIError.planRequired(minimum: "Plus") }
+        try await Task.sleep(for: .seconds(1.2))
+        let allergens = profile?.allergens ?? []
+        let all: [(ShoppingSuggestion, Allergen?)] = [
+            (ShoppingSuggestion(name: "Petto di pollo", quantity: "600 g", reason: "Proteine magre per 3 cene"), nil),
+            (ShoppingSuggestion(name: "Salmone", quantity: "2 filetti", reason: "Omega-3, due volte a settimana"), .fish),
+            (ShoppingSuggestion(name: "Yogurt greco 0%", quantity: "4 vasetti", reason: "Colazioni e spuntini proteici"), .milk),
+            (ShoppingSuggestion(name: "Lenticchie", quantity: "500 g", reason: "Legumi: fibre e proteine vegetali"), nil),
+            (ShoppingSuggestion(name: "Zucchine", quantity: "1 kg", reason: "Verdura per pranzi e cene"), nil),
+            (ShoppingSuggestion(name: "Mandorle", quantity: "200 g", reason: "Spuntino, una manciata al giorno"), .treeNuts),
+            (ShoppingSuggestion(name: "Pasta integrale", quantity: "500 g", reason: "Carboidrati complessi per i pranzi"), .gluten),
+            (ShoppingSuggestion(name: "Mele", quantity: "1 kg", reason: "Frutta per gli spuntini"), nil),
+        ]
+        return all.filter { item in item.1.map { !allergens.contains($0) } ?? true }.map(\.0)
+    }
+
     func deleteAccount() async throws {
         profile = nil; targets = nil; meals = []; weights = []; messages = []
         set(.signedOut)
@@ -254,7 +286,8 @@ extension AppServices {
     static func preview(startOnboarding: Bool = ProcessInfo.processInfo.arguments.contains("-PreviewOnboarding")) -> AppServices {
         let store = PreviewStore(startOnboarding: startOnboarding)
         return AppServices(auth: store, profile: store, meals: store, foods: store, scanner: store, coach: store,
-                           weight: store, entitlements: store, purchases: store, account: store, push: store)
+                           weight: store, entitlements: store, purchases: store, account: store, push: store,
+                           shopping: store)
     }
 }
 #endif

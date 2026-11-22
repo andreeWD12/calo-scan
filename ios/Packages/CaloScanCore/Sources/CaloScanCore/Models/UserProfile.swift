@@ -31,7 +31,9 @@ public enum DietPreference: String, Codable, CaseIterable, Sendable {
 }
 
 public enum Allergen: String, Codable, CaseIterable, Sendable {
-    case gluten, lactose, treeNuts = "tree_nuts", peanuts, eggs, fish, shellfish, soy, sesame, other
+    // I 14 allergeni del Reg. UE 1169/2011 (allegato II), più intolleranza al lattosio e voce libera.
+    case gluten, milk, lactose, eggs, fish, shellfish, molluscs, peanuts, treeNuts = "tree_nuts", soy
+    case celery, mustard, sesame, sulphites, lupin, other
 }
 
 /// Dati fisici necessari ai calcoli. Validati alla costruzione.

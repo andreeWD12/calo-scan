@@ -65,15 +65,15 @@ extension Plan {
     var features: [LocalizedStringKey] {
         switch self {
         case .free:
-            ["Diario alimentare e inserimento manuale", "Calcolo del fabbisogno calorico",
+            ["Diario alimentare e inserimento manuale", "Calcolo del fabbisogno calorico", "Lista della spesa manuale",
              "Statistiche settimanali di base", "Scansioni AI limitate ogni giorno"]
         case .plus:
             ["Più scansioni AI ogni giorno", "Analisi dettagliata dei macronutrienti",
              "Statistiche settimanali e mensili complete", "Consigli nutrizionali personalizzati",
-             "Analisi delle abitudini alimentari"]
+             "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI"]
         case .pro:
             ["Tutto di Plus", "Scansioni AI con limiti molto più alti", "AI Nutrition Coach avanzato",
-             "Piano dei pasti settimanale e idee ricette", "Lista della spesa intelligente",
+             "Piano dei pasti settimanale e idee ricette", "Lista della spesa AI senza limiti settimanali",
              "Report mensili avanzati"]
         }
     }

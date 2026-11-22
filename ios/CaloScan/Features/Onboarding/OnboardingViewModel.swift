@@ -270,14 +270,20 @@ extension Allergen {
     var title: LocalizedStringKey {
         switch self {
         case .gluten: "Glutine"
-        case .lactose: "Lattosio"
-        case .treeNuts: "Frutta a guscio"
-        case .peanuts: "Arachidi"
+        case .milk: "Latte (allergia)"
+        case .lactose: "Lattosio (intolleranza)"
         case .eggs: "Uova"
         case .fish: "Pesce"
-        case .shellfish: "Crostacei e molluschi"
+        case .shellfish: "Crostacei"
+        case .molluscs: "Molluschi"
+        case .peanuts: "Arachidi"
+        case .treeNuts: "Frutta a guscio"
         case .soy: "Soia"
+        case .celery: "Sedano"
+        case .mustard: "Senape"
         case .sesame: "Sesamo"
+        case .sulphites: "Solfiti"
+        case .lupin: "Lupini"
         case .other: "Altro"
         }
     }

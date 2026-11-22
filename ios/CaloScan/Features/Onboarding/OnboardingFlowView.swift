@@ -275,7 +275,7 @@ private struct AllergiesStep: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.m) {
-            Text("Seleziona tutto ciò che vale per te. Useremo queste informazioni per i suggerimenti del coach.")
+            Text("Seleziona tutto ciò che vale per te: il coach AI e la lista della spesa suggerita escluderanno questi alimenti. Se non hai allergie o intolleranze, tocca Continua. Potrai modificarle in qualsiasi momento dal Profilo.")
                 .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
             LazyVGrid(columns: columns, alignment: .leading, spacing: DS.Spacing.xs) {
                 ForEach(Allergen.allCases, id: \.self) { allergen in

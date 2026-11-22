@@ -138,6 +138,20 @@ Regole:
 
 Limiti in tabella `plan_limits` (modificabili senza rilasciare l'app). Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`; i prezzi si impostano in App Store Connect.
 
+### Lista della spesa
+
+Da Home (icona carrello in alto a sinistra) e da Profilo. Prodotti raggruppati per reparto (`ShoppingCategory.guess` sceglie il reparto dal nome; l'utente lo cambia con la pressione prolungata), spunta con un tocco, eliminazione, rimozione dei prodotti presi, condivisione come testo.
+
+| Funzione | Piano |
+|---|---|
+| Inserimento manuale, spunta, condivisione | Tutti (Free compreso) |
+| Prodotti dai pasti del piano del professionista per 7 giorni, grammature sommate (`ShoppingListBuilder`, nessuna AI) | Tutti |
+| Suggerimenti AI (`shopping-suggest`): obiettivi, piano, preferenze e pasti recenti; l'utente sceglie cosa aggiungere | Plus: 2 liste a settimana · Pro: fino a 5 al giorno (in `plan_limits`) |
+
+Allergeni: il prompt li esclude e il server applica comunque `filterSuggestions` (`_shared/shopping.ts`, con test) prima di rispondere. Tabella `shopping_items` (id, user_id, name, quantity, category, is_checked, source `manual`/`plan`/`ai`, added_at) con RLS sul proprietario, massimo 200 prodotti.
+
+Allergeni nell'onboarding: i 14 del Reg. UE 1169/2011 più intolleranza al lattosio e voce libera; modificabili dal Profilo.
+
 ### Inviti all'upgrade
 
 Schede compatte sopra la barra delle sezioni (`UpsellBanner`), mai a schermo intero e mai durante la fotocamera o un flusso in corso. Si chiudono con la X o da sole dopo 9 secondi. Compaiono 2,6 s dopo l'azione che le provoca, così non si sovrappongono al popup di conferma.

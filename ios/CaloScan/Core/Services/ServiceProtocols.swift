@@ -61,6 +61,19 @@ protocol ScanService: Sendable {
     func analyze(description: String, jpegData: Data?) async throws -> ScanResult
 }
 
+// MARK: - Lista della spesa
+
+protocol ShoppingListService: Sendable {
+    func items() async throws -> [ShoppingItem]
+    /// Crea o aggiorna i prodotti indicati.
+    func save(_ items: [ShoppingItem]) async throws
+    func delete(itemIDs: [UUID]) async throws
+    /// Suggerimenti dell'AI, solo Plus e Pro (controllo e limiti sul server). Il server usa obiettivi,
+    /// piano del professionista, preferenze e pasti recenti, ed esclude sempre gli allergeni dell'utente.
+    /// - Parameter request: richiesta facoltativa dell'utente, es. "cene veloci per 3 giorni".
+    func suggest(request: String?) async throws -> [ShoppingSuggestion]
+}
+
 // MARK: - Coach
 
 struct CoachInsight: Identifiable, Codable, Hashable, Sendable {
@@ -179,4 +192,5 @@ struct AppServices: Sendable {
     let purchases: any PurchaseService
     let account: any AccountService
     let push: any PushTokenService
+    let shopping: any ShoppingListService
 }

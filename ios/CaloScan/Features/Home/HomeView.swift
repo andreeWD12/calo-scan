@@ -1,7 +1,7 @@
 import SwiftUI
 import CaloScanCore
 
-enum HomeRoute: Hashable { case coach, subscription }
+enum HomeRoute: Hashable { case coach, subscription, shopping }
 
 /// Dashboard: calorie e macro di oggi, pulsante di scansione, consigli, pasti del giorno.
 struct HomeView: View {
@@ -31,6 +31,10 @@ struct HomeView: View {
             .background(DS.Palette.background.ignoresSafeArea())
             .refreshable { await model.load() }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { path.append(.shopping) } label: { Image(systemName: "cart") }
+                        .accessibilityLabel(Text("Lista della spesa"))
+                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     PlanShortcut(plan: app.entitlements.plan) {
                         // Free e Plus vedono i piani; Pro va alla gestione dell'abbonamento.
@@ -44,6 +48,7 @@ struct HomeView: View {
                 switch route {
                 case .coach: CoachView(services: app.services)
                 case .subscription: ManageSubscriptionView()
+                case .shopping: ShoppingListView(services: app.services)
                 }
             }
             .sheet(isPresented: $showPaywall) {
