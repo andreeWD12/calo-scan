@@ -141,7 +141,22 @@ Flusso: StoreKit 2 acquista → l'app invia la transazione firmata (JWS) a `veri
 
 Notifiche **locali** per i promemoria (pasti, peso, riepilogo giornaliero): funzionano senza server e senza raccogliere token. Push remote (APNs) solo per il report settimanale e i suggerimenti, opzionali. Massimo 3 notifiche al giorno, orari scelti dall'utente, tutto disattivato di default tranne ciò che l'utente abilita nell'onboarding.
 
-## 11. Gestione errori e stati
+### Notifiche push (APNs)
+
+- `AppDelegate` registra il dispositivo solo dopo che l'utente ha attivato una notifica (mai al primo avvio).
+- Il token viene inviato a `PushTokenService` (tabella `push_tokens`, Fase 9); le notifiche remote partono da una Edge Function con chiave APNs `.p8`.
+- Con l'app aperta le notifiche appaiono come banner; il tocco o un'azione rapida ("Scansiona il piatto", "Registra il peso") apre la schermata giusta tramite `DeepLinkRouter` (payload `{"route": "scanner"}` o URL `caloscan://scanner`).
+
+## 11. Animazioni e feedback
+
+- Molle di sistema (`.smooth`, `.snappy`, `.bouncy`) definite in `DS.Motion`; nessuna durata casuale sparsa nel codice.
+- Entrate a cascata delle schede, profondità durante lo scroll (`scrollTransition`), anelli e barre che si riempiono, numeri che cambiano con `numericText`.
+- Apertura dello scanner con zoom dal pulsante centrale (iOS 18, `navigationTransition(.zoom)`); su iOS 17 presentazione standard.
+- Popup di conferma in stile iOS (`ToastCenter`) con feedback aptico e annuncio VoiceOver.
+- Effetti SF Symbols (`symbolEffect`) su tab e azioni; feedback aptico su scatto, salvataggio ed errori.
+- Con "Riduci movimento" attivo, spostamenti e scale diventano dissolvenze.
+
+## 11b. Gestione errori e stati
 
 - `APIError` tipizzato (`offline`, `unauthorized`, `quotaExceeded`, `server`, `decoding`, `aiUnavailable`) con messaggi localizzati.
 - Ogni schermata gestisce: caricamento (skeleton), vuoto (con azione), errore (con "Riprova").

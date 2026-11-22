@@ -31,17 +31,26 @@ struct ProgressScreen: View {
             }
             .sheet(isPresented: $showAddWeight) {
                 AddWeightSheet(initial: model.entries.value?.last?.weightKg ?? app.profile?.weightKg) { kg, date in
-                    await model.add(weightKg: kg, date: date)
+                    let saved = await model.add(weightKg: kg, date: date)
+                    if saved { app.toasts.success(String(localized: "Peso registrato"), subtitle: Format.kg(kg), symbol: "scalemass.fill") }
+                    return saved
                 }
             }
             .sheet(isPresented: $showAddMeasurement) {
-                AddMeasurementSheet { await model.add($0) }
+                AddMeasurementSheet { measurement in
+                    let saved = await model.add(measurement)
+                    if saved { app.toasts.success(String(localized: "Misure salvate"), symbol: "ruler.fill") }
+                    return saved
+                }
             }
             .alert("Operazione non riuscita",
                    isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } }),
                    presenting: model.error) { _ in Button("OK", role: .cancel) {} } message: { Text($0.localizedDescription) }
         }
         .task { await model.load() }
+        .onChange(of: app.router.pending, initial: true) { _, link in
+            if link == .logWeight { showAddWeight = true; app.router.pending = nil }
+        }
     }
 
     @ViewBuilder
@@ -59,7 +68,7 @@ struct ProgressScreen: View {
                 SummaryGrid(progress: progress)
             }
             Card {
-                Picker("Periodo", selection: $model.range) {
+                Picker("Periodo", selection: $model.range.animation(DS.Motion.standard)) {
                     ForEach(ProgressViewModel.Range.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)

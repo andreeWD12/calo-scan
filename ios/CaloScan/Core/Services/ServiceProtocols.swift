@@ -170,4 +170,5 @@ struct AppServices: Sendable {
     let entitlements: any EntitlementService
     let purchases: any PurchaseService
     let account: any AccountService
+    let push: any PushTokenService
 }

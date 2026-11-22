@@ -151,6 +151,7 @@ struct EditProfileView: View {
         do {
             try await app.services.profile.save(profile: result.0, targets: result.1)
             app.updateProfile(result.0, targets: result.1)
+            app.toasts.success(String(localized: "Profilo aggiornato"), subtitle: String(localized: "Obiettivi ricalcolati"))
             dismiss()
         } catch {
             self.error = APIError.from(error)
@@ -249,6 +250,7 @@ struct EditTargetsView: View {
         do {
             try await app.services.profile.save(profile: profile, targets: targets)
             app.updateProfile(profile, targets: targets)
+            app.toasts.success(String(localized: "Obiettivi aggiornati"))
             dismiss()
         } catch {
             self.error = APIError.from(error)

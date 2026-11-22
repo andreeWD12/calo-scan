@@ -41,11 +41,14 @@ struct HomeView: View {
             }
             .sheet(item: $addingTo) { type in
                 AddFoodFlowView(services: app.services, mealType: type) {
-                    app.diaryDidChange()
+                    app.mealSaved(type)
                 }
             }
         }
         .task(id: app.diaryRevision) { await model.load() }
+        .onChange(of: app.router.pending, initial: true) { _, link in
+            if link == .coach { path = [.coach]; app.router.pending = nil }
+        }
     }
 
     private var header: some View {
@@ -71,16 +74,20 @@ struct HomeView: View {
             EmptyView()
         case .loaded(let day):
             if let targets = app.targets {
-                SummaryCard(day: day, targets: targets)
+                SummaryCard(day: day, targets: targets).appear(index: 0)
             }
-            ScanCallToAction(scansRemaining: app.entitlements.scansRemaining, action: onScan)
+            ScanCallToAction(scansRemaining: app.entitlements.scansRemaining, action: onScan).appear(index: 1)
             if let insight = model.insights.first {
                 InsightCard(insight: insight) { path.append(.coach) }
+                    .appear(index: 2)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
-            ForEach(MealType.allCases, id: \.self) { type in
+            ForEach(Array(MealType.allCases.enumerated()), id: \.element) { index, type in
                 MealSectionCard(type: type, meals: day.meals(of: type),
                                 onAdd: { addingTo = type },
                                 onDelete: { meal in Task { await model.delete(meal) } })
+                    .appear(index: 3 + index)
+                    .cardScrollEffect()
             }
         }
     }
@@ -149,7 +156,7 @@ private struct ScanCallToAction: View {
                                startPoint: .topLeading, endPoint: .bottomTrailing),
                 in: .rect(cornerRadius: DS.Radius.l))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
         .accessibilityHint(Text("Apre la fotocamera per analizzare un piatto"))
     }
 }
@@ -197,6 +204,7 @@ struct MealSectionCard: View {
         Card {
             HStack {
                 Label(type.title, systemImage: type.symbol).font(DS.Font.headline)
+                    .symbolEffect(.bounce, value: items.count)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Text(Format.kcal(totals.kcal)).font(DS.Font.callout.monospacedDigit())
@@ -230,8 +238,11 @@ struct MealSectionCard: View {
                             Button("Elimina pasto", systemImage: "trash", role: .destructive) { onDelete(row.meal) }
                         }
                     }
+                    .transition(.asymmetric(insertion: .move(edge: .leading).combined(with: .opacity),
+                                            removal: .opacity.combined(with: .scale(scale: 0.95))))
                 }
             }
         }
+        .animation(DS.Motion.standard, value: items.map(\.id))
     }
 }

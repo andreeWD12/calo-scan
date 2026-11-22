@@ -27,7 +27,11 @@ struct PaywallView: View {
     }
 
     private func purchased() {
-        Task { await app.refreshEntitlements() }
+        Task {
+            await app.refreshEntitlements()
+            app.toasts.success(String(localized: "Benvenuto in CaloScan \(app.entitlements.plan.displayName)"),
+                               subtitle: String(localized: "Le funzioni Premium sono attive"), symbol: "crown.fill")
+        }
         onPurchased?()
         dismiss()
     }

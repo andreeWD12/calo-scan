@@ -36,8 +36,9 @@ enum ReminderScheduler {
     private static let ids = ["reminder.breakfast", "reminder.lunch", "reminder.dinner", "reminder.summary", "reminder.weighin"]
 
     /// Chiede il permesso solo quando l'utente attiva un promemoria.
+    @MainActor
     static func requestAuthorization() async -> Bool {
-        (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        await PushPermission.request()
     }
 
     static func authorizationStatus() async -> UNAuthorizationStatus {
@@ -62,6 +63,17 @@ enum ReminderScheduler {
             content.title = title
             content.body = body
             content.sound = .default
+            switch id {
+            case ids[4]:
+                content.categoryIdentifier = NotificationCategory.weighIn
+                content.userInfo = ["route": DeepLink.logWeight.rawValue]
+            case ids[3]:
+                content.categoryIdentifier = NotificationCategory.report
+                content.userInfo = ["route": DeepLink.diary.rawValue]
+            default:
+                content.categoryIdentifier = NotificationCategory.mealReminder
+                content.userInfo = ["route": DeepLink.scanner.rawValue]
+            }
             var components = DateComponents()
             components.hour = reminder.hour
             components.minute = reminder.minute

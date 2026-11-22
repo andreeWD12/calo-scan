@@ -16,6 +16,9 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearance: AppearancePreference = .system
     @State private var reminders = ReminderSettings.load()
     @State private var permissionDenied = false
+    /// Notifiche push dal server: report settimanale e suggerimenti (massimo 2 a settimana).
+    @AppStorage("push.weeklyReport") private var weeklyReport = false
+    @AppStorage("push.tips") private var tips = false
 
     var body: some View {
         Form {
@@ -39,6 +42,19 @@ struct SettingsView: View {
                     Text("Tutti i promemoria sono facoltativi e generati sul dispositivo. Attiva solo quelli che ti sono utili.")
                 }
             }
+            Section {
+                Toggle("Report settimanale", isOn: $weeklyReport)
+                Toggle("Suggerimenti del coach", isOn: $tips)
+            } header: {
+                Text("Notifiche push")
+            } footer: {
+                Text("Al massimo due notifiche a settimana, mai pubblicitarie. Il report arriva la domenica sera.")
+            }
+            .onChange(of: weeklyReport || tips) { _, wantsPush in
+                guard wantsPush else { return }
+                Task { permissionDenied = !(await PushPermission.request()) }
+            }
+
             Section("Informazioni") {
                 LabeledContent("Versione", value: Bundle.main.appVersion)
                 Link("Termini di servizio", destination: LegalLinks.terms)

@@ -45,7 +45,7 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | Requisito | Dove | Stato |
 |---|---|---|
 | Direttiva 2011/83/UE e Omnibus: prezzi chiari, rinnovo, recesso | Paywall: prezzo localizzato da StoreKit, periodo, rinnovo automatico, come disdire; il recesso è gestito da Apple | ✅ |
-| European Accessibility Act (dal 28/06/2025) | Dynamic Type, etichette VoiceOver, contrasti WCAG AA, target ≥ 44 pt, dark mode | ✅ base · ⏳ audit completo (Fase 10) |
+| European Accessibility Act (dal 28/06/2025) | Dynamic Type, etichette VoiceOver, contrasti WCAG AA, target ≥ 44 pt, dark mode, animazioni che rispettano "Riduci movimento", popup annunciati da VoiceOver | ✅ base · ⏳ audit completo (Fase 10) |
 | Lingua | Interfaccia in italiano; localizzazioni aggiuntive in `Localizable.xcstrings` | 🟡 Fase 10 |
 
 ## 5. App Store Review Guidelines
@@ -63,4 +63,4 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | 5.1.3 Salute: dati sanitari non salvati in iCloud | Dati solo su Supabase; nessun uso di iCloud/HealthKit | ✅ |
 | Privacy Manifest (`PrivacyInfo.xcprivacy`) | `ios/CaloScan/Resources/` | ✅ |
 | Permessi con motivazione (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`) | `project.yml` | ✅ |
-| Notifiche: facoltative, non promozionali senza consenso (4.5.4) | Promemoria locali disattivati di default | ✅ |
+| Notifiche: facoltative, non promozionali senza consenso (4.5.4) | Promemoria locali e push disattivati di default; permesso chiesto solo quando l'utente attiva un'opzione; massimo 2 push a settimana | ✅ |

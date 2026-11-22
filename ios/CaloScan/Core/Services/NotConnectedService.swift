@@ -6,7 +6,8 @@ import CaloScanCore
 /// stato d'errore. Ogni fase sostituisce in `AppServices.live` il servizio corrispondente e, a progetto
 /// completo, questo file viene eliminato.
 struct NotConnectedService: AuthService, ProfileRepository, MealRepository, FoodSearchService, ScanService,
-                            CoachService, WeightRepository, EntitlementService, PurchaseService, AccountService {
+                            CoachService, WeightRepository, EntitlementService, PurchaseService, AccountService,
+                            PushTokenService {
 
     private func fail() -> APIError { .notConnected }
 
@@ -51,6 +52,9 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func update(consents: ConsentState) async throws { throw fail() }
     func exportData() async throws -> URL { throw fail() }
     func deleteAccount() async throws { throw fail() }
+
+    func register(deviceToken: String, environment: PushEnvironment) async throws { throw fail() }
+    func unregister() async throws { throw fail() }
 }
 
 extension AppServices {
@@ -59,6 +63,6 @@ extension AppServices {
         let pending = NotConnectedService()
         return AppServices(auth: pending, profile: pending, meals: pending, foods: pending, scanner: pending,
                            coach: pending, weight: pending, entitlements: pending, purchases: pending,
-                           account: pending)
+                           account: pending, push: pending)
     }
 }

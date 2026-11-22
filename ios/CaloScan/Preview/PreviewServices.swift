@@ -6,7 +6,8 @@ import CaloScanCore
 /// Compilati SOLO nelle build Debug: in Release questo file non esiste.
 /// I valori nutrizionali d'esempio sono approssimazioni di USDA FoodData Central (SR Legacy).
 actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchService, ScanService,
-                    CoachService, WeightRepository, EntitlementService, PurchaseService, AccountService {
+                    CoachService, WeightRepository, EntitlementService, PurchaseService, AccountService,
+                    PushTokenService {
 
     nonisolated let stateStream: AsyncStream<SessionState>
     private nonisolated let continuation: AsyncStream<SessionState>.Continuation
@@ -219,6 +220,9 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
         return url
     }
 
+    func register(deviceToken: String, environment: PushEnvironment) async throws {}
+    func unregister() async throws {}
+
     func deleteAccount() async throws {
         profile = nil; targets = nil; meals = []; weights = []; messages = []
         set(.signedOut)
@@ -230,7 +234,7 @@ extension AppServices {
     static func preview(startOnboarding: Bool = ProcessInfo.processInfo.arguments.contains("-PreviewOnboarding")) -> AppServices {
         let store = PreviewStore(startOnboarding: startOnboarding)
         return AppServices(auth: store, profile: store, meals: store, foods: store, scanner: store, coach: store,
-                           weight: store, entitlements: store, purchases: store, account: store)
+                           weight: store, entitlements: store, purchases: store, account: store, push: store)
     }
 }
 #endif

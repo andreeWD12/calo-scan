@@ -39,7 +39,7 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 14. Pagine pubbliche per **Informativa privacy** e **Termini di servizio** (URL richiesti da App Store Connect).
     Consigliato un controllo legale: l'app tratta dati relativi alla salute (art. 9 GDPR).
-15. Chiave APNs (.p8) per le notifiche push remote.
+15. Chiave APNs (.p8) per le notifiche push remote: Apple Developer → Keys → nuova chiave con *Apple Push Notifications service*. Serve anche la capability *Push Notifications* sull'App ID (già dichiarata in `project.yml`). I promemoria locali funzionano senza.
 16. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect.
 
 Tutti i segreti server sono elencati in `supabase/.env.example`.

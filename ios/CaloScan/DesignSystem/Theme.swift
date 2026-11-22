@@ -62,9 +62,20 @@ enum DS {
         static let metricLarge = SwiftUI.Font.system(size: 44, weight: .bold, design: .rounded).monospacedDigit()
     }
 
+    /// Movimento in stile iOS: molle fisiche invece di curve a durata fissa.
+    /// Ogni animazione passa da qui, così "Riduci movimento" viene rispettato ovunque.
     enum Motion {
-        static let standard = Animation.spring(response: 0.4, dampingFraction: 0.85)
+        /// Transizioni di stato e layout.
+        static let standard = Animation.smooth(duration: 0.4)
+        /// Interazioni dirette (tocchi, selezioni): reattiva, senza rimbalzo.
+        static let snappy = Animation.snappy(duration: 0.3)
+        /// Elementi che "arrivano" (popup, conferme): leggero rimbalzo.
+        static let bouncy = Animation.bouncy(duration: 0.5, extraBounce: 0.05)
+        /// Grafici e anelli che si riempiono.
+        static let fill = Animation.smooth(duration: 0.9)
         static let quick = Animation.easeOut(duration: 0.2)
+        /// Ritardo tra elementi di una lista che entrano in sequenza.
+        static let stagger: Double = 0.05
     }
 }
 

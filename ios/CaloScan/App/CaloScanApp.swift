@@ -2,12 +2,14 @@ import SwiftUI
 
 @main
 struct CaloScanApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     /// Se la configurazione manca l'app lo dice chiaramente invece di fallire in modo silenzioso.
     private let bootstrap: Result<AppState, Error>
 
     init() {
         // `App` è isolato sul MainActor, quindi lo stato può essere creato qui.
         bootstrap = Result { try Self.makeState() }
+        if case .success(let state) = bootstrap { AppDelegate.pushService = state.services.push }
         Log.app.info("CaloScan avviata")
     }
 
@@ -27,7 +29,12 @@ struct CaloScanApp: App {
         WindowGroup {
             switch bootstrap {
             case .success(let state):
-                RootView().environment(state)
+                RootView()
+                    .environment(state)
+                    .toastOverlay(state.toasts)
+                    .onOpenURL { url in
+                        if let link = DeepLink(url: url) { state.router.open(link) }
+                    }
             case .failure(let error):
                 ConfigurationErrorView(message: error.localizedDescription)
             }

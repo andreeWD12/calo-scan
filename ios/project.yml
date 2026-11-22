@@ -45,6 +45,7 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes: [remote-notification]
         NSCameraUsageDescription: "CaloScan usa la fotocamera per fotografare i tuoi piatti e stimarne i valori nutrizionali."
         NSPhotoLibraryUsageDescription: "CaloScan accede alle foto che scegli per analizzare un piatto già fotografato."
         # Valori iniettati dagli xcconfig (vedi Config/Secrets.example.xcconfig)

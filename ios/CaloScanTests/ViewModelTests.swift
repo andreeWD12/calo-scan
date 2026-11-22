@@ -54,3 +54,11 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertNotNil(model.customCaloriesError)
     }
 }
+
+final class DeepLinkTests: XCTestCase {
+    func testURLParsing() {
+        XCTAssertEqual(DeepLink(url: URL(string: "caloscan://scanner")!), .scanner)
+        XCTAssertEqual(DeepLink(url: URL(string: "caloscan://log-weight")!), .logWeight)
+        XCTAssertNil(DeepLink(url: URL(string: "https://example.com/scanner")!))
+    }
+}

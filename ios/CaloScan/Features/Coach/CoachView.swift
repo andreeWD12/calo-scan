@@ -23,6 +23,8 @@ struct CoachView: View {
                 .padding(DS.Spacing.screen)
             }
             .scrollDismissesKeyboard(.interactively)
+            .animation(DS.Motion.bouncy, value: model.messages.value?.count)
+            .animation(DS.Motion.standard, value: model.isSending)
             .onChange(of: model.messages.value?.count) { _, _ in
                 if let id = model.messages.value?.last?.id {
                     withAnimation { proxy.scrollTo(id, anchor: .bottom) }
@@ -69,7 +71,14 @@ struct CoachView: View {
                 }
                 .padding(.top, DS.Spacing.s)
             } else {
-                ForEach(messages) { MessageBubble(message: $0).id($0.id) }
+                ForEach(messages) { message in
+                    MessageBubble(message: message)
+                        .id(message.id)
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity)
+                                .combined(with: .scale(scale: 0.9, anchor: message.role == .user ? .bottomTrailing : .bottomLeading)),
+                            removal: .opacity))
+                }
             }
         }
     }
@@ -88,6 +97,7 @@ struct CoachView: View {
                         .foregroundStyle(model.canSend ? DS.Palette.brand : DS.Palette.separator)
                 }
                 .disabled(!model.canSend)
+                .sensoryFeedback(.impact(weight: .light), trigger: model.messages.value?.count)
                 .accessibilityLabel(Text("Invia"))
             }
             let e = app.entitlements

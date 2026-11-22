@@ -6,6 +6,9 @@ struct CalorieRing: View {
     let target: Int
     var lineWidth: CGFloat = 16
 
+    @State private var shown: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var progress: Double { target > 0 ? consumed / Double(target) : 0 }
     private var remaining: Double { Double(target) - consumed }
 
@@ -13,11 +16,12 @@ struct CalorieRing: View {
         ZStack {
             Circle().stroke(DS.Palette.surfaceMuted, lineWidth: lineWidth)
             Circle()
-                .trim(from: 0, to: min(progress, 1))
+                .trim(from: 0, to: min(shown, 1))
                 .stroke(progress > 1.1 ? DS.Palette.warning : DS.Palette.brand,
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(DS.Motion.standard, value: progress)
+                .onAppear { withMotion(DS.Motion.fill, reduceMotion: reduceMotion) { shown = progress } }
+                .onChange(of: progress) { _, new in withMotion(DS.Motion.fill, reduceMotion: reduceMotion) { shown = new } }
             VStack(spacing: 2) {
                 Text(Format.kcalNumber(abs(remaining)))
                     .font(DS.Font.metricLarge)
@@ -43,6 +47,9 @@ struct MacroBar: View {
     let target: Int
     let tint: Color
 
+    @State private var shown: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var progress: Double { target > 0 ? min(consumed / Double(target), 1) : 0 }
 
     var body: some View {
@@ -57,8 +64,9 @@ struct MacroBar: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(DS.Palette.surfaceMuted)
-                    Capsule().fill(tint).frame(width: geo.size.width * progress)
-                        .animation(DS.Motion.standard, value: progress)
+                    Capsule().fill(tint).frame(width: geo.size.width * shown)
+                        .onAppear { withMotion(DS.Motion.fill, reduceMotion: reduceMotion) { shown = progress } }
+                        .onChange(of: progress) { _, new in withMotion(DS.Motion.fill, reduceMotion: reduceMotion) { shown = new } }
                 }
             }
             .frame(height: 8)

@@ -16,12 +16,14 @@ struct DiaryView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Spacing.m) {
-                    Picker("Vista", selection: $model.mode) {
+                    Picker("Vista", selection: $model.mode.animation(DS.Motion.snappy)) {
                         ForEach(DiaryViewModel.Mode.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     periodNavigator
                     content
+                        .id("\(model.mode.rawValue)-\(model.selectedDate.timeIntervalSince1970)")
+                        .transition(.opacity.combined(with: .offset(y: 8)))
                 }
                 .padding(.horizontal, DS.Spacing.screen)
                 .padding(.bottom, DS.Spacing.xl)
@@ -29,6 +31,7 @@ struct DiaryView: View {
             .background(DS.Palette.background.ignoresSafeArea())
             .navigationTitle("Diario")
             .refreshable { await model.load() }
+            .animation(DS.Motion.standard, value: model.mode)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showCalendar = true } label: { Image(systemName: "calendar") }
@@ -44,7 +47,7 @@ struct DiaryView: View {
             }
             .sheet(item: $addingTo) { type in
                 AddFoodFlowView(services: app.services, mealType: type, day: model.selectedDate) {
-                    app.diaryDidChange()
+                    app.mealSaved(type)
                 }
             }
         }
@@ -55,12 +58,12 @@ struct DiaryView: View {
 
     private var periodNavigator: some View {
         HStack {
-            Button { model.shift(by: -1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+            Button { withAnimation(DS.Motion.snappy) { model.shift(by: -1) } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
                 .accessibilityLabel(Text("Periodo precedente"))
             Spacer()
-            Text(model.periodTitle).font(DS.Font.headline)
+            Text(model.periodTitle).font(DS.Font.headline).contentTransition(.numericText())
             Spacer()
-            Button { model.shift(by: 1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
+            Button { withAnimation(DS.Motion.snappy) { model.shift(by: 1) } } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
                 .disabled(!model.canGoForward)
                 .accessibilityLabel(Text("Periodo successivo"))
         }

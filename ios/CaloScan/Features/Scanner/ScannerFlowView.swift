@@ -32,11 +32,13 @@ struct ScannerFlowView: View {
                     }
                 case .analyzing:
                     AnalyzingView(imageData: model.imageData)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
                 case .result:
                     ScanResultView(model: model, services: app.services) {
-                        app.diaryDidChange()
+                        app.mealSaved(model.mealType, fromScan: true)
                         dismiss()
                     }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 case .failed(let error):
                     ScanFailureView(error: error,
                                     onRetry: { model.retake() },
@@ -44,16 +46,24 @@ struct ScannerFlowView: View {
                                     onUpgrade: { showPaywall = true })
                 }
             }
+            .animation(DS.Motion.standard, value: model.phase)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Chiudi") { dismiss() }
                 }
             }
         }
+        .sensoryFeedback(trigger: model.phase) { _, phase in
+            switch phase {
+            case .result: .success
+            case .failed: .error
+            default: nil
+            }
+        }
         .task { await model.loadConsent() }
         .sheet(isPresented: $showManualEntry) {
             AddFoodFlowView(services: app.services, mealType: model.mealType) {
-                app.diaryDidChange()
+                app.mealSaved(model.mealType)
                 dismiss()
             }
         }
@@ -199,6 +209,8 @@ private struct FramingGuide: View {
 private struct AnalyzingView: View {
     let imageData: Data?
     @State private var pulse = false
+    @State private var sweep = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: DS.Spacing.l) {
@@ -206,6 +218,16 @@ private struct AnalyzingView: View {
                 Image(uiImage: image)
                     .resizable().scaledToFill()
                     .frame(width: 220, height: 220)
+                    .clipShape(.rect(cornerRadius: DS.Radius.l))
+                    .overlay(alignment: .top) {
+                        if !reduceMotion {
+                            LinearGradient(colors: [.clear, DS.Palette.brand.opacity(0.55), .clear],
+                                           startPoint: .top, endPoint: .bottom)
+                                .frame(height: 60)
+                                .offset(y: sweep ? 190 : -60)
+                                .blendMode(.plusLighter)
+                        }
+                    }
                     .clipShape(.rect(cornerRadius: DS.Radius.l))
                     .overlay(RoundedRectangle(cornerRadius: DS.Radius.l)
                         .strokeBorder(DS.Palette.brand, lineWidth: 3).opacity(pulse ? 1 : 0.3))
@@ -219,7 +241,11 @@ private struct AnalyzingView: View {
         .padding(DS.Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DS.Palette.background.ignoresSafeArea())
-        .onAppear { withAnimation(.easeInOut(duration: 0.9).repeatForever()) { pulse = true } }
+        .onAppear {
+            guard !reduceMotion else { pulse = true; return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever()) { pulse = true }
+            withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) { sweep = true }
+        }
     }
 }
 

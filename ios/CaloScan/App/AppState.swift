@@ -6,6 +6,8 @@ import CaloScanCore
 @MainActor
 final class AppState {
     let services: AppServices
+    let toasts = ToastCenter()
+    let router = DeepLinkRouter.shared
 
     private(set) var session: SessionState = .unknown
     private(set) var profile: UserProfile?
@@ -65,6 +67,14 @@ final class AppState {
     func updateProfile(_ profile: UserProfile, targets: DailyTargets) {
         self.profile = profile
         self.targets = targets
+    }
+
+    /// Pasto salvato: aggiorna il diario e mostra la conferma.
+    func mealSaved(_ type: MealType, fromScan: Bool = false) {
+        diaryDidChange()
+        toasts.success(String(localized: "Aggiunto a \(type.title)"),
+                       subtitle: fromScan ? String(localized: "Valori stimati dalla foto") : nil,
+                       symbol: fromScan ? "camera.viewfinder" : "checkmark.circle.fill")
     }
 
     func diaryDidChange() {
