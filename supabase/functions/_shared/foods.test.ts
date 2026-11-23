@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aiEstimateFood, cleanProductName, isLatinName, fromOFF, fromUSDA, isBarcode, normalizeQuery, stableUUID } from "./foods.ts";
+import { aiEstimateFood, pickFood, cleanProductName, isLatinName, fromOFF, fromUSDA, isBarcode, normalizeQuery, stableUUID } from "./foods.ts";
 
 test("alimenti: USDA per 100 g", async () => {
   const f = await fromUSDA({
@@ -80,4 +80,14 @@ test("alimenti: solo nomi in alfabeto latino", () => {
   assert.ok(isLatinName("Fusilli n.34"));
   assert.ok(!isLatinName("פסטה פוזילי"));
   assert.ok(!isLatinName("Паста"));
+});
+
+test("alimenti: il database vince salvo calorie troppo diverse", () => {
+  const f = (kcal: number, source: "usda" | "ai_estimate") =>
+    ({ id: source, name: "Sugo", per100g: { kcal, proteinG: 1, carbsG: 5, fatG: 1 }, source });
+  assert.equal(pickFood(f(40, "usda"), f(45, "ai_estimate"))?.source, "usda");
+  assert.equal(pickFood(f(92, "usda"), f(40, "ai_estimate"))?.source, "ai_estimate");
+  assert.equal(pickFood(null, f(40, "ai_estimate"))?.source, "ai_estimate");
+  assert.equal(pickFood(f(40, "usda"), null)?.source, "usda");
+  assert.equal(pickFood(f(5, "usda"), f(15, "ai_estimate"))?.source, "usda");
 });

@@ -179,3 +179,16 @@ export async function aiEstimateFood(name: string, raw: Nutrients): Promise<Food
 export function isLatinName(name: string): boolean {
   return !/[^\p{Script=Latin}\p{N}\p{P}\p{Zs}\p{S}]/u.test(name);
 }
+
+/**
+ * Sceglie tra il riscontro del database e la stima dell'AI. Vince il database, a meno che le calorie
+ * siano così diverse (meno di 0,55 o più di 1,8 volte) da far pensare a un abbinamento sbagliato,
+ * per esempio un sugo pronto americano molto zuccherato al posto di un sugo di pomodoro.
+ */
+export function pickFood(db: FoodItem | null, estimate: FoodItem | null): FoodItem | null {
+  if (!db || !estimate) return db ?? estimate;
+  const a = db.per100g.kcal, b = estimate.per100g.kcal;
+  if (a < 20 && b < 20) return db;
+  const ratio = a / Math.max(b, 1);
+  return ratio < 0.55 || ratio > 1.8 ? estimate : db;
+}

@@ -194,7 +194,7 @@ Ricevi la foto di un pasto e/o una descrizione scritta dall'utente. Elenca gli a
 
 Regole:
 - Scomponi sempre i piatti composti nei singoli ingredienti che si pesano, così l'utente non deve correggerli:
-  "fusilli al pomodoro" → Fusilli (pasta cooked), Sugo di pomodoro (tomato sauce), Olio d'oliva (olive oil) se il
+  "fusilli al pomodoro" → Fusilli (pasta cooked), Sugo di pomodoro (tomato puree), Olio d'oliva (olive oil) se il
   sugo è condito. Mai un unico alimento per un piatto con più ingredienti.
 - Per ogni alimento stima anche calorie e macro per 100 g così come è nel piatto (cotto, condito): servono solo se
   il database non lo trova.
