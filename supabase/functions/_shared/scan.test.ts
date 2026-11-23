@@ -32,7 +32,7 @@ test("scansioni: solo JPEG", () => {
 test("scansioni: risposta del modello ripulita e limitata", () => {
   const r = sanitizeAIResult({
     items: [
-      { name: "Pasta al pomodoro", searchQuery: "pasta cooked", grams: 182.4, confidence: 0.8, ingredients: ["pasta", "pomodoro"] },
+      { name: "Pasta al pomodoro", searchQuery: "pasta cooked", grams: 182.4, kcalPer100g: 158, proteinPer100g: 5.8, carbsPer100g: 30.9, fatPer100g: 0.9, confidence: 0.8, ingredients: ["pasta", "pomodoro"] },
       { name: "Olio", searchQuery: "olive oil", grams: 99999, confidence: 4, ingredients: [] },
       { name: "", searchQuery: "x", grams: 10, confidence: 0.5, ingredients: [] },
       { name: "Pane", grams: "tanto", confidence: 0.5 },
@@ -46,7 +46,8 @@ test("scansioni: risposta del modello ripulita e limitata", () => {
     overallConfidence: 0.7,
   });
   assert.equal(r.items.length, 2);
-  assert.deepEqual(r.items[0], { name: "Pasta al pomodoro", searchQuery: "pasta cooked", grams: 182, confidence: 0.8, ingredients: ["pasta", "pomodoro"] });
+  assert.deepEqual(r.items[0], { name: "Pasta al pomodoro", searchQuery: "pasta cooked", grams: 182, per100g: { kcal: 158, proteinG: 5.8, carbsG: 30.9, fatG: 0.9 }, confidence: 0.8, ingredients: ["pasta", "pomodoro"] });
+  assert.ok(Number.isNaN(r.items[1].per100g.kcal));
   assert.equal(r.items[1].grams, 3000);
   assert.equal(r.items[1].confidence, 1);
   assert.equal(r.questions.length, 3);

@@ -71,6 +71,7 @@ extension FoodSource {
         case .usda: "USDA FoodData Central"
         case .openFoodFacts: "Open Food Facts"
         case .custom: String(localized: "Inserito da te")
+        case .aiEstimate: String(localized: "Valori stimati dall'AI")
         }
     }
 }

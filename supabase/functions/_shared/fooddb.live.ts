@@ -4,7 +4,7 @@
  * Verifica che i formati delle risposte siano ancora quelli che sappiamo leggere.
  */
 import { fromUSDA } from "./foods.ts";
-import { lookupBarcode, searchOFF, searchUSDA } from "./fooddb.ts";
+import { bestUSDAMatch, lookupBarcode, searchOFF, searchUSDA } from "./fooddb.ts";
 
 let failed = false;
 const check = (label: string, ok: boolean, detail: unknown) => {
@@ -24,6 +24,15 @@ check("USDA rice cooked", riceItem !== null, riceItem?.per100g);
 // l'app mostra comunque i risultati USDA, quindi qui è solo un avviso.
 const off = await searchOFF("spaghetti", 5);
 console.log(`${off.length > 0 ? "OK  " : "WARN"} OFF ricerca spaghetti: ${JSON.stringify(off.slice(0, 2).map((f) => [f.name, f.brand, f.per100g.kcal]))}`);
+
+// Un piatto scomposto come fa lo scanner ("fusilli al pomodoro"): ogni ingrediente deve trovare valori USDA.
+for (const [it, en] of [["Fusilli", "pasta cooked"], ["Sugo di pomodoro", "tomato sauce"], ["Olio d'oliva", "olive oil"]]) {
+  const m = await bestUSDAMatch(en, it);
+  check(`USDA abbinamento ${it}`, m !== null && m.name === it, m?.per100g);
+}
+
+const fusilli = await searchOFF("fusilli", 10);
+console.log(`${fusilli.length > 0 ? "OK  " : "WARN"} OFF fusilli solo in italiano: ${JSON.stringify(fusilli.map((f) => f.name))}`);
 
 const barcode = await lookupBarcode("8076809513753");
 check("OFF codice a barre", barcode !== null && barcode.per100g.kcal > 300, barcode && [barcode.name, barcode.per100g]);

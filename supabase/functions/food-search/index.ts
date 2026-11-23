@@ -12,7 +12,7 @@ import { adminClient, json, readJSON, requireUser } from "../_shared/supabase.ts
 
 const CACHE_DAYS = 30;
 /** Cambia quando cambia il formato dei risultati: le voci vecchie (es. nomi non tradotti) vengono ignorate. */
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const MAX_RESULTS = 25;
 
 Deno.serve(async (req) => {

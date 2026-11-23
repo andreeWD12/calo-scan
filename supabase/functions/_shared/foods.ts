@@ -10,12 +10,12 @@ export interface FoodItem {
   name: string;
   brand?: string | null;
   per100g: Nutrients;
-  source: "usda" | "open_food_facts" | "custom";
+  source: "usda" | "open_food_facts" | "custom" | "ai_estimate";
   defaultServingG?: number | null;
 }
 
 const round1 = (v: number) => Math.round(v * 10) / 10;
-const isPlausible = (n: Nutrients) =>
+export const isPlausible = (n: Nutrients) =>
   [n.kcal, n.proteinG, n.carbsG, n.fatG].every((v) => Number.isFinite(v) && v >= 0)
   && n.kcal <= 900 && n.proteinG <= 100 && n.carbsG <= 100 && n.fatG <= 100
   && n.proteinG + n.carbsG + n.fatG <= 105;
@@ -84,6 +84,7 @@ export interface OFFProduct {
   product_name_it?: string;
   generic_name_it?: string;
   brands?: string;
+  lang?: string;
   serving_quantity?: number | string;
   nutriments?: Record<string, number | string | undefined>;
 }
@@ -150,4 +151,31 @@ export function normalizeQuery(q: unknown): string | null {
   if (typeof q !== "string") return null;
   const s = q.normalize("NFC").toLowerCase().replace(/[\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim();
   return s.length >= 2 && s.length <= 80 && /\p{L}/u.test(s) ? s : null;
+}
+
+/**
+ * Alimento con valori per 100 g stimati dall'AI, usato solo se nessun database ha un riscontro.
+ * Le calorie devono essere coerenti con le macro (4/4/9 kcal per grammo, ±25%), altrimenti si ricalcolano.
+ */
+export async function aiEstimateFood(name: string, raw: Nutrients): Promise<FoodItem | null> {
+  const fromMacros = 4 * raw.proteinG + 4 * raw.carbsG + 9 * raw.fatG;
+  const kcal = Number.isFinite(raw.kcal) && fromMacros > 0 && Math.abs(raw.kcal - fromMacros) / fromMacros <= 0.25
+    ? raw.kcal
+    : fromMacros;
+  const per100g = { kcal, proteinG: raw.proteinG, carbsG: raw.carbsG, fatG: raw.fatG };
+  if (!name || !isPlausible(per100g) || (kcal === 0 && name.length === 0)) return null;
+  const rounded = { kcal: Math.round(kcal), proteinG: round1(raw.proteinG), carbsG: round1(raw.carbsG), fatG: round1(raw.fatG) };
+  return {
+    id: await stableUUID(`ai:${name.toLowerCase()}:${rounded.kcal}:${rounded.proteinG}:${rounded.carbsG}:${rounded.fatG}`),
+    name: name.slice(0, 120),
+    brand: null,
+    per100g: rounded,
+    source: "ai_estimate",
+    defaultServingG: null,
+  };
+}
+
+/** Nome leggibile per un utente italiano: niente alfabeti non latini (es. ebraico, cirillico). */
+export function isLatinName(name: string): boolean {
+  return !/[^\p{Script=Latin}\p{N}\p{P}\p{Zs}\p{S}]/u.test(name);
 }

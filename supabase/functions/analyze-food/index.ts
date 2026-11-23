@@ -11,6 +11,7 @@ import { sanitizeFoodDescription } from "../_shared/nutrition.ts";
 import { checkScanQuota, decodeJPEG, safeTimeZone } from "../_shared/scan.ts";
 import { AIUnavailableError, recognizeMeal } from "../_shared/ai.ts";
 import { bestUSDAMatch } from "../_shared/fooddb.ts";
+import { aiEstimateFood } from "../_shared/foods.ts";
 import { currentPlan } from "../_shared/plan.ts";
 import { scanUsage } from "../_shared/usage.ts";
 import { adminClient, json, readJSON, requireUser } from "../_shared/supabase.ts";
@@ -65,7 +66,9 @@ Deno.serve(async (req) => {
   }
 
   const [matched, extras] = await Promise.all([
-    Promise.all(result.items.map((i) => bestUSDAMatch(i.searchQuery, i.name))),
+    // Valori da USDA quando c'è un riscontro, altrimenti la stima dell'AI (marcata come tale nell'app):
+    // così ogni alimento è subito pronto da salvare, senza scegliere a mano la corrispondenza.
+    Promise.all(result.items.map(async (i) => await bestUSDAMatch(i.searchQuery, i.name) ?? await aiEstimateFood(i.name, i.per100g))),
     Promise.all(result.questions.map((q) => q.add ? bestUSDAMatch(q.add.searchQuery, q.add.name) : null)),
   ]);
   const items = result.items.map((item, i) => ({

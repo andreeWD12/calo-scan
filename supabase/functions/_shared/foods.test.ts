@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanProductName, fromOFF, fromUSDA, isBarcode, normalizeQuery, stableUUID } from "./foods.ts";
+import { aiEstimateFood, cleanProductName, isLatinName, fromOFF, fromUSDA, isBarcode, normalizeQuery, stableUUID } from "./foods.ts";
 
 test("alimenti: USDA per 100 g", async () => {
   const f = await fromUSDA({
@@ -62,4 +62,22 @@ test("alimenti: nomi senza marchi né insegne", () => {
   assert.equal(cleanProductName("Yogurt greco 0% - Coop", "Coop"), "Yogurt greco 0%");
   assert.equal(cleanProductName("Coppa di testa", undefined), "Coppa di testa");
   assert.equal(cleanProductName("Barilla", "Barilla"), "");
+});
+
+test("alimenti: stima AI solo se coerente", async () => {
+  const pasta = await aiEstimateFood("Fusilli", { kcal: 158, proteinG: 5.8, carbsG: 30.9, fatG: 0.9 });
+  assert.equal(pasta?.source, "ai_estimate");
+  assert.equal(pasta?.per100g.kcal, 158);
+  // Calorie incoerenti con le macro: ricalcolate (4·10 + 4·20 + 9·5 = 165).
+  const fixed = await aiEstimateFood("Sugo", { kcal: 900, proteinG: 10, carbsG: 20, fatG: 5 });
+  assert.equal(fixed?.per100g.kcal, 165);
+  assert.equal(await aiEstimateFood("X", { kcal: NaN, proteinG: NaN, carbsG: 1, fatG: 1 }), null);
+  assert.equal(await aiEstimateFood("X", { kcal: 100, proteinG: 80, carbsG: 80, fatG: 0 }), null);
+});
+
+test("alimenti: solo nomi in alfabeto latino", () => {
+  assert.ok(isLatinName("Pâte à tartiner 100% cacao"));
+  assert.ok(isLatinName("Fusilli n.34"));
+  assert.ok(!isLatinName("פסטה פוזילי"));
+  assert.ok(!isLatinName("Паста"));
 });

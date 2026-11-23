@@ -3,6 +3,8 @@ import Foundation
 /// Origine dei valori nutrizionali. L'app mostra sempre la fonte all'utente.
 public enum FoodSource: String, Codable, Sendable {
     case usda, openFoodFacts = "open_food_facts", custom
+    /// Valori per 100 g stimati dall'AI quando nessun database ha l'alimento.
+    case aiEstimate = "ai_estimate"
 }
 
 /// Alimento con valori per 100 g provenienti da un database attendibile (o creato dall'utente).

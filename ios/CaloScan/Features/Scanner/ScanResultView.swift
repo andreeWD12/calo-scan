@@ -163,6 +163,9 @@ private struct DraftItemRow: View {
                         .font(DS.Font.caption).foregroundStyle(DS.Palette.warning)
                 } else if let n = item.nutrients {
                     MacroInline(protein: n.proteinG, carbs: n.carbsG, fat: n.fatG)
+                    if item.food?.source == .aiEstimate {
+                        Text("Valori stimati dall'AI").font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
+                    }
                 }
                 if !item.ingredients.isEmpty {
                     Text(item.ingredients.joined(separator: ", "))

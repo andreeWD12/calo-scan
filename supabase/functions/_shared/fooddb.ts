@@ -3,10 +3,10 @@
  * e Open Food Facts (licenza ODbL, citato nell'app come fonte). Nessun dato dell'utente viene inviato:
  * solo il nome dell'alimento cercato o il codice a barre.
  */
-import { type FoodItem, fromOFF, fromUSDA, type OFFProduct, type USDAFood, USDA_DATA_TYPES } from "./foods.ts";
+import { type FoodItem, fromOFF, fromUSDA, isLatinName, type OFFProduct, type USDAFood, USDA_DATA_TYPES } from "./foods.ts";
 
 const USER_AGENT = "CaloScan/1.0 (+https://andreewd12.github.io/calo-scan/support/)";
-const OFF_FIELDS = "code,product_name,product_name_it,generic_name_it,brands,nutriments,serving_quantity";
+const OFF_FIELDS = "code,product_name,product_name_it,generic_name_it,brands,nutriments,serving_quantity,lang";
 
 /** Alimenti USDA grezzi per una ricerca in inglese. Senza chiave usa DEMO_KEY (limiti bassi, solo prove). */
 export async function searchUSDA(query: string, pageSize = 10, dataTypes = USDA_DATA_TYPES): Promise<USDAFood[]> {
@@ -55,9 +55,16 @@ export function matchQueries(englishQuery: string): string[] {
 /** Prodotti di Open Food Facts venduti in Italia, cercati per nome. */
 export async function searchOFF(query: string, pageSize = 10): Promise<FoodItem[]> {
   // Prima il servizio di ricerca nuovo (search-a-licious), poi quello storico, spesso sovraccarico.
-  const products = await searchOFFNew(query, pageSize) ?? await searchOFFLegacy(query, pageSize) ?? [];
-  const items = await Promise.all(products.map(fromOFF));
-  return items.filter((i): i is FoodItem => i !== null);
+  // Se ne chiedono di più perché poi restano solo i prodotti con il nome in italiano.
+  const fetched = await searchOFFNew(query, pageSize * 3) ?? await searchOFFLegacy(query, pageSize * 3) ?? [];
+  const italian = fetched.filter(hasItalianName);
+  const items = await Promise.all(italian.map(fromOFF));
+  return items.filter((i): i is FoodItem => i !== null && isLatinName(i.name)).slice(0, pageSize);
+}
+
+/** Prodotto con il nome in italiano: campo product_name_it o lingua principale italiana. */
+export function hasItalianName(p: OFFProduct): boolean {
+  return Boolean(p.product_name_it?.trim() || p.generic_name_it?.trim()) || p.lang === "it";
 }
 
 /** Converte un risultato di search-a-licious (marche come elenco, nomi a volte per lingua). */
@@ -77,6 +84,7 @@ export function normalizeOFFHit(hit: Record<string, unknown>): OFFProduct {
     product_name_it: text(hit.product_name_it),
     generic_name_it: text(hit.generic_name_it),
     brands: text(hit.brands),
+    lang: text(hit.lang),
     serving_quantity: hit.serving_quantity as number | string | undefined,
     nutriments: hit.nutriments as OFFProduct["nutriments"],
   };

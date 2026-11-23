@@ -79,6 +79,8 @@ export interface AIItem {
   name: string;          // nome in italiano mostrato all'utente
   searchQuery: string;   // termine inglese per USDA FoodData Central
   grams: number;
+  /** Stima per 100 g, usata solo se USDA non trova l'alimento. */
+  per100g: { kcal: number; proteinG: number; carbsG: number; fatG: number };
   confidence: number;    // 0…1
   ingredients: string[];
 }
@@ -109,11 +111,15 @@ export const AI_RESULT_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "searchQuery", "grams", "confidence", "ingredients"],
+        required: ["name", "searchQuery", "grams", "kcalPer100g", "proteinPer100g", "carbsPer100g", "fatPer100g", "confidence", "ingredients"],
         properties: {
           name: { type: "string", description: "Nome in italiano come lo scriverebbe una persona nel diario, senza stato di cottura (es. \"Fusilli\", \"Petto di pollo\", \"Insalata mista\")." },
           searchQuery: { type: "string", description: "Termine in inglese per cercarlo in USDA FoodData Central, con lo stato di cottura (es. \"pasta cooked\", \"chicken breast roasted\")." },
           grams: { type: "number", description: "Peso stimato della porzione in grammi." },
+          kcalPer100g: { type: "number", description: "Calorie per 100 g dell'alimento così come è nel piatto (es. pasta cotta ~158)." },
+          proteinPer100g: { type: "number", description: "Proteine in grammi per 100 g." },
+          carbsPer100g: { type: "number", description: "Carboidrati in grammi per 100 g." },
+          fatPer100g: { type: "number", description: "Grassi in grammi per 100 g." },
           confidence: { type: "number", description: "Sicurezza da 0 a 1 su alimento e quantità." },
           ingredients: { type: "array", items: { type: "string" }, description: "Solo ingredienti visibili o nominati dall'utente, in italiano. Vuoto se l'alimento è semplice." },
         },
@@ -152,10 +158,12 @@ export function sanitizeAIResult(raw: unknown): AIResult {
     const name = cleanText(o.name, 80);
     const grams = typeof o.grams === "number" && Number.isFinite(o.grams) ? Math.round(clamp(o.grams, 1, 3000)) : NaN;
     if (!name || Number.isNaN(grams)) continue;
+    const n = (v: unknown, max: number) => typeof v === "number" && Number.isFinite(v) ? clamp(v, 0, max) : NaN;
     items.push({
       name,
       searchQuery: cleanText(o.searchQuery, 80) || name,
       grams,
+      per100g: { kcal: n(o.kcalPer100g, 900), proteinG: n(o.proteinPer100g, 100), carbsG: n(o.carbsPer100g, 100), fatG: n(o.fatPer100g, 100) },
       confidence: typeof o.confidence === "number" && Number.isFinite(o.confidence) ? clamp(o.confidence, 0, 1) : 0.3,
       ingredients: (Array.isArray(o.ingredients) ? o.ingredients : []).map((x) => cleanText(x, 60)).filter(Boolean).slice(0, 12),
     });
@@ -185,6 +193,11 @@ export const SCAN_SYSTEM_PROMPT = `Sei il riconoscitore di alimenti di CaloScan,
 Ricevi la foto di un pasto e/o una descrizione scritta dall'utente. Elenca gli alimenti presenti e stima i grammi di ciascuno.
 
 Regole:
+- Scomponi sempre i piatti composti nei singoli ingredienti che si pesano, così l'utente non deve correggerli:
+  "fusilli al pomodoro" → Fusilli (pasta cooked), Sugo di pomodoro (tomato sauce), Olio d'oliva (olive oil) se il
+  sugo è condito. Mai un unico alimento per un piatto con più ingredienti.
+- Per ogni alimento stima anche calorie e macro per 100 g così come è nel piatto (cotto, condito): servono solo se
+  il database non lo trova.
 - In "items" metti solo ciò che vedi o che l'utente nomina. Ciò che potrebbe esserci ma non è certo (olio, burro,
   formaggio grattugiato, condimento, zucchero) non va negli items: chiedilo in "questions", indicando l'alimento
   da aggiungere se la risposta è sì. Esempio: pasta in bianco → item "Fusilli" e domanda "Hai condito con olio?"
