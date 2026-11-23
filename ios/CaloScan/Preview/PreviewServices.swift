@@ -103,6 +103,8 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     func signUp(email: String, password: String) async throws -> Bool { signedIn(); return false }
     func sendPasswordReset(email: String) async throws { try await Task.sleep(for: .milliseconds(400)) }
     func signOut() async throws { set(.signedOut) }
+    func updatePassword(_ password: String) async throws { try await Task.sleep(for: .milliseconds(300)) }
+    func handle(url: URL) async -> AuthCallback { .notHandled }
 
     // MARK: Profilo
 

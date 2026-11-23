@@ -22,6 +22,9 @@ struct RootView: View {
         .tint(DS.Palette.brand)
         .preferredColorScheme(appearance.colorScheme)
         .task { await app.start() }
+        .sheet(isPresented: Binding(get: { app.showsNewPassword }, set: { app.showsNewPassword = $0 })) {
+            NewPasswordView(services: app.services)
+        }
     }
 }
 

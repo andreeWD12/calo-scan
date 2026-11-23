@@ -23,7 +23,6 @@ struct WelcomeFlowView: View {
                     }
                 }
         }
-        .onOpenURL { _ = GoogleSignInCoordinator.handle($0) }
     }
 }
 

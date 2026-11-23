@@ -18,7 +18,9 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func signIn(email: String, password: String) async throws { throw fail() }
     func signUp(email: String, password: String) async throws -> Bool { throw fail() }
     func sendPasswordReset(email: String) async throws { throw fail() }
+    func updatePassword(_ password: String) async throws { throw fail() }
     func signOut() async throws { throw fail() }
+    func handle(url: URL) async -> AuthCallback { .notHandled }
 
     func loadProfile() async throws -> UserProfile? { throw fail() }
     func loadTargets() async throws -> DailyTargets? { throw fail() }
@@ -71,11 +73,18 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
 }
 
 extension AppServices {
-    /// Servizi di produzione. Fase 2: nessun backend collegato ancora.
+    /// Servizi di produzione. Fase 3: autenticazione, profilo, consensi, peso ed eliminazione account.
+    /// Gli altri servizi restano `NotConnectedService` finché la loro fase non li collega.
+    @MainActor
     static func live(container: AppContainer) -> AppServices {
         let pending = NotConnectedService()
-        return AppServices(auth: pending, profile: pending, meals: pending, foods: pending, scanner: pending,
-                           coach: pending, weight: pending, entitlements: pending, purchases: pending,
-                           account: pending, push: pending, shopping: pending, referrals: pending)
+        let client = container.supabase
+        return AppServices(auth: SupabaseAuthService(client: client),
+                           profile: SupabaseProfileRepository(client: client, functions: container.functions),
+                           meals: pending, foods: pending, scanner: pending, coach: pending,
+                           weight: SupabaseWeightRepository(client: client),
+                           entitlements: pending, purchases: pending,
+                           account: SupabaseAccountService(client: client, functions: container.functions),
+                           push: pending, shopping: pending, referrals: pending)
     }
 }

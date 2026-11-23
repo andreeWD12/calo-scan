@@ -33,7 +33,8 @@ struct CaloScanApp: App {
                     .environment(state)
                     .toastOverlay(state.toasts)
                     .onOpenURL { url in
-                        if let link = DeepLink(url: url) { state.router.open(link) }
+                        if GoogleSignInCoordinator.handle(url) { return }
+                        Task { await state.open(url) }
                     }
             case .failure(let error):
                 ConfigurationErrorView(message: error.localizedDescription)
