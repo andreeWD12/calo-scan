@@ -105,7 +105,8 @@ struct HomeView: View {
             if let targets = app.targets {
                 SummaryCard(day: day, targets: targets, professional: app.professionalPlan?.professional).appear(index: 0)
             }
-            ScanCallToAction(scansRemaining: app.entitlements.hasUnlimitedScans ? nil : app.entitlements.scansRemaining, action: onScan).appear(index: 1)
+            ScanCallToAction(scansRemaining: app.entitlements.hasUnlimitedScans ? nil : app.entitlements.scansRemaining,
+                             included: app.entitlements.includesAIScans, action: onScan).appear(index: 1)
             if let insight = model.insights.first {
                 InsightCard(insight: insight) { path.append(.coach) }
                     .appear(index: 2)
@@ -174,12 +175,15 @@ private struct SummaryCard: View {
 /// Il fulcro dell'app: pulsante grande per scansionare un piatto.
 private struct ScanCallToAction: View {
     private var scansText: LocalizedStringKey {
-        guard let scansRemaining else { return "Scansioni illimitate" }
+        guard included else { return "Incluso nei piani Plus e Pro" }
+        guard let scansRemaining else { return "Scansioni AI disponibili" }
         return scansRemaining > 0 ? "\(scansRemaining) scansioni disponibili oggi" : "Scansioni di oggi esaurite"
     }
 
     /// nil = illimitate (Pro).
     let scansRemaining: Int?
+    /// false per il piano Free: il pulsante apre la presentazione dei piani dentro lo scanner.
+    var included = true
     let action: () -> Void
 
     var body: some View {
@@ -196,7 +200,7 @@ private struct ScanCallToAction: View {
                         .opacity(0.85)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.headline)
+                Image(systemName: included ? "chevron.right" : "lock.fill").font(.headline)
             }
             .foregroundStyle(DS.Palette.onBrand)
             .padding(DS.Spacing.m)

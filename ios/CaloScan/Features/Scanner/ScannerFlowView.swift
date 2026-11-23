@@ -317,16 +317,25 @@ private struct QuotaReachedView: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label("Scansioni di oggi esaurite", systemImage: "hourglass")
+            if plan == .free {
+                Label("Scanner AI con Plus e Pro", systemImage: "camera.viewfinder")
+            } else {
+                Label("Scansioni di oggi esaurite", systemImage: "hourglass")
+            }
         } description: {
-            Text(plan == .pro
-                 ? "Hai usato tutte le scansioni disponibili oggi. Si rinnovano domani."
-                 : "Hai usato le scansioni AI incluse oggi nel piano \(plan.displayName). Si rinnovano domani, oppure puoi passare a un piano superiore.")
+            switch plan {
+            case .free:
+                Text("Fotografa o descrivi il piatto e l'AI riconosce alimenti e quantità. Plus include 4 scansioni al giorno, Pro 15. Gratis puoi sempre cercare un alimento, leggere il codice a barre o inserire i valori dell'etichetta.")
+            case .plus:
+                Text("Hai usato le 4 scansioni AI di oggi. Si rinnovano domani, oppure con Pro ne hai 15 al giorno.")
+            case .pro:
+                Text("Hai usato le 15 scansioni AI di oggi. Si rinnovano domani.")
+            }
         } actions: {
             if plan < .pro {
-                Button("Scopri i piani Premium", action: onUpgrade).buttonStyle(.borderedProminent)
+                Button(plan == .free ? "Scopri Plus e Pro" : "Passa a Pro", action: onUpgrade).buttonStyle(.borderedProminent)
             }
-            Button("Inserisci manualmente", action: onManual)
+            Button(plan == .free ? "Cerca o inserisci a mano" : "Inserisci manualmente", action: onManual)
         }
         .tint(DS.Palette.brand)
         .background { AppBackground() }

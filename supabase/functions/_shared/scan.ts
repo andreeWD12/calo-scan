@@ -5,9 +5,12 @@
 
 export type Plan = "free" | "plus" | "pro";
 
-/** Scansioni al giorno per piano (null = illimitate). Pro ha solo il limite anti-abuso sulle raffiche. */
+/**
+ * Scansioni AI al giorno per piano (foto o descrizione analizzata dall'AI). Free non ne ha: ricerca,
+ * codice a barre e inserimento manuale restano gratuiti. Plus copre un pasto per tipo (4), Pro un uso intenso (15).
+ */
 export const SCAN_LIMITS = {
-  daily: { free: 3, plus: 20, pro: null } as Record<Plan, number | null>,
+  daily: { free: 0, plus: 4, pro: 15 } as Record<Plan, number | null>,
   burstWindowMinutes: 10,
   burstMax: 20,
 } as const;

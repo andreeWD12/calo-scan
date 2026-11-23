@@ -132,11 +132,11 @@ Regole:
 
 | Piano | Scansioni AI/giorno | Coach | Statistiche |
 |---|---|---|---|
-| Free | 3 | messaggi base limitati (5/giorno) | settimanali di base |
-| Plus | 20 | consigli personalizzati (30 msg/giorno) | settimanali + mensili complete |
-| Pro | **illimitate** | coach avanzato, piani pasto, ricette, lista spesa (150 msg/giorno) | report mensili avanzati |
+| Free | 0 (ricerca, codice a barre e inserimento manuale gratuiti) | messaggi base limitati (5/giorno) | settimanali di base |
+| Plus | 4 (una per pasto) | consigli personalizzati (30 msg/giorno) | settimanali + mensili complete |
+| Pro | 15 | coach avanzato, piani pasto, ricette, lista spesa (150 msg/giorno) | report mensili avanzati |
 
-Limiti in tabella `plan_limits` (modificabili senza rilasciare l'app). Per Pro `scans_per_day = NULL` = illimitate (`Entitlements.scansLimitToday == nil`): nessun tetto giornaliero. Resta solo un **limite anti-abuso sulle raffiche** (20 analisi in 10 minuti per account, nella funzione `analyze-meal`), che un uso personale non raggiunge; è scritto nei Termini ("uso personale, non automatizzato"). Le analisi fallite non contano. Costi AI: monitorare il costo medio per utente Pro sul cruscotto del fornitore. Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`, più `caloscan.pro.monthly.pregnancy` (Pro, solo per l'offerta gravidanza); i prezzi si impostano in App Store Connect.
+Limiti in `SCAN_LIMITS` (`supabase/functions/_shared/scan.ts`), applicati da `analyze-food` e mostrati da `get-entitlements`: si cambiano con un nuovo deploy delle funzioni, senza rilasciare l'app. Lo scanner AI è riservato ai piani a pagamento per contenere i costi del fornitore AI (decisione del 23/11/2026). Le analisi fallite non contano. Costi AI: monitorare il costo medio per utente sul cruscotto del fornitore. Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`, più `caloscan.pro.monthly.pregnancy` (Pro, solo per l'offerta gravidanza); i prezzi si impostano in App Store Connect.
 
 ### Lista della spesa
 

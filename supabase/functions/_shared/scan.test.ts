@@ -3,12 +3,11 @@ import assert from "node:assert/strict";
 import { checkScanQuota, decodeJPEG, MAX_ITEMS, safeTimeZone, sanitizeAIResult, startOfDay } from "./scan.ts";
 
 test("scansioni: limiti per piano", () => {
-  assert.deepEqual(checkScanQuota("free", 2, 2), { ok: true });
-  assert.deepEqual(checkScanQuota("free", 3, 3), { ok: false, reason: "daily" });
-  assert.deepEqual(checkScanQuota("plus", 19, 5), { ok: true });
-  assert.deepEqual(checkScanQuota("plus", 20, 0), { ok: false, reason: "daily" });
-  assert.deepEqual(checkScanQuota("pro", 500, 19), { ok: true });
-  assert.deepEqual(checkScanQuota("pro", 500, 20), { ok: false, reason: "burst" });
+  assert.deepEqual(checkScanQuota("free", 0, 0), { ok: false, reason: "daily" });
+  assert.deepEqual(checkScanQuota("plus", 3, 3), { ok: true });
+  assert.deepEqual(checkScanQuota("plus", 4, 0), { ok: false, reason: "daily" });
+  assert.deepEqual(checkScanQuota("pro", 14, 14), { ok: true });
+  assert.deepEqual(checkScanQuota("pro", 15, 0), { ok: false, reason: "daily" });
 });
 
 test("scansioni: inizio del giorno nel fuso dell'utente", () => {

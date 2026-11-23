@@ -77,13 +77,13 @@ extension Plan {
         switch self {
         case .free:
             ["Diario alimentare e inserimento manuale", "Calcolo del fabbisogno calorico", "Lista della spesa manuale",
-             "Statistiche settimanali di base", "Scansioni AI limitate ogni giorno"]
+             "Statistiche settimanali di base", "Ricerca alimenti e codici a barre"]
         case .plus:
-            ["Più scansioni AI ogni giorno", "Analisi dettagliata dei macronutrienti",
+            ["Scanner AI: 4 scansioni al giorno, una per pasto", "Analisi dettagliata dei macronutrienti",
              "Statistiche settimanali e mensili complete", "Consigli nutrizionali personalizzati",
              "Analisi delle abitudini alimentari", "Lista della spesa suggerita dall'AI"]
         case .pro:
-            ["Tutto di Plus", "Scansioni AI illimitate", "AI Nutrition Coach avanzato",
+            ["Tutto di Plus", "Scanner AI: 15 scansioni al giorno", "AI Nutrition Coach avanzato",
              "Stile alimentare scelto con il coach, anche digiuno intermittente",
              "Dieta per la gravidanza che si adatta alla tua settimana",
              "Piano dei pasti settimanale e idee ricette", "Lista della spesa AI senza limiti settimanali",

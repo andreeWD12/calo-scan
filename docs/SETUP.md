@@ -37,9 +37,19 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 ## Fase 5 – AI
 
-8. **Chiave del provider AI multimodale** (es. Anthropic) → `supabase secrets set AI_API_KEY=...`. Mai nell'app.
-9. **USDA FoodData Central API key** (gratuita su fdc.nal.usda.gov/api-key-signup) → `USDA_FDC_API_KEY`.
+8. **Chiave Anthropic** (console.anthropic.com → API Keys) e **chiave USDA FoodData Central**
+   (gratuita su fdc.nal.usda.gov/api-key-signup). Solo come segreti del server, mai nell'app:
+   ```
+   supabase secrets set ANTHROPIC_API_KEY=... USDA_FDC_API_KEY=...
+   supabase db push --remote
+   supabase functions deploy food-search analyze-food get-entitlements
+   ```
+   Facoltativi: `AI_MODEL` (predefinito `claude-opus-5-5`; un modello più economico abbassa i costi
+   ma può riconoscere peggio i piatti) e `AI_EFFORT` (`low`, `medium` predefinito, `high`).
    Open Food Facts non richiede chiave.
+   Lo scanner AI è solo per Plus e Pro. Per provarlo prima degli abbonamenti (Fase 8) dai il piano Pro
+   al tuo account: copia il tuo User UID da Supabase → Authentication → Users e poi
+   `supabase secrets set TESTER_USER_IDS=<il tuo UID>` (più account separati da virgola).
 
 ## Fase 8 – Abbonamenti
 

@@ -6,8 +6,8 @@
 | 2 | Design system e schermate principali | ✅ completata |
 | 3 | Registrazione, login, onboarding (collegamento a Supabase Auth) | ✅ completata |
 | 4 | Database (schema + RLS) e backend | ✅ completata |
-| 5 | AI Food Scanner e analisi nutrizionale | ⏳ prossima |
-| 6 | Diario e statistiche | |
+| 5 | AI Food Scanner e analisi nutrizionale | ✅ completata |
+| 6 | Diario e statistiche | ⏳ prossima |
 | 7 | AI Nutrition Coach | |
 | 8 | Abbonamenti Free / Plus / Pro | |
 | 9 | Notifiche, privacy, sicurezza | |
@@ -34,6 +34,18 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
 
+## Fase 5 – consegnato
+
+- `analyze-food`: l'AI (Claude, modello in `AI_MODEL`) riconosce solo alimenti e grammi; calorie e macro arrivano da USDA FoodData Central. Risposta con schema JSON fisso e ripulita lato server (`sanitizeAIResult`).
+- `food-search`: USDA (ricerca tradotta in inglese, nomi tradotti in italiano) + Open Food Facts (prodotti italiani e codici a barre), cache di 30 giorni in `food_search_cache`.
+- `get-entitlements`: piano e scansioni di oggi. Scanner AI solo nei piani a pagamento: Plus 4 al giorno, Pro 15; Free usa ricerca, codice a barre e inserimento manuale. Contano solo le analisi riuscite (`scan_events`).
+- Foto: mai salvate sui server. La miniatura del pasto resta solo sul telefono (`MealPhotoStore`), esclusa dal backup e cancellata con il pasto o all'uscita.
+- Consensi controllati dal server: dati sanitari sempre, analisi foto solo quando si invia una foto.
+- Nuova grafica: sfondi sfumati, ombre morbide, un colore per pasto, anelli più grandi per calorie e macro, serie di giorni registrati, haptics.
+- Test: 54 test TypeScript, controllo tipi Deno e prova dal vivo di USDA e Open Food Facts in CI.
+
+Fino alla Fase 8 tutti gli utenti hanno il piano Free; per provare lo scanner, gli account in `TESTER_USER_IDS` hanno Pro.
+
 ## Fase 4 – consegnato
 
 - Migrazione `20261124000001_fase4_diario_spesa.sql`:
@@ -45,7 +57,7 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Barra di navigazione: linea di separazione dietro il pulsante Scanner, icone più grandi.
 - Permessi espliciti per `authenticated` e `service_role` anche sulle tabelle della Fase 3 (migrazioni `…0002`, `…0003`).
 
-Ancora `NotConnectedService` dopo la Fase 4: ricerca alimenti e scanner (Fase 5), misure corporee (Fase 6), coach e suggerimenti AI della spesa (Fase 7), abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
+Ancora `NotConnectedService` dopo la Fase 5: misure corporee (Fase 6), coach e suggerimenti AI della spesa (Fase 7), abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
 
 ## Fase 3 – consegnato
 
