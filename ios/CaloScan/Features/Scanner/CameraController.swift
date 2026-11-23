@@ -15,7 +15,7 @@ final class CameraController: NSObject, @unchecked Sendable {
     }
 
     let session = AVCaptureSession()
-    private let queue = DispatchQueue(label: "com.caloscan.camera")
+    private let queue = DispatchQueue(label: "com.andrewnalini.caloscan.camera")
     private let output = AVCapturePhotoOutput()
     private var continuation: CheckedContinuation<Data, Error>?
 

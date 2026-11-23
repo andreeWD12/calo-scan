@@ -12,7 +12,7 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 ## Fase 3 – Autenticazione
 
 3. **Apple Developer Program** (99 $/anno), necessario anche per Sign in with Apple e TestFlight.
-   - Crea l'App ID `com.caloscan.app` (o il tuo bundle ID) con la capability *Sign in with Apple* e *Push Notifications*.
+   - Crea l'App ID `com.andrewnalini.caloscan.app` con la capability *Sign in with Apple* e *Push Notifications*.
    - Crea un *Services ID* e una chiave *Sign in with Apple* → inseriscili in Supabase → Authentication → Providers → Apple.
 4. **Google Cloud Console**: crea un client OAuth **iOS** (per l'app) e uno **Web** (per Supabase).
    - Client iOS → `GOOGLE_IOS_CLIENT_ID` e `GOOGLE_REVERSED_CLIENT_ID` in `Secrets.xcconfig`.
