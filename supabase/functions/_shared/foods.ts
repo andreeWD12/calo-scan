@@ -69,7 +69,7 @@ export async function fromUSDA(f: USDAFood, displayName?: string): Promise<FoodI
   return {
     id: await stableUUID(`usda:${f.fdcId}`),
     name: (displayName ?? f.description).slice(0, 120),
-    brand: f.dataType === "Branded" ? (f.brandName || f.brandOwner || null) : null,
+    brand: null,
     per100g: { kcal: Math.round(per100g.kcal), proteinG: round1(per100g.proteinG), carbsG: round1(per100g.carbsG), fatG: round1(per100g.fatG) },
     source: "usda",
     defaultServingG: serving,
@@ -101,17 +101,43 @@ export async function fromOFF(p: OFFProduct): Promise<FoodItem | null> {
     carbsG: num(n["carbohydrates_100g"]),
     fatG: num(n["fat_100g"]),
   };
-  const name = (p.product_name_it || p.product_name || p.generic_name_it || "").trim();
+  const name = cleanProductName(p.product_name_it || p.product_name || p.generic_name_it || "", p.brands);
   if (!name || !p.code || !isPlausible(per100g)) return null;
   const serving = num(p.serving_quantity);
   return {
     id: await stableUUID(`off:${p.code}`),
     name: name.slice(0, 120),
-    brand: p.brands ? p.brands.split(",")[0].trim().slice(0, 60) || null : null,
+    // Marchi e insegne non vengono mostrati: nell'app conta l'alimento, non il negozio.
+    brand: null,
     per100g: { kcal: Math.round(per100g.kcal), proteinG: round1(per100g.proteinG), carbsG: round1(per100g.carbsG), fatG: round1(per100g.fatG) },
     source: "open_food_facts",
     defaultServingG: Number.isFinite(serving) && serving >= 1 && serving <= 3000 ? Math.round(serving) : null,
   };
+}
+
+/** Insegne della grande distribuzione che compaiono spesso nei nomi dei prodotti a marchio. */
+const RETAILERS = [
+  "esselunga", "coop", "conad", "carrefour", "lidl", "eurospin", "despar", "eurospar", "interspar", "spar",
+  "pam", "panorama", "md", "penny", "aldi", "iper", "ipercoop", "bennet", "famila", "crai", "sigma", "tigre",
+  "selex", "il viaggiator goloso", "viaggiator goloso", "auchan", "unes", "tuodì", "todis",
+  "deco", "gs", "dimeglio", "naturasì", "naturasi", "fior fiore", "vivi verde", "terre d'italia",
+];
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Nome del prodotto senza marchio né insegna (es. "Spaghetti n.5 Barilla" → "Spaghetti n.5"). */
+export function cleanProductName(raw: string, brands?: string): string {
+  const words = [
+    ...(brands ?? "").split(",").map((b) => b.trim().toLowerCase()).filter((b) => b.length >= 2),
+    ...RETAILERS,
+  ].sort((a, b) => b.length - a.length);
+  let name = raw.normalize("NFC");
+  for (const w of words) {
+    name = name.replace(new RegExp(`(^|[\\s,()\\-–])${escapeRegExp(w)}(?=$|[\\s,()\\-–])`, "giu"), "$1");
+  }
+  name = name.replace(/\(\s*\)/g, "").replace(/\s+/g, " ").replace(/^[\s,\-–]+|[\s,\-–]+$/g, "").trim();
+  if (!name) return "";
+  return (name[0].toLocaleUpperCase("it") + name.slice(1)).slice(0, 120);
 }
 
 /** Codice a barre EAN/UPC: solo cifre, 8–14. */

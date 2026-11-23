@@ -32,12 +32,24 @@ export async function searchUSDA(query: string, pageSize = 10, dataTypes = USDA_
 
 /** Primo alimento USDA valido per un termine, con il nome italiano scelto da noi. */
 export async function bestUSDAMatch(englishQuery: string, italianName: string): Promise<FoodItem | null> {
-  const foods = await searchUSDA(englishQuery, 5, ["Foundation", "SR Legacy", "Survey (FNDDS)"]);
-  for (const f of foods) {
-    const item = await fromUSDA(f, italianName);
-    if (item) return item;
+  // Prima il termine completo, poi uno più generico (es. "fusilli pasta cooked" → "pasta cooked").
+  // Niente ripiego su Open Food Facts: i prodotti confezionati hanno spesso valori a crudo (pasta secca),
+  // che su un piatto cotto triplicherebbero le calorie. Se non c'è corrispondenza sceglie l'utente.
+  for (const query of matchQueries(englishQuery)) {
+    const foods = await searchUSDA(query, 5, ["Foundation", "SR Legacy", "Survey (FNDDS)"]);
+    for (const f of foods) {
+      const item = await fromUSDA(f, italianName);
+      if (item) return item;
+    }
   }
   return null;
+}
+
+/** Varianti di ricerca dalla più precisa alla più generica, senza duplicati. */
+export function matchQueries(englishQuery: string): string[] {
+  const words = englishQuery.toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter(Boolean);
+  const variants = [englishQuery.trim(), words.length >= 3 ? words.slice(1).join(" ") : ""];
+  return [...new Set(variants.filter((v) => v.length >= 3))];
 }
 
 /** Prodotti di Open Food Facts venduti in Italia, cercati per nome. */

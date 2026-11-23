@@ -8,8 +8,9 @@ final class FoodSearchViewModel {
     private(set) var results: Loadable<[FoodItem]> = .idle
     private let foods: any FoodSearchService
 
-    init(foods: any FoodSearchService) {
+    init(foods: any FoodSearchService, query: String = "") {
         self.foods = foods
+        self.query = query
     }
 
     /// Ricerca con debounce: viene annullata se l'utente continua a scrivere.
@@ -37,8 +38,9 @@ struct FoodSearchView: View {
     @State private var customFood: FoodItem?
     let onSelect: (FoodItem) -> Void
 
-    init(services: AppServices, onSelect: @escaping (FoodItem) -> Void) {
-        _model = State(initialValue: FoodSearchViewModel(foods: services.foods))
+    /// `initialQuery`: ricerca già compilata, ad esempio con il nome riconosciuto dallo scanner.
+    init(services: AppServices, initialQuery: String = "", onSelect: @escaping (FoodItem) -> Void) {
+        _model = State(initialValue: FoodSearchViewModel(foods: services.foods, query: initialQuery))
         self.onSelect = onSelect
     }
 
@@ -98,7 +100,7 @@ struct FoodRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(food.name).font(DS.Font.callout.weight(.medium)).foregroundStyle(DS.Palette.textPrimary)
-                Text([food.brand, food.source.label].compactMap { $0 }.joined(separator: " · "))
+                Text(food.source.label)
                     .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
                 PregnancyFoodBadge(name: food.name)
             }

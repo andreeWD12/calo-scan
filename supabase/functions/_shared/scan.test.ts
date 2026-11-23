@@ -44,7 +44,7 @@ test("scansioni: risposta del modello ripulita e limitata", () => {
   assert.deepEqual(r.items[0], { name: "Pasta al pomodoro", searchQuery: "pasta cooked", grams: 182, confidence: 0.8, ingredients: ["pasta", "pomodoro"] });
   assert.equal(r.items[1].grams, 3000);
   assert.equal(r.items[1].confidence, 1);
-  assert.equal(r.questions.length, 3);
+  assert.equal(r.questions.length, 1);
   assert.equal(sanitizeAIResult(null).items.length, 0);
   const many = sanitizeAIResult({ items: Array.from({ length: 40 }, (_, i) => ({ name: `a${i}`, searchQuery: "a", grams: 10, confidence: 1, ingredients: [] })) });
   assert.equal(many.items.length, MAX_ITEMS);

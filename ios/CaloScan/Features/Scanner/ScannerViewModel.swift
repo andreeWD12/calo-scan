@@ -131,6 +131,9 @@ final class ScannerViewModel {
         items[index] = item
     }
 
+    /// L'utente chiude il suggerimento dell'AI senza rispondere.
+    func dismissQuestions() { questions = [] }
+
     func remove(_ item: DraftItem) {
         items.removeAll { $0.id == item.id }
     }

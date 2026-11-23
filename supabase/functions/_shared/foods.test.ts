@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fromOFF, fromUSDA, isBarcode, normalizeQuery, stableUUID } from "./foods.ts";
+import { cleanProductName, fromOFF, fromUSDA, isBarcode, normalizeQuery, stableUUID } from "./foods.ts";
 
 test("alimenti: USDA per 100 g", async () => {
   const f = await fromUSDA({
@@ -38,7 +38,8 @@ test("alimenti: Open Food Facts", async () => {
     serving_quantity: "100",
     nutriments: { "energy-kcal_100g": 359, proteins_100g: 13, carbohydrates_100g: 71, fat_100g: 2 },
   });
-  assert.equal(f?.brand, "Barilla");
+  assert.equal(f?.brand, null);
+  assert.equal(f?.name, "Spaghetti n.5");
   assert.equal(f?.source, "open_food_facts");
   assert.equal(f?.defaultServingG, 100);
   const kjOnly = await fromOFF({ code: "1", product_name: "Biscotti", nutriments: { energy_100g: 2000, proteins_100g: 7, carbohydrates_100g: 70, fat_100g: 18 } });
@@ -53,4 +54,12 @@ test("alimenti: codici a barre e query", () => {
   assert.equal(normalizeQuery("  Pasta   AL Pomodoro "), "pasta al pomodoro");
   assert.equal(normalizeQuery("1"), null);
   assert.equal(normalizeQuery("123"), null);
+});
+
+test("alimenti: nomi senza marchi né insegne", () => {
+  assert.equal(cleanProductName("Spaghetti n.5 Barilla", "Barilla"), "Spaghetti n.5");
+  assert.equal(cleanProductName("Esselunga mozzarella", undefined), "Mozzarella");
+  assert.equal(cleanProductName("Yogurt greco 0% - Coop", "Coop"), "Yogurt greco 0%");
+  assert.equal(cleanProductName("Coppa di testa", undefined), "Coppa di testa");
+  assert.equal(cleanProductName("Barilla", "Barilla"), "");
 });

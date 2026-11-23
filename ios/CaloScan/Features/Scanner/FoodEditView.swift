@@ -18,6 +18,8 @@ struct FoodEditView: View {
         self.onDelete = onDelete
         _item = State(initialValue: item)
         _gramsText = State(initialValue: item.grams)
+        // Alimento senza corrispondenza: si apre subito la ricerca già compilata con il nome riconosciuto.
+        _replacing = State(initialValue: item.food == nil)
     }
 
     private var gramsError: String? {
@@ -93,9 +95,15 @@ struct FoodEditView: View {
             }
         }
         .navigationDestination(isPresented: $replacing) {
-            FoodSearchView(services: services) { food in
+            FoodSearchView(services: services, initialQuery: item.food == nil ? item.detectedName : "") { food in
+                let wasUnresolved = item.food == nil
                 item.food = food
                 replacing = false
+                // Se mancava solo la corrispondenza, la scelta conclude la modifica: niente "Fatto" in più.
+                if wasUnresolved, let g = gramsText, gramsError == nil {
+                    item.grams = g
+                    onSave(item)
+                }
             }
             .navigationTitle("Cambia alimento")
         }

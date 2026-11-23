@@ -11,6 +11,8 @@ import { AIUnavailableError, isAIConfigured, toEnglishQuery, toItalianNames } fr
 import { adminClient, json, readJSON, requireUser } from "../_shared/supabase.ts";
 
 const CACHE_DAYS = 30;
+/** Cambia quando cambia il formato dei risultati: le voci vecchie (es. nomi non tradotti) vengono ignorate. */
+const CACHE_VERSION = "v2";
 const MAX_RESULTS = 25;
 
 Deno.serve(async (req) => {
@@ -24,7 +26,7 @@ Deno.serve(async (req) => {
 
   if (body.barcode !== undefined) {
     if (!isBarcode(body.barcode)) return errorResponse("invalid_input", { message: "Codice a barre non valido." });
-    const key = `barcode:${body.barcode}`;
+    const key = `${CACHE_VERSION}:barcode:${body.barcode}`;
     const cached = await readCache(admin, key);
     if (cached) return json({ food: cached[0] ?? null });
     const food = await lookupBarcode(body.barcode);
@@ -34,24 +36,26 @@ Deno.serve(async (req) => {
 
   const query = normalizeQuery(body.query);
   if (!query) return errorResponse("invalid_input", { message: "Scrivi almeno due lettere." });
-  const key = `query:${query}`;
+  const key = `${CACHE_VERSION}:query:${query}`;
   const cached = await readCache(admin, key);
   if (cached) return json({ foods: cached });
 
   const [usda, off] = await Promise.all([usdaInItalian(query), searchOFF(query, 10)]);
   const seen = new Set<string>();
-  const foods = [...usda, ...off].filter((f) => {
-    const k = `${f.name.toLowerCase()}|${f.brand ?? ""}`;
+  // Senza marchi, prodotti con lo stesso nome sarebbero doppioni: resta il primo.
+  const foods = [...usda.foods, ...off].filter((f) => {
+    const k = f.name.toLocaleLowerCase("it");
     if (seen.has(k)) return false;
     seen.add(k);
     return true;
   }).slice(0, MAX_RESULTS);
-  if (foods.length > 0) await writeCache(admin, key, foods);
+  // Si salva in cache solo un risultato completo, con i nomi USDA già in italiano.
+  if (foods.length > 0 && usda.translated) await writeCache(admin, key, foods);
   return json({ foods });
 });
 
 /** USDA è in inglese: la ricerca viene tradotta e i nomi dei risultati riportati in italiano. */
-async function usdaInItalian(query: string): Promise<FoodItem[]> {
+async function usdaInItalian(query: string): Promise<{ foods: FoodItem[]; translated: boolean }> {
   let english = query;
   let translate = isAIConfigured();
   if (translate) {
@@ -62,17 +66,21 @@ async function usdaInItalian(query: string): Promise<FoodItem[]> {
       translate = false;
     }
   }
-  const raw = (await searchUSDA(english, 12)).slice(0, 12);
-  let names: (string | undefined)[] = raw.map(() => undefined);
-  if (translate && raw.length > 0) {
+  // Solo alimenti generici: i prodotti confezionati arrivano da Open Food Facts (mercato italiano).
+  const raw = (await searchUSDA(english, 12, ["Foundation", "SR Legacy", "Survey (FNDDS)"])).slice(0, 12);
+  if (raw.length === 0) return { foods: [], translated: true };
+  let names: string[] | null = null;
+  if (translate) {
     try {
-      names = (await toItalianNames(raw.map((f) => f.description))) ?? names;
+      names = await toItalianNames(raw.map((f) => f.description));
     } catch (e) {
       if (!(e instanceof AIUnavailableError)) throw e;
     }
   }
+  // Senza traduzione i nomi resterebbero in inglese: meglio mostrare solo Open Food Facts.
+  if (!names) return { foods: [], translated: false };
   const items = await Promise.all(raw.map((f, i) => fromUSDA(f, names[i])));
-  return items.filter((i): i is FoodItem => i !== null);
+  return { foods: items.filter((i): i is FoodItem => i !== null), translated: true };
 }
 
 type Admin = ReturnType<typeof adminClient>;

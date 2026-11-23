@@ -35,10 +35,22 @@ struct ScanResultView: View {
             }
 
             if !model.questions.isEmpty {
-                Section("Da confermare") {
+                // Solo un suggerimento: non blocca il salvataggio e si chiude con la X.
+                Section {
                     ForEach(model.questions, id: \.self) { q in
-                        Label(q, systemImage: "questionmark.circle").font(DS.Font.callout)
+                        HStack(alignment: .top) {
+                            Label(q, systemImage: "lightbulb").font(DS.Font.callout)
+                                .foregroundStyle(DS.Palette.textSecondary)
+                            Spacer()
+                            Button { withAnimation(DS.Motion.snappy) { model.dismissQuestions() } } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Palette.textTertiary)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(Text("Chiudi il suggerimento"))
+                        }
                     }
+                } footer: {
+                    Text("Se serve, tocca un alimento per correggerlo o aggiungine uno.")
                 }
             }
 
