@@ -8,6 +8,7 @@ struct ProfileView: View {
     @Environment(AppState.self) private var app
     @State private var path: [ProfileRoute] = []
     @State private var showGuide = false
+    @State private var paywallPlan: Plan?
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -51,9 +52,20 @@ struct ProfileView: View {
                         LabeledContent("Proteine", value: "\(targets.proteinG) g")
                         LabeledContent("Carboidrati", value: "\(targets.carbsG) g")
                         LabeledContent("Grassi", value: "\(targets.fatG) g")
-                        NavigationLink(value: ProfileRoute.professionalPlan) {
-                            Label(app.professionalPlan == nil ? "Aggiungi il piano del medico o dietista" : "Modifica il piano del professionista",
-                                  systemImage: "stethoscope")
+                        // Il piano del professionista è incluso in Plus e Pro; chi ne ha già uno può sempre aprirlo ed eliminarlo.
+                        if app.entitlements.plan >= .plus || app.professionalPlan != nil {
+                            NavigationLink(value: ProfileRoute.professionalPlan) {
+                                Label(app.professionalPlan == nil ? "Aggiungi il piano del medico o dietista" : "Modifica il piano del professionista",
+                                      systemImage: "stethoscope")
+                            }
+                        } else {
+                            Button { paywallPlan = .plus } label: {
+                                HStack {
+                                    Label("Aggiungi il piano del medico o dietista", systemImage: "stethoscope")
+                                    Spacer()
+                                    PlanLockBadge(plan: .plus)
+                                }
+                            }
                         }
                         if app.professionalPlan == nil {
                             NavigationLink("Modifica obiettivi", value: ProfileRoute.editTargets)
@@ -62,7 +74,7 @@ struct ProfileView: View {
                         Text("Obiettivi giornalieri")
                     } footer: {
                         if app.professionalPlan == nil {
-                            Text("Hai calorie o una dieta indicate da un professionista? Aggiungile: il diario userà quei valori.")
+                            Text("Hai calorie o una dieta indicate da un professionista? Con Plus e Pro puoi aggiungerle e il diario userà quei valori. In ogni piano puoi modificare gli obiettivi a mano.")
                         }
                     }
                 }
@@ -74,6 +86,7 @@ struct ProfileView: View {
                         } label: {
                             Label("Stile alimentare", systemImage: "fork.knife")
                         }
+                        .badge(app.hasEatingStyles ? nil : Text(Image(systemName: "lock.fill")))
                     }
                     if app.profile?.sex != .male {
                         NavigationLink(value: ProfileRoute.pregnancy) {
@@ -98,6 +111,7 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profilo")
+            .sheet(item: $paywallPlan) { plan in PaywallView(services: app.services, highlight: plan) }
             .fullScreenCover(isPresented: $showGuide) {
                 AppGuideView { showGuide = false }
             }

@@ -136,6 +136,11 @@ Regole:
 | Plus | 4 (una per pasto) | consigli personalizzati (30 msg/giorno) | settimanali + mensili complete |
 | Pro | 15 | coach avanzato, piani pasto, ricette, lista spesa (150 msg/giorno) | report mensili avanzati |
 
+Funzioni riservate (filigrana con lucchetto `premiumLocked(_:title:)`: il contenuto con i dati veri resta sfocato sotto un velo, un tocco apre i piani):
+- **Plus**: distribuzione delle calorie tra i pasti, andamento dei macronutrienti, statistiche mensili, misure corporee, storico completo del peso ("Tutto"), piano del medico o dietista (salvataggio bloccato anche dal server in `save-professional-plan`; eliminazione sempre possibile).
+- **Pro**: stile alimentare, dieta per la gravidanza che segue la settimana (l'elenco degli alimenti da evitare e il mantenimento senza deficit restano gratuiti).
+- **Mai a pagamento**: esportazione ed eliminazione dei dati, consensi, avvisi di sicurezza, modifica manuale degli obiettivi.
+
 Limiti in `SCAN_LIMITS` (`supabase/functions/_shared/scan.ts`), applicati da `analyze-food` e mostrati da `get-entitlements`: si cambiano con un nuovo deploy delle funzioni, senza rilasciare l'app. Lo scanner AI è riservato ai piani a pagamento per contenere i costi del fornitore AI (decisione del 23/11/2026). Le analisi fallite non contano. Costi AI: monitorare il costo medio per utente sul cruscotto del fornitore. Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`, più `caloscan.pro.monthly.pregnancy` (Pro, solo per l'offerta gravidanza); i prezzi si impostano in App Store Connect.
 
 ### Lista della spesa

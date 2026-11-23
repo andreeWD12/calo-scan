@@ -44,7 +44,7 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Nuova grafica: sfondi sfumati, ombre morbide, un colore per pasto, anelli più grandi per calorie e macro, serie di giorni registrati, haptics.
 - Test: 54 test TypeScript, controllo tipi Deno e prova dal vivo di USDA e Open Food Facts in CI.
 
-Fino alla Fase 8 tutti gli utenti hanno il piano Free; per provare lo scanner, gli account in `TESTER_USER_IDS` hanno Pro.
+Funzioni Plus e Pro segnate da una filigrana con lucchetto (vedi ARCHITECTURE §8). Fino alla Fase 8 tutti gli utenti hanno il piano Free; per provare lo scanner, gli account in `TESTER_USER_IDS` hanno Pro.
 
 ## Fase 4 – consegnato
 

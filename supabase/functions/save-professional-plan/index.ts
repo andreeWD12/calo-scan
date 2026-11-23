@@ -2,8 +2,10 @@
  * Salva o elimina il piano del medico o dietista dopo averlo rivalidato (_shared/professionalPlan.ts).
  * Il client può solo leggere `professional_plans` (RLS): la scrittura passa da qui.
  * Corpo: { plan: ProfessionalPlan } per salvare, { delete: true } per tornare agli obiettivi dell'app → 204
+ * Salvare richiede Plus o Pro; eliminare è sempre possibile (anche dopo la fine dell'abbonamento).
  */
 import { errorResponse } from "../_shared/errors.ts";
+import { currentPlan } from "../_shared/plan.ts";
 import { validateProfessionalPlanPayload } from "../_shared/professionalPlan.ts";
 import { adminClient, readJSON, requireUser } from "../_shared/supabase.ts";
 
@@ -25,6 +27,8 @@ Deno.serve(async (req) => {
     }
     return new Response(null, { status: 204 });
   }
+
+  if (await currentPlan(admin, auth.userId) === "free") return errorResponse("plan_required", { minimum: "Plus" });
 
   const issues = validateProfessionalPlanPayload(body.plan);
   if (issues.length > 0) return errorResponse("invalid_input", { message: issues.join(",") });
