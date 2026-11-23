@@ -1,4 +1,5 @@
 import SwiftUI
+import CaloScanCore
 
 /// AI Nutrition Coach: consigli del giorno e chat con l'assistente.
 struct CoachView: View {
