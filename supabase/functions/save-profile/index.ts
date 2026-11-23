@@ -28,8 +28,9 @@ Deno.serve(async (req) => {
     updated_at: new Date().toISOString(),
   }, { onConflict: "user_id" });
   if (error) {
-    console.error("save-profile: salvataggio non riuscito", error.code);
-    return errorResponse("internal");
+    // Solo il codice Postgres (es. 42501 = permesso negato): nessun dato dell'utente nel log o nella risposta.
+    console.error("save-profile: salvataggio non riuscito", error.code, error.message);
+    return errorResponse("internal", { message: `db_${error.code ?? "unknown"}` });
   }
   return new Response(null, { status: 204 });
 });
