@@ -271,7 +271,7 @@ private struct AnalyzingView: View {
         }
         .padding(DS.Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .onAppear {
             guard !reduceMotion else { pulse = true; return }
             withAnimation(.easeInOut(duration: 0.9).repeatForever()) { pulse = true }
@@ -306,7 +306,7 @@ private struct ScanFailureView: View {
             Button("Cerca gli alimenti manualmente", action: onManual)
         }
         .tint(DS.Palette.brand)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
     }
 }
 
@@ -329,7 +329,7 @@ private struct QuotaReachedView: View {
             Button("Inserisci manualmente", action: onManual)
         }
         .tint(DS.Palette.brand)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
     }
 }
 
@@ -357,7 +357,7 @@ private struct AIConsentView: View {
                 .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
         }
         .padding(DS.Spacing.screen)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
     }
 }
 

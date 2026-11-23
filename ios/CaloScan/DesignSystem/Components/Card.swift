@@ -10,7 +10,8 @@ struct Card<Content: View>: View {
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(DS.Palette.surface, in: .rect(cornerRadius: DS.Radius.l))
-            .overlay(RoundedRectangle(cornerRadius: DS.Radius.l).strokeBorder(DS.Palette.separator.opacity(0.6), lineWidth: 0.5))
+            .overlay(RoundedRectangle(cornerRadius: DS.Radius.l).strokeBorder(DS.Palette.separator.opacity(0.45), lineWidth: 0.5))
+            .softShadow()
     }
 }
 
@@ -48,5 +49,12 @@ struct StatTile: View {
         .padding(DS.Spacing.s)
         .background(DS.Palette.surfaceMuted, in: .rect(cornerRadius: DS.Radius.m))
         .accessibilityElement(children: .combine)
+    }
+}
+
+extension View {
+    /// Ombra morbida comune a schede e pulsanti principali.
+    func softShadow() -> some View {
+        shadow(color: DS.Shadow.card, radius: DS.Shadow.cardRadius, x: 0, y: DS.Shadow.cardY)
     }
 }

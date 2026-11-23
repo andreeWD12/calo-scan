@@ -39,7 +39,7 @@ struct AppGuideView: View {
             .padding(.horizontal, DS.Spacing.screen)
             .padding(.vertical, DS.Spacing.s)
         }
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .sensoryFeedback(.selection, trigger: page)
     }
 }

@@ -14,6 +14,10 @@ final class ScreensUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons.firstMatch.waitForExistence(timeout: 20))
         save(app, "0-home-top")
+        app.swipeUp()
+        sleep(1)
+        save(app, "0-home-middle")
+        app.swipeDown(); app.swipeDown()
 
         for (index, title) in ["Home", "Diario", "Progressi", "Profilo"].enumerated() {
             let tab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", title)).firstMatch

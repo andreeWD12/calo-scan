@@ -40,7 +40,7 @@ struct OnboardingFlowView: View {
             }
             }
         }
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .animation(DS.Motion.standard, value: model.step)
         .animation(DS.Motion.standard, value: showingGuide)
         .alert("Salvataggio non riuscito",

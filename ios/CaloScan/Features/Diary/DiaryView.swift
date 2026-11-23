@@ -29,7 +29,7 @@ struct DiaryView: View {
                 .padding(.horizontal, DS.Spacing.screen)
                 .padding(.bottom, DS.Spacing.xl)
             }
-            .background(DS.Palette.background.ignoresSafeArea())
+            .background { AppBackground() }
             .navigationTitle("Diario")
             .refreshable { await model.load() }
             .animation(DS.Motion.standard, value: model.mode)

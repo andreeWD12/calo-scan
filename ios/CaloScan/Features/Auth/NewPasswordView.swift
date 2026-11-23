@@ -43,7 +43,7 @@ struct NewPasswordView: View {
                 Spacer()
             }
             .padding(DS.Spacing.screen)
-            .background(DS.Palette.background.ignoresSafeArea())
+            .background { AppBackground() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Annulla") { dismiss() } }
             }

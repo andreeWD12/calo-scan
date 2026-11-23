@@ -152,6 +152,8 @@ final class ScannerViewModel {
                         isCheatMeal: isCheatMeal)
         do {
             try await services.meals.save(meal)
+            // La foto resta solo sul telefono, come miniatura del pasto nel diario.
+            if let imageData { await MealPhotoStore.shared.save(jpegData: imageData, for: meal.id) }
             return true
         } catch {
             saveError = APIError.from(error)

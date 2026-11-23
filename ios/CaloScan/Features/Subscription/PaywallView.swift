@@ -88,7 +88,7 @@ struct PaywallContent: View {
             }
             .padding(DS.Spacing.screen)
         }
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .task { if case .idle = model.offers { await model.load() } }
         .alert("Acquisto non riuscito",
                isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } }),

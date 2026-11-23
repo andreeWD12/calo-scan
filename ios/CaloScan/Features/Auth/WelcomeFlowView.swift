@@ -60,7 +60,7 @@ struct WelcomeView: View {
         }
         .padding(.horizontal, DS.Spacing.screen)
         .padding(.bottom, DS.Spacing.m)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .authAlert(model)
     }
 

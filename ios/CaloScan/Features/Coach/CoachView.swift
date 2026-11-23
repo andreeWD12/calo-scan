@@ -38,7 +38,7 @@ struct CoachView: View {
                 }
             }
         }
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .navigationTitle("Coach AI")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) { inputBar }

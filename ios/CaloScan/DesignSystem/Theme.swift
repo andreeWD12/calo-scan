@@ -28,6 +28,26 @@ enum DS {
         static let warningSoft = Color(light: 0xFEF3C7, dark: 0x3A2E10)
         static let danger = Color(light: 0xDC2626, dark: 0xF87171)
         static let success = brand
+
+        /// Sfumatura leggera dietro le schermate (in alto un velo verde, in basso il fondo neutro).
+        static let backgroundGlow = Color(light: 0xE6F5EC, dark: 0x0F1F17)
+        static let backgroundGlowWarm = Color(light: 0xFFF4E5, dark: 0x1A160E)
+
+        /// Un colore per ogni pasto, usato per icone e accenti.
+        static let breakfast = Color(light: 0xD97706, dark: 0xFBBF24)
+        static let lunch = Color(light: 0x15894F, dark: 0x3DD68C)
+        static let dinner = Color(light: 0x6D4AD6, dark: 0xA78BFA)
+        static let snack = Color(light: 0xDB2777, dark: 0xF472B6)
+
+        /// Fiamma della serie di giorni registrati.
+        static let streak = Color(light: 0xEA580C, dark: 0xFB923C)
+    }
+
+    /// Ombre morbide per le schede (in dark mode quasi invisibili, lì conta il contrasto della superficie).
+    enum Shadow {
+        static let card = Color(light: 0x0F1A14, dark: 0x000000).opacity(0.07)
+        static let cardRadius: CGFloat = 14
+        static let cardY: CGFloat = 6
     }
 
     enum Spacing {
@@ -94,5 +114,21 @@ extension UIColor {
                   green: CGFloat((rgb >> 8) & 0xFF) / 255,
                   blue: CGFloat(rgb & 0xFF) / 255,
                   alpha: 1)
+    }
+}
+
+/// Sfondo comune delle schermate: fondo neutro con due aloni sfumati, uno verde in alto
+/// e uno caldo in basso. Decorativo, nascosto a VoiceOver.
+struct AppBackground: View {
+    var body: some View {
+        ZStack {
+            DS.Palette.background
+            RadialGradient(colors: [DS.Palette.backgroundGlow, DS.Palette.backgroundGlow.opacity(0)],
+                           center: .topLeading, startRadius: 0, endRadius: 520)
+            RadialGradient(colors: [DS.Palette.backgroundGlowWarm.opacity(0.8), DS.Palette.backgroundGlowWarm.opacity(0)],
+                           center: .bottomTrailing, startRadius: 0, endRadius: 420)
+        }
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
     }
 }

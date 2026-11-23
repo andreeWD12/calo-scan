@@ -42,23 +42,68 @@ export async function bestUSDAMatch(englishQuery: string, italianName: string): 
 
 /** Prodotti di Open Food Facts venduti in Italia, cercati per nome. */
 export async function searchOFF(query: string, pageSize = 10): Promise<FoodItem[]> {
+  // Prima il servizio di ricerca nuovo (search-a-licious), poi quello storico, spesso sovraccarico.
+  const products = await searchOFFNew(query, pageSize) ?? await searchOFFLegacy(query, pageSize) ?? [];
+  const items = await Promise.all(products.map(fromOFF));
+  return items.filter((i): i is FoodItem => i !== null);
+}
+
+/** Converte un risultato di search-a-licious (marche come elenco, nomi a volte per lingua). */
+export function normalizeOFFHit(hit: Record<string, unknown>): OFFProduct {
+  const text = (v: unknown): string | undefined => {
+    if (typeof v === "string") return v;
+    if (Array.isArray(v)) return v.filter((x) => typeof x === "string").join(", ") || undefined;
+    if (v && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      return text(o.it ?? o.main ?? o.en ?? Object.values(o)[0]);
+    }
+    return undefined;
+  };
+  return {
+    code: text(hit.code),
+    product_name: text(hit.product_name),
+    product_name_it: text(hit.product_name_it),
+    generic_name_it: text(hit.generic_name_it),
+    brands: text(hit.brands),
+    serving_quantity: hit.serving_quantity as number | string | undefined,
+    nutriments: hit.nutriments as OFFProduct["nutriments"],
+  };
+}
+
+async function searchOFFNew(query: string, pageSize: number): Promise<OFFProduct[] | null> {
+  const url = new URL("https://search.openfoodfacts.org/search");
+  url.search = new URLSearchParams({ q: query, page_size: String(pageSize), langs: "it", fields: OFF_FIELDS }).toString();
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(6000) });
+    if (!res.ok) {
+      console.error("off-search: risposta", res.status);
+      return null;
+    }
+    const json = await res.json() as { hits?: Record<string, unknown>[] };
+    return Array.isArray(json.hits) ? json.hits.map(normalizeOFFHit) : null;
+  } catch (error) {
+    console.error("off-search: non raggiungibile", (error as Error).name);
+    return null;
+  }
+}
+
+async function searchOFFLegacy(query: string, pageSize: number): Promise<OFFProduct[] | null> {
   const url = new URL("https://world.openfoodfacts.org/cgi/search.pl");
   url.search = new URLSearchParams({
     search_terms: query, search_simple: "1", action: "process", json: "1",
     page_size: String(pageSize), fields: OFF_FIELDS, lc: "it", cc: "it",
   }).toString();
   try {
-    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(8000) });
+    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(6000) });
     if (!res.ok) {
       console.error("off: risposta", res.status);
-      return [];
+      return null;
     }
     const json = await res.json() as { products?: OFFProduct[] };
-    const items = await Promise.all((json.products ?? []).map(fromOFF));
-    return items.filter((i): i is FoodItem => i !== null);
+    return json.products ?? [];
   } catch (error) {
     console.error("off: non raggiungibile", (error as Error).name);
-    return [];
+    return null;
   }
 }
 

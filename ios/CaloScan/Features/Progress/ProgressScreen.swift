@@ -20,7 +20,7 @@ struct ProgressScreen: View {
                     .padding(.horizontal, DS.Spacing.screen)
                     .padding(.bottom, DS.Spacing.xl)
             }
-            .background(DS.Palette.background.ignoresSafeArea())
+            .background { AppBackground() }
             .navigationTitle("Progressi")
             .refreshable { await model.load() }
             .toolbar {

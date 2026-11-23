@@ -65,6 +65,7 @@ final class AppState {
 
     private func apply(_ state: SessionState) async {
         session = state
+        if state == .signedOut { await MealPhotoStore.shared.removeAll() }
         guard case .signedIn = state else {
             profile = nil; computedTargets = nil; professionalPlan = nil; entitlements = .free
             return

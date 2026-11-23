@@ -29,7 +29,7 @@ struct ForgotPasswordView: View {
             Spacer()
         }
         .padding(DS.Spacing.screen)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .navigationTitle("Password dimenticata")
         .navigationBarTitleDisplayMode(.inline)
         .authAlert(model)
