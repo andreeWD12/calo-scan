@@ -66,6 +66,11 @@ enum APIError: LocalizedError, Equatable {
             return .offline
         }
         if error is DecodingError { return .decoding }
+        #if DEBUG
+        // In sviluppo si mostra l'errore originale (es. di PostgREST o di Auth) per capire subito la causa.
+        return .invalidInput(String(localized: "Si è verificato un errore imprevisto.") + "\n[sviluppo] " + String(String(describing: error).prefix(400)))
+        #else
         return .unknown
+        #endif
     }
 }
