@@ -67,6 +67,10 @@ struct ScannerFlowView: View {
             }
         }
         .task { await model.loadConsent() }
+        // Una scansione riuscita consuma il limite di oggi: si aggiorna il conteggio mostrato.
+        .onChange(of: model.phase) { _, phase in
+            if phase == .result { Task { await app.refreshEntitlements() } }
+        }
         .sheet(isPresented: $showManualEntry) {
             AddFoodFlowView(services: app.services, mealType: model.mealType) {
                 app.mealSaved(model.mealType)
@@ -339,7 +343,7 @@ private struct AIConsentView: View {
         VStack(alignment: .leading, spacing: DS.Spacing.m) {
             Image(systemName: "sparkles.rectangle.stack").font(.system(size: 44)).foregroundStyle(DS.Palette.brand)
             Text("Analisi delle foto con l'AI").font(DS.Font.title)
-            Text("Per riconoscere gli alimenti, la foto del piatto viene inviata in modo cifrato al nostro fornitore di intelligenza artificiale. La foto non contiene la tua posizione, non viene usata per addestrare modelli e viene cancellata automaticamente dopo l'analisi entro il periodo indicato nell'informativa.")
+            Text("Per riconoscere gli alimenti, la foto del piatto viene inviata in modo cifrato al nostro fornitore di intelligenza artificiale. La foto non contiene la tua posizione e non viene usata per addestrare modelli. CaloScan non la salva sui propri server: resta solo sul tuo iPhone; il fornitore la cancella entro il periodo indicato nell'informativa.")
                 .foregroundStyle(DS.Palette.textSecondary)
             Link("Leggi l'informativa sulla privacy", destination: LegalLinks.privacyPolicy)
                 .font(DS.Font.callout.weight(.semibold))

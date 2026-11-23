@@ -56,3 +56,12 @@ verify_jwt = false
 
 [functions.save-professional-plan]
 verify_jwt = false
+
+[functions.food-search]
+verify_jwt = false
+
+[functions.analyze-food]
+verify_jwt = false
+
+[functions.get-entitlements]
+verify_jwt = false

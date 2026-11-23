@@ -5,9 +5,9 @@ name: Build iOS
 on:
   push:
     branches: ["fase-*", "main"]
-    paths: ["ios/**", ".github/workflows/ios-build.yml"]
+    paths: ["ios/**", "supabase/**", ".github/workflows/ios-build.yml"]
   pull_request:
-    paths: ["ios/**"]
+    paths: ["ios/**", "supabase/**"]
   workflow_dispatch:
 
 concurrency:
@@ -15,6 +15,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.5.6
+      - name: Test della logica condivisa (Node)
+        run: node --experimental-strip-types --test supabase/functions/_shared/*.test.ts
+      - name: Controllo dei tipi delle Edge Functions (Deno)
+        run: deno check supabase/functions/*/index.ts
+      - name: Prova dal vivo di USDA e Open Food Facts
+        run: deno run --allow-net --allow-env supabase/functions/_shared/fooddb.live.ts
+
   build:
     runs-on: macos-26
     timeout-minutes: 40

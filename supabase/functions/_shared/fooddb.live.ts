@@ -1,0 +1,29 @@
+/**
+ * Prova dal vivo degli archivi pubblici (USDA con DEMO_KEY, Open Food Facts). Gira solo in CI:
+ * deno run --allow-net --allow-env supabase/functions/_shared/fooddb.live.ts
+ * Verifica che i formati delle risposte siano ancora quelli che sappiamo leggere.
+ */
+import { fromUSDA } from "./foods.ts";
+import { lookupBarcode, searchOFF, searchUSDA } from "./fooddb.ts";
+
+let failed = false;
+const check = (label: string, ok: boolean, detail: unknown) => {
+  console.log(`${ok ? "OK  " : "FAIL"} ${label}: ${JSON.stringify(detail)}`);
+  if (!ok) failed = true;
+};
+
+const usda = await searchUSDA("apple raw", 5);
+const apple = usda.length ? await fromUSDA(usda[0], "Mela") : null;
+check("USDA apple raw", apple !== null && apple.per100g.kcal > 30 && apple.per100g.kcal < 80, apple);
+
+const rice = await searchUSDA("rice white cooked", 5, ["Foundation", "SR Legacy", "Survey (FNDDS)"]);
+const riceItem = rice.length ? await fromUSDA(rice[0]) : null;
+check("USDA rice cooked", riceItem !== null, riceItem?.per100g);
+
+const off = await searchOFF("spaghetti", 5);
+check("OFF ricerca spaghetti", off.length > 0, off.slice(0, 2).map((f) => [f.name, f.brand, f.per100g.kcal]));
+
+const barcode = await lookupBarcode("8076809513753");
+check("OFF codice a barre", barcode !== null && barcode.per100g.kcal > 300, barcode && [barcode.name, barcode.per100g]);
+
+if (failed) Deno.exit(1);

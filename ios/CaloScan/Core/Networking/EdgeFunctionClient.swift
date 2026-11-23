@@ -14,6 +14,7 @@ struct EdgeFunctionClient: Sendable {
         case exportData = "export-data"
         case saveProfile = "save-profile"
         case saveProfessionalPlan = "save-professional-plan"
+        case getEntitlements = "get-entitlements"
         case deleteAccount = "delete-account"
     }
 
