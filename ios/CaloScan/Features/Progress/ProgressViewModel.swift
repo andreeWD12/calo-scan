@@ -33,9 +33,12 @@ final class ProgressViewModel {
         do {
             let list = try await weight.entries().sorted { $0.date < $1.date }
             entries = list.isEmpty ? .empty : .loaded(list)
-            measurements = try await weight.measurements().sorted { $0.date > $1.date }
         } catch {
             entries = .failed(APIError.from(error))
+        }
+        // Le misure sono separate: se non si caricano, il peso resta visibile.
+        if let list = try? await weight.measurements() {
+            measurements = list.sorted { $0.date > $1.date }
         }
     }
 
@@ -70,8 +73,17 @@ final class ProgressViewModel {
         catch { self.error = APIError.from(error) }
     }
 
+    func delete(_ measurement: BodyMeasurement) async {
+        do { try await weight.delete(measurementID: measurement.id); await load() }
+        catch { self.error = APIError.from(error) }
+    }
+
     func add(_ measurement: BodyMeasurement) async -> Bool {
         guard !measurement.isEmpty else { return false }
+        guard measurement.invalidKinds.isEmpty else {
+            error = .invalidInput(String(localized: "Controlla le misure: alcuni valori non sono plausibili."))
+            return false
+        }
         do {
             try await weight.add(measurement)
             await load()

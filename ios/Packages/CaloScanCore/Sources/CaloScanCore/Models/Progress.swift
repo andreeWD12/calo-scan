@@ -27,6 +27,50 @@ public struct BodyMeasurement: Identifiable, Codable, Hashable, Sendable {
     }
 
     public var isEmpty: Bool { [waistCm, hipsCm, chestCm, armCm, thighCm].allSatisfy { $0 == nil } }
+
+    /// Le singole misure, con i limiti di validità (gli stessi del database).
+    public enum Kind: String, CaseIterable, Sendable {
+        case waist, hips, chest, arm, thigh
+
+        public var range: ClosedRange<Double> {
+            switch self {
+            case .waist, .hips, .chest: 30...250
+            case .arm: 10...100
+            case .thigh: 20...150
+            }
+        }
+
+        public var keyPath: WritableKeyPath<BodyMeasurement, Double?> {
+            switch self {
+            case .waist: \.waistCm
+            case .hips: \.hipsCm
+            case .chest: \.chestCm
+            case .arm: \.armCm
+            case .thigh: \.thighCm
+            }
+        }
+    }
+
+    public func value(_ kind: Kind) -> Double? { self[keyPath: kind.keyPath] }
+
+    /// Misure compilate ma fuori dai limiti.
+    public var invalidKinds: [Kind] {
+        Kind.allCases.filter { kind in value(kind).map { !kind.range.contains($0) } ?? false }
+    }
+
+    /// Variazione di ogni misura tra la prima rilevazione che la contiene e l'ultima (cm, negativo = diminuita).
+    /// `history` può essere in qualsiasi ordine.
+    public static func changes(in history: [BodyMeasurement]) -> [Kind: Double] {
+        let sorted = history.sorted { $0.date < $1.date }
+        var result: [Kind: Double] = [:]
+        for kind in Kind.allCases {
+            let values = sorted.compactMap { $0.value(kind) }
+            if values.count >= 2, let first = values.first, let last = values.last {
+                result[kind] = ((last - first) * 10).rounded() / 10
+            }
+        }
+        return result
+    }
 }
 
 public struct WeightProgress: Equatable, Sendable {

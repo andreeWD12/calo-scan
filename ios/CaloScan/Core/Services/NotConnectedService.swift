@@ -48,6 +48,7 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func delete(entryID: UUID) async throws { throw fail() }
     func measurements() async throws -> [BodyMeasurement] { throw fail() }
     func add(_ measurement: BodyMeasurement) async throws { throw fail() }
+    func delete(measurementID: UUID) async throws { throw fail() }
 
     func refresh() async throws -> Entitlements { throw fail() }
     func offers() async throws -> [PlanOffer] { throw fail() }

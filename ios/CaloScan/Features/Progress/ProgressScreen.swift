@@ -86,7 +86,8 @@ struct ProgressScreen: View {
                         .frame(maxWidth: .infinity, minHeight: 120)
                 }
             }
-            MeasurementsCard(measurements: model.measurements) { showAddMeasurement = true }
+            MeasurementsCard(measurements: model.measurements, onAdd: { showAddMeasurement = true },
+                             onDelete: { m in Task { await model.delete(m) } })
                 .premiumLocked(.plus, title: "Misure corporee")
             HistoryCard(entries: entries.reversed()) { entry in Task { await model.delete(entry) } }
         }
@@ -159,21 +160,45 @@ struct WeightChart: View {
 private struct MeasurementsCard: View {
     let measurements: [BodyMeasurement]
     let onAdd: () -> Void
+    let onDelete: (BodyMeasurement) -> Void
 
     var body: some View {
+        let changes = BodyMeasurement.changes(in: measurements)
         Card {
             SectionHeader(title: "Misure corporee", trailing: AnyView(
                 Button("Aggiungi", action: onAdd).font(DS.Font.callout.weight(.semibold))))
             if let latest = measurements.first {
-                Text(latest.date.formatted(date: .abbreviated, time: .omitted))
+                Text("Ultima rilevazione: \(latest.date.formatted(date: .abbreviated, time: .omitted))")
                     .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DS.Spacing.xs) {
-                    tile("Vita", latest.waistCm)
-                    tile("Fianchi", latest.hipsCm)
-                    tile("Petto", latest.chestCm)
-                    tile("Braccio", latest.armCm)
-                    tile("Coscia", latest.thighCm)
+                    ForEach(BodyMeasurement.Kind.allCases, id: \.self) { kind in
+                        if let value = latestValue(kind) {
+                            StatTile(title: kind.title, value: Self.cm(value), caption: changes[kind].map(Self.change))
+                        }
+                    }
                 }
+                if let oldest = measurements.last, measurements.count > 1 {
+                    Text("Variazioni rispetto al \(oldest.date.formatted(date: .abbreviated, time: .omitted)).")
+                        .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
+                }
+                Divider()
+                ForEach(measurements.prefix(10)) { m in
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(m.date.formatted(date: .abbreviated, time: .omitted)).font(DS.Font.callout)
+                        Spacer()
+                        Text(BodyMeasurement.Kind.allCases.compactMap { kind in
+                            m.value(kind).map { "\(kind.short) \(Self.number($0))" }
+                        }.joined(separator: " · "))
+                        .font(DS.Font.caption.monospacedDigit()).foregroundStyle(DS.Palette.textSecondary)
+                        .multilineTextAlignment(.trailing)
+                    }
+                    .frame(minHeight: 32)
+                    .contextMenu {
+                        Button("Elimina", systemImage: "trash", role: .destructive) { onDelete(m) }
+                    }
+                }
+                Text("Tieni premuta una rilevazione per eliminarla.")
+                    .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
             } else {
                 Text("Facoltative: vita, fianchi, petto, braccio e coscia aiutano a vedere i cambiamenti che la bilancia non mostra.")
                     .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
@@ -181,10 +206,37 @@ private struct MeasurementsCard: View {
         }
     }
 
-    @ViewBuilder
-    private func tile(_ title: LocalizedStringKey, _ value: Double?) -> some View {
-        if let value {
-            StatTile(title: title, value: "\(value.formatted(.number.precision(.fractionLength(0...1)))) cm")
+    /// Valore più recente di una misura, anche se l'ultima rilevazione non la contiene.
+    private func latestValue(_ kind: BodyMeasurement.Kind) -> Double? {
+        measurements.lazy.compactMap { $0.value(kind) }.first
+    }
+
+    private static func number(_ v: Double) -> String { v.formatted(.number.precision(.fractionLength(0...1))) }
+    private static func cm(_ v: Double) -> String { "\(number(v)) cm" }
+    private static func change(_ v: Double) -> String {
+        v == 0 ? String(localized: "invariata") : "\(v > 0 ? "+" : "−")\(number(abs(v))) cm"
+    }
+}
+
+extension BodyMeasurement.Kind {
+    var title: LocalizedStringKey {
+        switch self {
+        case .waist: "Vita"
+        case .hips: "Fianchi"
+        case .chest: "Petto"
+        case .arm: "Braccio"
+        case .thigh: "Coscia"
+        }
+    }
+
+    /// Abbreviazione per lo storico.
+    var short: String {
+        switch self {
+        case .waist: String(localized: "Vita")
+        case .hips: String(localized: "Fianchi")
+        case .chest: String(localized: "Petto")
+        case .arm: String(localized: "Braccio")
+        case .thigh: String(localized: "Coscia")
         }
     }
 }
@@ -261,11 +313,12 @@ private struct AddMeasurementSheet: View {
             Form {
                 DatePicker("Data", selection: $draft.date, in: ...Date.now, displayedComponents: .date)
                 Section {
-                    NumericField(label: "Vita", value: $draft.waistCm, unit: "cm")
-                    NumericField(label: "Fianchi", value: $draft.hipsCm, unit: "cm")
-                    NumericField(label: "Petto", value: $draft.chestCm, unit: "cm")
-                    NumericField(label: "Braccio", value: $draft.armCm, unit: "cm")
-                    NumericField(label: "Coscia", value: $draft.thighCm, unit: "cm")
+                    ForEach(BodyMeasurement.Kind.allCases, id: \.self) { kind in
+                        NumericField(label: kind.title, value: $draft[dynamicMember: kind.keyPath], unit: "cm",
+                                     error: draft.invalidKinds.contains(kind)
+                                        ? String(localized: "Valore tra \(Int(kind.range.lowerBound)) e \(Int(kind.range.upperBound)) cm.")
+                                        : nil)
+                    }
                 } footer: {
                     Text("Compila solo le misure che vuoi monitorare.")
                 }
@@ -276,7 +329,7 @@ private struct AddMeasurementSheet: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Annulla") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Salva") { Task { if await save(draft) { dismiss() } } }
-                        .disabled(draft.isEmpty)
+                        .disabled(draft.isEmpty || !draft.invalidKinds.isEmpty)
                 }
             }
         }

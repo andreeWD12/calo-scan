@@ -90,7 +90,9 @@ struct DiaryView: View {
                                  onDelete: { meal in Task { await model.delete(meal) } },
                                  plan: app.professionalPlan,
                                  onLogPlanned: { loggingPlanned = $0 },
-                                 onToggleCheat: { meal in Task { await model.toggleCheat(meal) } })
+                                 onToggleCheat: { meal in Task { await model.toggleCheat(meal) } },
+                                 onUpdate: { meal in Task { await model.update(meal) } },
+                                 onRepeat: { meal in Task { if await model.repeatNow(meal) { app.mealSaved(meal.type) } } })
                 }
             case .week, .month:
                 switch model.period {

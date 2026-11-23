@@ -7,8 +7,8 @@
 | 3 | Registrazione, login, onboarding (collegamento a Supabase Auth) | ✅ completata |
 | 4 | Database (schema + RLS) e backend | ✅ completata |
 | 5 | AI Food Scanner e analisi nutrizionale | ✅ completata |
-| 6 | Diario e statistiche | ⏳ prossima |
-| 7 | AI Nutrition Coach | |
+| 6 | Diario e statistiche | ✅ completata |
+| 7 | AI Nutrition Coach | ⏳ prossima |
 | 8 | Abbonamenti Free / Plus / Pro | |
 | 9 | Notifiche, privacy, sicurezza | |
 | 10 | Test, bug fixing, preparazione App Store | |
@@ -34,6 +34,13 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
 
+## Fase 6 – consegnato
+
+- Migrazione `20261126000001_fase6_misure.sql`: tabella `body_measurements` (vita, fianchi, petto, braccio, coscia; almeno una misura, valori plausibili, massimo 1000 rilevazioni), RLS sul proprietario, permessi espliciti.
+- Progressi: misure salvate sul server, variazione di ogni misura dalla prima rilevazione, storico con eliminazione. Il peso resta visibile anche se le misure non si caricano. Misure e storico completo del peso sono Plus.
+- Diario e Home: tocca un alimento registrato per cambiare grammi o alimento; dal menu si può togliere un singolo alimento o registrare di nuovo il pasto adesso.
+- CI: anche i test della logica condivisa (`swift test` su CaloScanCore).
+
 ## Fase 5 – consegnato
 
 - `analyze-food`: l'AI (Claude, modello in `AI_MODEL`) riconosce solo alimenti e grammi; calorie e macro arrivano da USDA FoodData Central. Risposta con schema JSON fisso e ripulita lato server (`sanitizeAIResult`).
@@ -57,7 +64,7 @@ Funzioni Plus e Pro segnate da una filigrana con lucchetto (vedi ARCHITECTURE §
 - Barra di navigazione: linea di separazione dietro il pulsante Scanner, icone più grandi.
 - Permessi espliciti per `authenticated` e `service_role` anche sulle tabelle della Fase 3 (migrazioni `…0002`, `…0003`).
 
-Ancora `NotConnectedService` dopo la Fase 5: misure corporee (Fase 6), coach e suggerimenti AI della spesa (Fase 7), abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
+Ancora `NotConnectedService` dopo la Fase 6: coach e suggerimenti AI della spesa (Fase 7), abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
 
 ## Fase 3 – consegnato
 

@@ -117,6 +117,7 @@ protocol WeightRepository: Sendable {
     func delete(entryID: UUID) async throws
     func measurements() async throws -> [BodyMeasurement]
     func add(_ measurement: BodyMeasurement) async throws
+    func delete(measurementID: UUID) async throws
 }
 
 // MARK: - Abbonamenti
