@@ -56,6 +56,13 @@ jobs:
             -skipPackagePluginValidation -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO > uitest.log 2>&1 || (grep -E "error:|failed|Failing" uitest.log | head -40; exit 1)
           ls -la screens
+      - name: Screenshot ridotti nel log (per chi non può scaricare gli artifact)
+        if: success()
+        run: |
+          for f in screens/*.png; do
+            sips -s format jpeg -s formatOptions 60 -Z 700 "$f" --out "${f%.png}.jpg" >/dev/null
+            echo "=== IMG $(basename "${f%.png}") ==="; base64 -i "${f%.png}.jpg" | tr -d '\n'; echo; echo "=== END ==="
+          done
       - name: Carica gli screenshot
         if: always()
         uses: actions/upload-artifact@v4
