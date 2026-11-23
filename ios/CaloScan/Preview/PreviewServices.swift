@@ -42,7 +42,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
             profile = p
             targets = EnergyCalculator.targets(metrics: try! p.metrics(), activity: p.activity, goal: p.goal, diet: p.diet)
             consentState = ConsentState(healthDataProcessing: true, aiImageAnalysis: true, productEmails: false)
-            seedHistory()
+            (meals, weights) = Self.seedHistory()
         }
     }
 
@@ -64,9 +64,13 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
         FoodItem(name: "Mandorle", per100g: Nutrients(kcal: 579, proteinG: 21.2, carbsG: 21.6, fatG: 49.9), source: .usda, defaultServingG: 25),
     ]
 
-    private func food(_ prefix: String) -> FoodItem { Self.catalog.first { $0.name.hasPrefix(prefix) }! }
+    private func food(_ prefix: String) -> FoodItem { Self.food(prefix) }
+    private static func food(_ prefix: String) -> FoodItem { catalog.first { $0.name.hasPrefix(prefix) }! }
 
-    private func seedHistory() {
+    /// Storico d'esempio di 30 giorni (statico: l'init di un actor non può chiamarne i metodi).
+    private static func seedHistory() -> (meals: [Meal], weights: [WeightEntry]) {
+        var meals: [Meal] = []
+        var weights: [WeightEntry] = []
         let cal = Calendar.current
         for offset in 0..<30 {
             guard let day = cal.date(byAdding: .day, value: -offset, to: cal.startOfDay(for: .now)) else { continue }
@@ -89,6 +93,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
                 weights.append(WeightEntry(date: at(8), weightKg: 66 - Double(30 - offset) * 0.05))
             }
         }
+        return (meals, weights)
     }
 
     // MARK: Auth
