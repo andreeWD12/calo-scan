@@ -136,23 +136,29 @@ private struct TabBar: View {
         }
         .padding(.horizontal, DS.Spacing.xs)
         .padding(.top, DS.Spacing.xs)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
+        // Sfondo e linea di separazione stanno DIETRO ai pulsanti: il pulsante Scanner, che sporge
+        // verso l'alto, copre la linea invece di esserne attraversato.
+        .background(alignment: .top) {
+            Rectangle().fill(.bar)
+                .overlay(alignment: .top) { Divider() }
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private func tabButton(_ tab: AppTab) -> some View {
         Button {
             selection = tab
         } label: {
-            VStack(spacing: 3) {
+            VStack(spacing: 4) {
                 Image(systemName: tab.symbol)
                     .symbolVariant(selection == tab ? .fill : .none)
-                    .font(.system(size: 20))
+                    .font(.system(size: 25, weight: .regular))
+                    .frame(height: 28)
                     .symbolEffect(.bounce.down, value: selection == tab)
                     .contentTransition(.symbolEffect(.replace))
                 Text(tab.title).font(.caption2.weight(.medium))
             }
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(selection == tab ? DS.Palette.brand : DS.Palette.textTertiary)
         }
         .buttonStyle(.plain)
@@ -169,15 +175,17 @@ private struct TabBar: View {
                 ZStack {
                     Circle().fill(DS.Palette.brand)
                         .shadow(color: DS.Palette.brand.opacity(0.35), radius: 10, y: 4)
+                    // Bordo del colore dello sfondo: stacca il pulsante dalla barra.
+                    Circle().strokeBorder(DS.Palette.background, lineWidth: 4)
                     Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 26, weight: .semibold))
+                        .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(DS.Palette.onBrand)
                 }
-                .frame(width: 62, height: 62)
+                .frame(width: 66, height: 66)
                 .symbolEffect(.bounce, value: scanTaps)
                 .zoomSource(id: "scanner", in: zoomNamespace)
-                .offset(y: -14)
-                .padding(.bottom, -14)
+                .offset(y: -16)
+                .padding(.bottom, -16)
                 Text("Scanner").font(.caption2.weight(.semibold)).foregroundStyle(DS.Palette.brand)
             }
             .frame(maxWidth: .infinity)

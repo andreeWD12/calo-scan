@@ -10,19 +10,19 @@ Legenda stato: ✅ implementato · 🟡 parziale (completato nella fase indicata
 
 | Requisito | Dove | Stato |
 |---|---|---|
-| Base giuridica per dati sanitari: consenso esplicito (art. 9(2)(a)) | Onboarding → passo "I tuoi dati": casella separata, non preselezionata, obbligatoria | ✅ UI · 🟡 registrazione in `consents` (Fase 4) |
+| Base giuridica per dati sanitari: consenso esplicito (art. 9(2)(a)) | Onboarding → passo "I tuoi dati": casella separata, non preselezionata, obbligatoria | ✅ UI · ✅ registrazione in `consents` con storico `consent_events` |
 | Consenso libero, specifico, separato dai termini (art. 7) | Registrazione: termini e privacy in casella separata; analisi AI foto facoltativa con alternativa manuale | ✅ |
 | Revoca del consenso facile quanto la concessione (art. 7(3)) | Profilo → Privacy e account | ✅ UI · 🟡 backend (Fase 4/9) |
 | Informativa (art. 13) | Link in Welcome, Registrazione, Onboarding, Paywall, Impostazioni | ✅ link · ⏳ testo dell'informativa (a cura tua) |
 | Età minima per il consenso digitale (art. 8) | 16 anni, la soglia più alta nell'UE (`AgePolicy.minimumAccountAge`) | ✅ |
-| Piano del medico/dietista e descrizioni dei pasti: dati sanitari | Coperti dal consenso art. 9 dell'onboarding; inclusi in esportazione e cancellazione; nome del professionista facoltativo; nessun documento o ricetta caricato | ✅ UI · 🟡 tabella `professional_plans` (Fase 4) |
+| Piano del medico/dietista e descrizioni dei pasti: dati sanitari | Coperti dal consenso art. 9 dell'onboarding; inclusi in esportazione e cancellazione; nome del professionista facoltativo; nessun documento o ricetta caricato | ✅ UI · ✅ tabella `professional_plans`, scritta solo da `save-professional-plan` dopo la rivalidazione |
 | Lista della spesa AI | Richiesta facoltativa dell'utente e dati necessari inviati solo dal server; allergeni esclusi due volte (prompt + filtro `filterSuggestions`); avviso di controllare le etichette | ✅ UI · 🟡 `shopping-suggest` (Fase 7) |
 | Descrizione testuale inviata al fornitore AI | Informativa nel foglio "Descrivi il piatto"; nessun addestramento; disponibile anche senza consenso alle foto, perché non invia immagini | ✅ UI · 🟡 `analyze-food` (Fase 5) |
 | Minimizzazione (art. 5(1)(c)) | Sesso biologico facoltativo; foto ridimensionate e senza EXIF/GPS; nessun SDK di tracciamento | ✅ |
 | Limitazione della conservazione (art. 5(1)(e)) | Foto cancellate dopo `SCAN_IMAGE_RETENTION_DAYS` (default 30) | 🟡 Fase 4/5 |
 | Diritto di accesso e portabilità (art. 15, 20) | Privacy e account → Esporta i miei dati (JSON) | ✅ UI · 🟡 `export-data` (Fase 9) |
 | Diritto alla cancellazione (art. 17) | Privacy e account → Elimina account e dati | ✅ UI · 🟡 `delete-account` (Fase 9) |
-| Sicurezza del trattamento (art. 32) | HTTPS/ATS, token nel Keychain, RLS su ogni tabella, bucket privato, chiavi solo lato server | 🟡 Fase 4 |
+| Sicurezza del trattamento (art. 32) | HTTPS/ATS, token nel Keychain, RLS su ogni tabella, permessi minimi per ruolo, vincoli di validità nel database, chiavi solo lato server | ✅ database · 🟡 bucket foto (Fase 5) |
 | Valutazione d'impatto DPIA (art. 35) | Obbligatoria: trattamento su larga scala di dati sanitari | ⏳ a cura tua, prima del lancio |
 | Trasferimenti extra UE (capo V) | Supabase in regione UE; fornitore AI e USDA con clausole contrattuali standard / DPF | ⏳ verificare i DPA dei fornitori |
 | Registro dei trattamenti (art. 30) e nomina responsabili (art. 28) | DPA con Supabase, fornitore AI, provider email | ⏳ a cura tua |
@@ -69,7 +69,7 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | AI Act art. 50 – stile alimentare | Avviso che le proposte sono generate da un'AI e non sostituiscono il medico | ✅ Fase 2 |
 | App Store 1.4.1 – app per la salute | Nessuna promessa di risultati; avvertenze su sintomi (stanchezza, capogiri) e invito a interrompere e sentire il medico; digiuno escluso per minorenni | ✅ Fase 2 |
 | MDR – modalità gravidanza | Solo indicazioni pubbliche di sicurezza alimentare (Ministero della Salute, ISS, EFSA) e valori di riferimento EFSA; nessuna diagnosi, nessun integratore o dosaggio; rinvio a ginecologo/ostetrica; nessun deficit calorico | ✅ Fase 2 (app) |
-| GDPR art. 9 – gravidanza | Dato sanitario facoltativo, con il consenso ai dati sanitari; modificabile e cancellabile da Profilo › Gravidanza; incluso nell'export e cancellato con l'account | ✅ Fase 2 (app) / 🟡 Fase 4 (DB) |
+| GDPR art. 9 – gravidanza | Dato sanitario facoltativo, con il consenso ai dati sanitari; modificabile e cancellabile da Profilo › Gravidanza; incluso nell'export e cancellato con l'account | ✅ Fase 2 (app) / ✅ Fase 3–4 (DB, nel profilo) |
 | Gravidanza – tutele non a pagamento | Mai deficit calorico, niente digiuni o stili restrittivi ed elenco degli alimenti da evitare valgono anche con Free; i suggerimenti AI escludono sempre gli alimenti da evitare; con Pro la dieta completa (settimana, avvisi automatici) | ✅ Fase 2 |
 | GDPR art. 7(1) – prova del consenso | Consensi in `consents`, ogni modifica registrata da trigger in `consent_events` (consenso, valore, data); leggibili solo dal titolare | ✅ Fase 3 |
 | GDPR art. 25/32 – accesso ai dati | RLS su tutte le tabelle: ogni utente vede solo le proprie righe; profilo e obiettivi scritti solo dalla funzione `save-profile` dopo la rivalidazione; nessun accesso al ruolo anonimo; service_role solo nelle Edge Functions | ✅ Fase 3 |

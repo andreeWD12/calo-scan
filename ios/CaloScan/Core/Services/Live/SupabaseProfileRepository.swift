@@ -46,9 +46,42 @@ struct SupabaseProfileRepository: ProfileRepository {
         }
     }
 
-    // Salvataggio del piano del professionista: Fase 4 (rivalidazione con validateProfessionalPlan).
-    func save(professionalPlan: ProfessionalPlan) async throws { throw APIError.notConnected }
-    func deleteProfessionalPlan() async throws { throw APIError.notConnected }
+    private struct PlanBody: Encodable, Sendable { let plan: ProfessionalPlan }
+    private struct DeleteBody: Encodable, Sendable { let delete = true }
+
+    /// Salvato dalla funzione `save-professional-plan`, che lo rivalida con le stesse regole dell'app.
+    func save(professionalPlan: ProfessionalPlan) async throws {
+        do {
+            try await functions.send(.saveProfessionalPlan, body: PlanBody(plan: professionalPlan))
+        } catch APIError.invalidInput(let codes) {
+            throw APIError.invalidInput(Self.planMessage(for: codes))
+        }
+    }
+
+    func deleteProfessionalPlan() async throws {
+        try await functions.send(.saveProfessionalPlan, body: DeleteBody())
+    }
+
+    /// Traduce i codici di `validateProfessionalPlanPayload` in messaggi per l'utente.
+    static func planMessage(for codes: String) -> String {
+        let list = codes.split(separator: ",").map(String.init)
+        if list.contains("caloriesOutOfRange") {
+            return String(localized: "L'obiettivo calorico deve essere tra \(ProfessionalPlan.calorieRange.lowerBound) e \(ProfessionalPlan.calorieRange.upperBound) kcal.")
+        }
+        if list.contains("macrosDoNotMatchCalories") {
+            return String(localized: "Proteine, carboidrati e grassi non corrispondono alle calorie indicate.")
+        }
+        if list.contains("mealPlanInvalid") {
+            return String(localized: "Il piano dei pasti contiene alimenti o quantità non validi.")
+        }
+        if list.contains("reviewBeforeStart") {
+            return String(localized: "La data del controllo deve essere successiva all'inizio del piano.")
+        }
+        if list.contains("notesTooLong") || list.contains("nameTooLong") {
+            return String(localized: "Il nome o le note sono troppo lunghi.")
+        }
+        return String(localized: "Alcuni dati del piano non sono validi. Controllali e riprova.")
+    }
 
     private func row() async throws -> Row? {
         do {

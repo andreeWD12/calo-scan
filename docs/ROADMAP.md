@@ -5,8 +5,8 @@
 | 1 | Architettura e struttura del progetto | ✅ completata |
 | 2 | Design system e schermate principali | ✅ completata |
 | 3 | Registrazione, login, onboarding (collegamento a Supabase Auth) | ✅ completata |
-| 4 | Database (schema + RLS) e backend | ⏳ prossima |
-| 5 | AI Food Scanner e analisi nutrizionale | |
+| 4 | Database (schema + RLS) e backend | ✅ completata |
+| 5 | AI Food Scanner e analisi nutrizionale | ⏳ prossima |
 | 6 | Diario e statistiche | |
 | 7 | AI Nutrition Coach | |
 | 8 | Abbonamenti Free / Plus / Pro | |
@@ -33,6 +33,19 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Promemoria locali reali (UserNotifications), tema chiaro/scuro/automatico.
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
+
+## Fase 4 – consegnato
+
+- Migrazione `20261124000001_fase4_diario_spesa.sql`:
+  - `meals`: pasti con gli alimenti e i loro valori per 100 g (il diario non cambia se cambia il database alimenti); vincolo `meal_items_valid` con gli stessi limiti dell'app (1–3000 g, valori plausibili, max 50 alimenti).
+  - `shopping_items`: lista della spesa, massimo 200 prodotti per utente (trigger).
+  - RLS sul proprietario, cancellazione a cascata, permessi espliciti.
+- Funzione `save-professional-plan`: salva o elimina il piano del medico o dietista dopo averlo rivalidato (`_shared/professionalPlan.ts`, test inclusi).
+- App: `SupabaseMealRepository` (Home, Diario, statistiche), `SupabaseShoppingListService`, salvataggio del piano del professionista.
+- Barra di navigazione: linea di separazione dietro il pulsante Scanner, icone più grandi.
+- Permessi espliciti per `authenticated` e `service_role` anche sulle tabelle della Fase 3 (migrazioni `…0002`, `…0003`).
+
+Ancora `NotConnectedService` dopo la Fase 4: ricerca alimenti e scanner (Fase 5), misure corporee (Fase 6), coach e suggerimenti AI della spesa (Fase 7), abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
 
 ## Fase 3 – consegnato
 

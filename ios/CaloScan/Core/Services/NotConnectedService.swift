@@ -74,6 +74,7 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
 
 extension AppServices {
     /// Servizi di produzione. Fase 3: autenticazione, profilo, consensi, peso ed eliminazione account.
+    /// Fase 4: diario dei pasti, lista della spesa e piano del professionista.
     /// Gli altri servizi restano `NotConnectedService` finché la loro fase non li collega.
     @MainActor
     static func live(container: AppContainer) -> AppServices {
@@ -81,10 +82,10 @@ extension AppServices {
         let client = container.supabase
         return AppServices(auth: SupabaseAuthService(client: client),
                            profile: SupabaseProfileRepository(client: client, functions: container.functions),
-                           meals: pending, foods: pending, scanner: pending, coach: pending,
+                           meals: SupabaseMealRepository(client: client), foods: pending, scanner: pending, coach: pending,
                            weight: SupabaseWeightRepository(client: client),
                            entitlements: pending, purchases: pending,
                            account: SupabaseAccountService(client: client, functions: container.functions),
-                           push: pending, shopping: pending, referrals: pending)
+                           push: pending, shopping: SupabaseShoppingListService(client: client), referrals: pending)
     }
 }
