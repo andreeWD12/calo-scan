@@ -33,6 +33,8 @@ final class FoodSearchViewModel {
 /// Ricerca manuale degli alimenti nei database nutrizionali.
 struct FoodSearchView: View {
     @State private var model: FoodSearchViewModel
+    @State private var showsCustomFood = false
+    @State private var customFood: FoodItem?
     let onSelect: (FoodItem) -> Void
 
     init(services: AppServices, onSelect: @escaping (FoodItem) -> Void) {
@@ -42,6 +44,14 @@ struct FoodSearchView: View {
 
     var body: some View {
         List {
+            Section {
+                Button { showsCustomFood = true } label: {
+                    Label("Inserisci i valori dell'etichetta", systemImage: "square.and.pencil")
+                        .font(DS.Font.callout.weight(.medium))
+                }
+            } footer: {
+                Text("Per un alimento che non trovi, con calorie e macro letti dalla confezione.")
+            }
             switch model.results {
             case .idle:
                 Section {
@@ -72,6 +82,12 @@ struct FoodSearchView: View {
                     prompt: Text("Cerca un alimento"))
         .autocorrectionDisabled()
         .task(id: model.query) { await model.search() }
+        // L'alimento passa avanti solo a foglio chiuso, così la navigazione successiva non si blocca.
+        .sheet(isPresented: $showsCustomFood, onDismiss: {
+            if let food = customFood { customFood = nil; onSelect(food) }
+        }) {
+            CustomFoodView { customFood = $0 }
+        }
     }
 }
 

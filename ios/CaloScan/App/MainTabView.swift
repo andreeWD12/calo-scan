@@ -33,6 +33,7 @@ struct MainTabView: View {
     @State private var selection: AppTab = .home
     @State private var showScanner = false
     @State private var upsellPlan: Plan?
+    @State private var tabBarHeight: CGFloat = 64
     @Namespace private var scannerZoom
 
     var body: some View {
@@ -42,8 +43,12 @@ struct MainTabView: View {
             tab(.progress) { ProgressScreen(services: app.services) }
             tab(.profile) { ProfileView() }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // Spazio in fondo a ogni lista e ScrollView delle sezioni, alto quanto la barra: così si scorre
+        // fino all'ultimo elemento. (Un safeAreaInset esterno non arriva sempre dentro i NavigationStack.)
+        .contentMargins(.bottom, tabBarHeight, for: .scrollContent)
+        .overlay(alignment: .bottom) {
             TabBar(selection: $selection, zoomNamespace: scannerZoom, onScan: { showScanner = true })
+                .onGeometryChangeCompat { tabBarHeight = $0 }
                 .overlay(alignment: .top) {
                     if let prompt = app.upsell.current, !showScanner {
                         UpsellBanner(prompt: prompt,
@@ -98,6 +103,17 @@ struct MainTabView: View {
 }
 
 private extension View {
+    /// Altezza della vista, aggiornata quando cambia (es. testo più grande con Dynamic Type).
+    func onGeometryChangeCompat(_ action: @escaping (CGFloat) -> Void) -> some View {
+        background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { action(proxy.size.height) }
+                    .onChange(of: proxy.size.height) { _, height in action(height) }
+            }
+        }
+    }
+
     /// Zoom dal pulsante Scanner alla fotocamera (iOS 18+); su iOS 17 resta la presentazione standard.
     @ViewBuilder
     func zoomTransition(sourceID: String, in namespace: Namespace.ID) -> some View {

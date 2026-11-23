@@ -43,3 +43,23 @@ jobs:
           echo "--- avvisi Sendable/isolamento ---"
           grep -E "warning:.*(Sendable|isolat|concurren)" build.log | sort -u | head -60 || true
           tail -5 build.log
+      - name: Screenshot delle sezioni (simulatore, modalità anteprima)
+        if: success()
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone') and 'Pro' in x['name'] and 'Max' not in x['name']))")
+          echo "Simulatore: $UDID"
+          mkdir -p "$PWD/screens"
+          TEST_RUNNER_SCREENSHOT_DIR="$PWD/screens" xcodebuild test \
+            -project CaloScan.xcodeproj -scheme CaloScan \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -only-testing:CaloScanUITests \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO > uitest.log 2>&1 || (grep -E "error:|failed|Failing" uitest.log | head -40; exit 1)
+          ls -la screens
+      - name: Carica gli screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens
+          path: ios/screens/*.png
+          if-no-files-found: warn

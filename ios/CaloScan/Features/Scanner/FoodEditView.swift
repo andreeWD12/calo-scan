@@ -61,6 +61,7 @@ struct FoodEditView: View {
                         }
                     }
                 }
+                .contentMargins(.vertical, 0, for: .scrollContent)
             }
 
             if let food = item.food, let g = gramsText, gramsError == nil {

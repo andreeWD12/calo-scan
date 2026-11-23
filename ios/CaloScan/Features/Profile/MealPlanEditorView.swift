@@ -227,6 +227,7 @@ struct MealPlanEditorView: View {
             }
             .padding(.vertical, DS.Spacing.xs)
         }
+        .contentMargins(.vertical, 0, for: .scrollContent)   // niente spazio della barra in basso
     }
 
     private func mealSection(_ type: MealType) -> some View {

@@ -90,12 +90,22 @@ targets:
     sources: [CaloScanTests]
     dependencies:
       - target: CaloScan
+  CaloScanUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [CaloScanUITests]
+    settings:
+      base:
+        SWIFT_STRICT_CONCURRENCY: minimal
+    dependencies:
+      - target: CaloScan
 schemes:
   CaloScan:
     build:
       targets:
         CaloScan: all
         CaloScanTests: [test]
+        CaloScanUITests: [test]
     test:
-      targets: [CaloScanTests]
+      targets: [CaloScanTests, CaloScanUITests]
       gatherCoverageData: true
