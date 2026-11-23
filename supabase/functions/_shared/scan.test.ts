@@ -37,14 +37,22 @@ test("scansioni: risposta del modello ripulita e limitata", () => {
       { name: "", searchQuery: "x", grams: 10, confidence: 0.5, ingredients: [] },
       { name: "Pane", grams: "tanto", confidence: 0.5 },
     ],
-    questions: ["Q1", "Q2", "Q3", "Q4"],
+    questions: [
+      { question: "Hai condito con olio?", addName: "Olio d'oliva", addSearchQuery: "olive oil", addGrams: 10 },
+      { question: "È integrale?", addName: "", addSearchQuery: "", addGrams: 0 },
+      "Domanda vecchio formato",
+      { question: "Q4", addName: "x", addSearchQuery: "x", addGrams: 5 },
+    ],
     overallConfidence: 0.7,
   });
   assert.equal(r.items.length, 2);
   assert.deepEqual(r.items[0], { name: "Pasta al pomodoro", searchQuery: "pasta cooked", grams: 182, confidence: 0.8, ingredients: ["pasta", "pomodoro"] });
   assert.equal(r.items[1].grams, 3000);
   assert.equal(r.items[1].confidence, 1);
-  assert.equal(r.questions.length, 1);
+  assert.equal(r.questions.length, 3);
+  assert.deepEqual(r.questions[0], { question: "Hai condito con olio?", add: { name: "Olio d'oliva", searchQuery: "olive oil", grams: 10 } });
+  assert.equal(r.questions[1].add, null);
+  assert.deepEqual(r.questions[2], { question: "Domanda vecchio formato", add: null });
   assert.equal(sanitizeAIResult(null).items.length, 0);
   const many = sanitizeAIResult({ items: Array.from({ length: 40 }, (_, i) => ({ name: `a${i}`, searchQuery: "a", grams: 10, confidence: 1, ingredients: [] })) });
   assert.equal(many.items.length, MAX_ITEMS);

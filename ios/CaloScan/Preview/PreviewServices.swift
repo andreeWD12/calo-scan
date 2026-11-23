@@ -165,9 +165,13 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
             ScannedItem(detectedName: "Pasta al pomodoro", matchedFood: food("Pasta"), estimatedGrams: 180, confidenceScore: 0.85),
             ScannedItem(detectedName: "Salsa di pomodoro", matchedFood: food("Salsa"), estimatedGrams: 80, confidenceScore: 0.7,
                         ingredients: ["pomodoro", "basilico"]),
-            ScannedItem(detectedName: "Olio d'oliva", matchedFood: food("Olio"), estimatedGrams: 10, confidenceScore: 0.35),
-            ScannedItem(detectedName: "Parmigiano grattugiato", matchedFood: nil, estimatedGrams: 10, confidenceScore: 0.45),
-        ], questions: ["Quanto olio è stato usato nella preparazione?", "C'è formaggio grattugiato sulla pasta?"],
+        ], questions: ["Hai condito con olio?", "C'è formaggio grattugiato sulla pasta?"],
+           followUps: [
+            ScanFollowUp(question: "Hai condito con olio?",
+                         item: ScannedItem(detectedName: "Olio d'oliva", matchedFood: food("Olio"), estimatedGrams: 10, confidenceScore: 0.5)),
+            ScanFollowUp(question: "C'è formaggio grattugiato sulla pasta?",
+                         item: ScannedItem(detectedName: "Parmigiano grattugiato", matchedFood: nil, estimatedGrams: 10, confidenceScore: 0.5)),
+           ],
            overallConfidenceScore: 0.65)
     }
 

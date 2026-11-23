@@ -34,23 +34,17 @@ struct ScanResultView: View {
                     .listRowBackground(Color.clear)
             }
 
-            if !model.questions.isEmpty {
-                // Solo un suggerimento: non blocca il salvataggio e si chiude con la X.
+            if !model.followUps.isEmpty {
                 Section {
-                    ForEach(model.questions, id: \.self) { q in
-                        HStack(alignment: .top) {
-                            Label(q, systemImage: "lightbulb").font(DS.Font.callout)
-                                .foregroundStyle(DS.Palette.textSecondary)
-                            Spacer()
-                            Button { withAnimation(DS.Motion.snappy) { model.dismissQuestions() } } label: {
-                                Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Palette.textTertiary)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(Text("Chiudi il suggerimento"))
+                    ForEach(model.followUps) { followUp in
+                        FollowUpRow(followUp: followUp) { yes in
+                            withAnimation(DS.Motion.snappy) { model.answer(followUp, yes: yes) }
                         }
                     }
+                } header: {
+                    Text("Qualche dettaglio sul piatto")
                 } footer: {
-                    Text("Se serve, tocca un alimento per correggerlo o aggiungine uno.")
+                    Text("Rispondi per una stima più precisa. Puoi anche saltare: non serve per salvare.")
                 }
             }
 
@@ -189,5 +183,34 @@ private struct DraftItemRow: View {
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityHint(Text("Tocca per modificare"))
+    }
+}
+
+/// Domanda sì/no dell'analisi. Con "Sì" l'alimento proposto entra nel pasto, con "No" la domanda sparisce.
+private struct FollowUpRow: View {
+    let followUp: ScanFollowUp
+    let onAnswer: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            Label(followUp.question, systemImage: "questionmark.bubble")
+                .font(DS.Font.callout.weight(.medium))
+            if let item = followUp.item {
+                Text("Se sì aggiungiamo \(item.matchedFood?.name ?? item.detectedName), circa \(Format.grams(item.estimatedGrams)).")
+                    .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                HStack(spacing: DS.Spacing.xs) {
+                    Button("Sì") { onAnswer(true) }
+                        .buttonStyle(.borderedProminent).tint(DS.Palette.brand)
+                    Button("No") { onAnswer(false) }
+                        .buttonStyle(.bordered).tint(.secondary)
+                }
+                .font(DS.Font.callout.weight(.semibold))
+            } else {
+                Button("Ok, ho capito") { onAnswer(false) }
+                    .buttonStyle(.bordered).tint(.secondary)
+                    .font(DS.Font.callout.weight(.semibold))
+            }
+        }
+        .padding(.vertical, DS.Spacing.xxs)
     }
 }

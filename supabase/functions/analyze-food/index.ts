@@ -64,7 +64,10 @@ Deno.serve(async (req) => {
     throw e;
   }
 
-  const matched = await Promise.all(result.items.map((i) => bestUSDAMatch(i.searchQuery, i.name)));
+  const [matched, extras] = await Promise.all([
+    Promise.all(result.items.map((i) => bestUSDAMatch(i.searchQuery, i.name))),
+    Promise.all(result.questions.map((q) => q.add ? bestUSDAMatch(q.add.searchQuery, q.add.name) : null)),
+  ]);
   const items = result.items.map((item, i) => ({
     id: crypto.randomUUID(),
     detectedName: item.name,
@@ -83,7 +86,16 @@ Deno.serve(async (req) => {
   return json({
     id: crypto.randomUUID(),
     items,
-    questions: result.questions,
+    // Testi semplici per compatibilità; `followUps` porta anche l'alimento da aggiungere se l'utente dice sì.
+    questions: result.questions.map((q) => q.question),
+    followUps: result.questions.map((q, i) => ({
+      id: crypto.randomUUID(),
+      question: q.question,
+      item: q.add
+        ? { id: crypto.randomUUID(), detectedName: q.add.name, matchedFood: extras[i], estimatedGrams: q.add.grams,
+          confidenceScore: 0.5, ingredients: [] }
+        : null,
+    })),
     overallConfidenceScore: result.overallConfidence,
   });
 });
