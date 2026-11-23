@@ -31,13 +31,15 @@ jobs:
           xcodegen generate
       - name: Compila app e test (simulatore, senza firma)
         run: |
-          set -o pipefail
           xcodebuild build-for-testing \
             -project CaloScan.xcodeproj -scheme CaloScan \
             -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation -skipMacroValidation \
-            CODE_SIGNING_ALLOWED=NO 2>&1 | tee build.log | grep -E "error:|warning: .*(Sendable|isolat)|BUILD" || true
-          exit ${PIPESTATUS[0]}
-      - name: Errori
-        if: failure()
-        run: grep -E "error:" build.log | sort -u | head -100
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1
+      - name: Errori e avvisi di concorrenza
+        if: always()
+        run: |
+          grep -E "error:" build.log | sort -u | head -150 || true
+          echo "--- avvisi Sendable/isolamento ---"
+          grep -E "warning:.*(Sendable|isolat|concurren)" build.log | sort -u | head -60 || true
+          tail -5 build.log
