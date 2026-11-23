@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 /// Destinazioni raggiungibili da una notifica (campo `route` nel payload) o da un URL `caloscan://`.
 enum DeepLink: String, Sendable {

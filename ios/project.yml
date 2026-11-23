@@ -29,6 +29,10 @@ targets:
   CaloScan:
     type: application
     platform: iOS
+    # Anche a livello di target, così DEVELOPMENT_TEAM di Secrets.xcconfig arriva alla firma.
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
     sources:
       - path: CaloScan
         excludes: ["**/*.md"]

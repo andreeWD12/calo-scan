@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import CaloScanCore
 
 /// Una riga modificabile del risultato di scansione.

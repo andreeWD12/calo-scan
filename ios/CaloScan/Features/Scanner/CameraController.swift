@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import UIKit
 import SwiftUI
 
@@ -47,8 +47,8 @@ final class CameraController: NSObject, @unchecked Sendable {
         }
     }
 
-    func start() { queue.async { [session] in if !session.isRunning { session.startRunning() } } }
-    func stop() { queue.async { [session] in if session.isRunning { session.stopRunning() } } }
+    func start() { queue.async { [self] in if !session.isRunning { session.startRunning() } } }
+    func stop() { queue.async { [self] in if session.isRunning { session.stopRunning() } } }
 
     func capture() async throws -> Data {
         try await withCheckedThrowingContinuation { cont in

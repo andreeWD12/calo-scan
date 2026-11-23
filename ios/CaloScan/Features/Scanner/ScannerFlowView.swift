@@ -1,6 +1,6 @@
 import SwiftUI
 import PhotosUI
-import AVFoundation
+@preconcurrency import AVFoundation
 
 /// Flusso di scansione a schermo intero: fotocamera → analisi → risultato modificabile → salvataggio.
 struct ScannerFlowView: View {
