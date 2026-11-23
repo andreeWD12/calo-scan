@@ -39,6 +39,7 @@ struct EdgeFunctionClient: Sendable {
         do {
             return try await client.functions.invoke(function.rawValue, options: try options(body), decoder: Self.decoder)
         } catch let FunctionsError.httpError(code, data) {
+            Log.network.error("\(function.rawValue, privacy: .public): HTTP \(code) \(String(decoding: data.prefix(300), as: UTF8.self), privacy: .public)")
             throw APIError.from(status: code, body: data)
         } catch {
             throw APIError.from(error)
@@ -50,6 +51,7 @@ struct EdgeFunctionClient: Sendable {
         do {
             try await client.functions.invoke(function.rawValue, options: try options(body))
         } catch let FunctionsError.httpError(code, data) {
+            Log.network.error("\(function.rawValue, privacy: .public): HTTP \(code) \(String(decoding: data.prefix(300), as: UTF8.self), privacy: .public)")
             throw APIError.from(status: code, body: data)
         } catch {
             throw APIError.from(error)
