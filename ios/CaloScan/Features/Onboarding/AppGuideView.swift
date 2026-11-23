@@ -97,7 +97,8 @@ struct GuidePage: Identifiable {
     let items: [Item]
     var id: String { symbol }
 
-    static let all: [GuidePage] = [
+    // Calcolata: LocalizedStringKey non è Sendable, quindi non può stare in una costante statica (Swift 6).
+    static var all: [GuidePage] { [
         GuidePage(symbol: "house.fill", title: "Home: la tua giornata",
                   intro: "Appena apri l'app vedi a che punto sei oggi.",
                   items: [
@@ -216,5 +217,5 @@ struct GuidePage: Identifiable {
                     Item(symbol: "person.2", title: "Invita un amico",
                          text: "Da Profilo › Invita un amico condividi il tuo codice: quando un amico inizia a usare CaloScan ricevi uno sconto sul primo mese (uno solo, non accumulabile)."),
                   ]),
-    ]
+    ] }
 }

@@ -75,9 +75,10 @@ extension FoodSource {
     }
 }
 
-extension Text {
-    /// Testo con link Markdown costruito da una stringa già localizzata e interpolata.
-    init(markdown: String) {
-        self.init((try? AttributedString(markdown: markdown)) ?? AttributedString(markdown))
+extension AttributedString {
+    /// Testo con link Markdown da una stringa già localizzata e interpolata (mai usata come chiave
+    /// di localizzazione). Se il Markdown non è valido mostra il testo così com'è.
+    static func markdown(_ string: String) -> AttributedString {
+        (try? AttributedString(markdown: string)) ?? AttributedString(string)
     }
 }

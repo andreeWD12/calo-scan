@@ -178,7 +178,7 @@ private struct MessageBubble: View {
         let isUser = message.role == .user
         HStack {
             if isUser { Spacer(minLength: 48) }
-            Text(markdown: message.text)   // il coach può usare Markdown semplice; mai come chiave di localizzazione
+            Text(AttributedString.markdown(message.text))   // il coach può usare Markdown semplice; mai come chiave di localizzazione
                 .font(DS.Font.callout)
                 .textSelection(.enabled)
                 .padding(DS.Spacing.s)

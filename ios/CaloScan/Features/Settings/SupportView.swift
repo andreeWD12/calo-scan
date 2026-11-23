@@ -76,10 +76,10 @@ struct SupportView: View {
     }
 }
 
-struct SupportFAQ: Identifiable {
+struct SupportFAQ: Identifiable, Sendable {
     let id: Int
-    let question: LocalizedStringKey
-    let answer: LocalizedStringKey
+    let question: LocalizedStringResource
+    let answer: LocalizedStringResource
 
     static let all: [SupportFAQ] = [
         SupportFAQ(id: 1, question: "Quante scansioni AI ho?",

@@ -42,6 +42,7 @@ targets:
           UIColorName: LaunchBackground
           UIImageName: LaunchLogo
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIRequiresFullScreen: true            # solo verticale: richiesto da Xcode se non si supportano tutte le rotazioni
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         ITSAppUsesNonExemptEncryption: false
@@ -67,6 +68,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.andrewnalini.caloscan.app
+        CODE_SIGN_STYLE: Automatic          # DEVELOPMENT_TEAM arriva da Config/Secrets.xcconfig
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
