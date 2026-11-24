@@ -32,7 +32,10 @@ struct ProgressScreen: View {
             .sheet(isPresented: $showAddWeight) {
                 AddWeightSheet(initial: model.entries.value?.last?.weightKg ?? app.profile?.weightKg) { kg, date in
                     let saved = await model.add(weightKg: kg, date: date)
-                    if saved { app.toasts.success(String(localized: "Peso registrato"), subtitle: Format.kg(kg), symbol: "scalemass.fill") }
+                    if saved {
+                        app.toasts.success(String(localized: "Peso registrato"), subtitle: Format.kg(kg), symbol: "scalemass.fill")
+                        app.weightSaved(entries: model.entries.value ?? [])
+                    }
                     return saved
                 }
             }

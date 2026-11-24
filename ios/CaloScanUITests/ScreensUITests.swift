@@ -29,6 +29,20 @@ final class ScreensUITests: XCTestCase {
         }
     }
 
+    /// Festa a schermo pieno e pop-up di incoraggiamento.
+    @MainActor
+    func testCelebrations() throws {
+        for kind in ["big", "small"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-PreviewMode", "-PreviewCelebration", kind]
+            app.launch()
+            XCTAssertTrue(app.buttons.firstMatch.waitForExistence(timeout: 20))
+            sleep(kind == "big" ? 5 : 3)
+            save(app, "9-festa-\(kind)")
+            app.terminate()
+        }
+    }
+
     @MainActor
     private func save(_ app: XCUIApplication, _ name: String) {
         let shot = app.screenshot()

@@ -8,6 +8,8 @@ final class AppState {
     let services: AppServices
     let toasts = ToastCenter()
     let upsell = UpsellCenter()
+    /// Feste per i traguardi e pop-up di incoraggiamento e sulle abitudini.
+    let celebrations = CelebrationCenter()
     let router = DeepLinkRouter.shared
 
     private(set) var session: SessionState = .unknown
@@ -142,6 +144,22 @@ final class AppState {
             await refreshEntitlements()
             upsell.mealSaved(entitlements: entitlements, usedAIScan: usedAI)
         }
+        Task { await checkMealMilestones() }
+    }
+
+    /// Traguardi dopo un pasto: obiettivo del giorno, proteine, giornata completa, giorni di fila, abitudini.
+    private func checkMealMilestones() async {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        guard let from = calendar.date(byAdding: .day, value: -60, to: today),
+              let logs = try? await services.meals.dayLogs(from: from, to: today) else { return }
+        celebrations.offer(Milestones.afterMeal(logs: logs, targets: targets, goal: profile?.goal, calendar: calendar))
+    }
+
+    /// Traguardi di peso (metà strada, obiettivo raggiunto). Mai in gravidanza.
+    func weightSaved(entries: [WeightEntry]) {
+        guard pregnancy == nil else { return }
+        celebrations.offer(Milestones.afterWeight(entries: entries, goal: profile?.targetWeightKg))
     }
 
     /// Dopo ogni messaggio al coach: aggiorna i limiti e valuta l'invito all'upgrade.
