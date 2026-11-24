@@ -47,6 +47,7 @@ final class AppState {
     private(set) var diaryRevision = 0
 
     private var sessionTask: Task<Void, Never>?
+    private var purchasesTask: Task<Void, Never>?
     /// Aperto dal link di recupero password: mostra la schermata per scegliere la nuova password.
     var showsNewPassword = false
 
@@ -63,6 +64,13 @@ final class AppState {
                 await self?.apply(state)
             }
         }
+        // Rinnovi, rimborsi, acquisti approvati più tardi: StoreKit li segnala anche ad app chiusa, all'avvio successivo.
+        purchasesTask?.cancel()
+        purchasesTask = Task { [weak self, services] in
+            for await _ in services.purchases.transactionUpdates() {
+                await self?.refreshEntitlements()
+            }
+        }
     }
 
     private func apply(_ state: SessionState) async {
@@ -73,6 +81,9 @@ final class AppState {
             return
         }
         await reloadProfile()
+        await refreshEntitlements()
+        // Abbonamenti già attivi su questo Apple ID (altro dispositivo, reinstallazione): il server li verifica con Apple.
+        await services.purchases.syncCurrentEntitlements()
         await refreshEntitlements()
     }
 

@@ -62,19 +62,36 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 ## Fase 8 – Abbonamenti
 
-10. **App Store Connect**: crea l'app, poi un *Subscription Group* "CaloScan Premium" con i 4 prodotti
-    `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly` e imposta i prezzi.
+10. **App Store Connect** › la tua app › *Monetization* › *Subscriptions*: crea un *Subscription Group* "CaloScan Premium" con i 4 prodotti
+    `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly` e imposta i prezzi
+    (proposta: Plus 4,99 € / 39,99 €, Pro 9,99 € / 79,99 €). Livelli del gruppo: Pro annuale e Pro mensile in alto, poi Plus.
+    Facoltativo: sugli annuali un'*Introductory Offer* "Free trial" di 1 settimana.
     **Offerta gravidanza**: nello stesso gruppo crea anche `caloscan.pro.monthly.pregnancy` (nome "CaloScan Pro – Gravidanza",
     durata 1 mese, **stesso prezzo** di `caloscan.pro.monthly`, stesso livello di servizio). Nella sua pagina → *Subscription Prices* →
     *Introductory Offers* → **Pay as you go**, durata **3 mesi**, prezzo pari al 70% del normale (es. 6,99 € se Pro costa 9,99 €),
     in tutti i paesi in vendita. Se cambi il prezzo di Pro mensile, aggiorna anche questo prodotto e la sua offerta.
-11. Firma il *Paid Applications Agreement* e inserisci dati fiscali e bancari (senza, gli acquisti non funzionano).
-12. Crea una chiave **App Store Connect API (In-App Purchase)** → `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`.
-13. Imposta l'URL delle **App Store Server Notifications V2** sulla funzione `app-store-notifications`.
+    Per ogni prodotto servono nome, descrizione e uno screenshot del paywall (per la revisione).
+11. *Business* › firma il **Paid Applications Agreement** e inserisci dati fiscali e bancari (senza, gli acquisti non funzionano).
+12. *Users and Access* › *Integrations* › **In-App Purchase** › genera una chiave. Scarica il file `.p8` (si scarica una volta sola) e annota
+    *Key ID* e *Issuer ID*. Poi, dalla cartella del progetto:
+    ```
+    supabase secrets set APPLE_ISSUER_ID=... APPLE_KEY_ID=... APPLE_BUNDLE_ID=com.andrewnalini.caloscan.app
+    supabase secrets set APPLE_PRIVATE_KEY="$(cat ~/Downloads/SubscriptionKey_XXXX.p8)"
+    supabase db push --remote
+    supabase functions deploy verify-purchase app-store-notifications get-entitlements
+    ```
+    La chiave resta solo nei segreti di Supabase: non metterla nel repository né nell'app.
+13. *App Information* › **App Store Server Notifications** › V2, sia *Production* sia *Sandbox*:
+    `https://bvfwujdugqzlwikuycmi.supabase.co/functions/v1/app-store-notifications`. Il pulsante "Send test notification" deve dare esito positivo.
+14. **Prova con un account Sandbox** (*Users and Access* › *Sandbox*): sull'iPhone, Impostazioni › App Store › Account sandbox. Avvia l'app da Xcode,
+    compra un piano dal paywall: il piano cambia subito e "Gestisci abbonamento" mostra scadenza e rinnovo. In Sandbox un mese dura 5 minuti.
+    `ios/StoreKit/CaloScan.storekit` serve solo a vedere i prezzi del paywall senza App Store Connect (Xcode › Scheme › Run › Options ›
+    StoreKit Configuration): con questo file gli acquisti non passano dal server, quindi il piano non cambia.
+15. Prima della pubblicazione togli `TESTER_USER_IDS` (`supabase secrets unset TESTER_USER_IDS`): da qui in poi il piano arriva solo dagli abbonamenti.
 
 ## Fase 9–10 – Privacy e pubblicazione
 
-14. Pagine pubbliche per **Informativa privacy** e **Termini di servizio** (URL richiesti da App Store Connect).
+16. Pagine pubbliche per **Informativa privacy** e **Termini di servizio** (URL richiesti da App Store Connect).
     Consigliato un controllo legale: l'app tratta dati relativi alla salute (art. 9 GDPR).
     **Pagina di assistenza** (GitHub Pages, gratis perché il repository è pubblico): GitHub › Settings › Pages ›
     *Deploy from a branch*, branch `main`, cartella `/ (root)`. La pagina è `support/index.html` e risponde su
@@ -82,7 +99,7 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
     Con un dominio tuo: Settings › Pages › *Custom domain*, poi aggiorna `SUPPORT_URL`. Privacy e termini andranno in `privacy/` e `terms/`.
     In `Secrets.xcconfig` imposta anche `SUPPORT_URL` (pagina di assistenza, richiesta da App Store Connect come *Support URL*,
     con un modo per contattarti) e `SUPPORT_EMAIL` (usata da Impostazioni › Assistenza › "Scrivici"; è visibile agli utenti).
-15. Chiave APNs (.p8) per le notifiche push remote: Apple Developer → Keys → nuova chiave con *Apple Push Notifications service*. Serve anche la capability *Push Notifications* sull'App ID (già dichiarata in `project.yml`). I promemoria locali funzionano senza.
-16. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect.
+17. Chiave APNs (.p8) per le notifiche push remote: Apple Developer → Keys → nuova chiave con *Apple Push Notifications service*. Serve anche la capability *Push Notifications* sull'App ID (già dichiarata in `project.yml`). I promemoria locali funzionano senza.
+18. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect.
 
 Tutti i segreti server sono elencati in `supabase/.env.example`.

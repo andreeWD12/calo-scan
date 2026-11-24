@@ -78,6 +78,7 @@ extension AppServices {
     /// Fase 4: diario dei pasti, lista della spesa e piano del professionista.
     /// Fase 5: scanner AI, ricerca alimenti, piano e scansioni di oggi.
     /// Fase 7: coach AI, proposte di stile alimentare e suggerimenti per la spesa.
+    /// Fase 8: abbonamenti con StoreKit 2, verificati dal server con l'App Store Server API.
     /// Gli altri servizi restano `NotConnectedService` finché la loro fase non li collega.
     @MainActor
     static func live(container: AppContainer) -> AppServices {
@@ -89,7 +90,7 @@ extension AppServices {
                            scanner: SupabaseScanService(functions: container.functions),
                            coach: SupabaseCoachService(functions: container.functions),
                            weight: SupabaseWeightRepository(client: client),
-                           entitlements: SupabaseEntitlementService(functions: container.functions), purchases: pending,
+                           entitlements: SupabaseEntitlementService(functions: container.functions), purchases: StoreKitPurchaseService(client: client, functions: container.functions),
                            account: SupabaseAccountService(client: client, functions: container.functions),
                            push: pending, shopping: SupabaseShoppingListService(client: client, functions: container.functions), referrals: pending)
     }

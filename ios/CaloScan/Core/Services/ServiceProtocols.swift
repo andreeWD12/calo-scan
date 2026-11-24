@@ -193,6 +193,15 @@ protocol PurchaseService: Sendable {
     func offers() async throws -> [PlanOffer]
     func purchase(offerID: String) async throws -> PurchaseOutcome
     func restore() async throws
+    /// All'accesso: invia al server gli abbonamenti già attivi su questo Apple ID (es. acquistati su un altro dispositivo).
+    func syncCurrentEntitlements() async
+    /// Eventi di StoreKit fuori dall'app (rinnovi, Chiedi di acquistare, codici offerta, rimborsi): ognuno chiede di ricaricare il piano.
+    func transactionUpdates() -> AsyncStream<Void>
+}
+
+extension PurchaseService {
+    func syncCurrentEntitlements() async {}
+    func transactionUpdates() -> AsyncStream<Void> { AsyncStream { $0.finish() } }
 }
 
 // MARK: - Account e privacy

@@ -68,3 +68,9 @@ verify_jwt = false
 
 [functions.coach-chat]
 verify_jwt = false
+
+[functions.verify-purchase]
+verify_jwt = false
+
+[functions.app-store-notifications]
+verify_jwt = false

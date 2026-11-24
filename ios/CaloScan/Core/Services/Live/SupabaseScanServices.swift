@@ -43,7 +43,7 @@ struct SupabaseScanService: ScanService {
     }
 }
 
-/// Piano e utilizzo di oggi (funzione `get-entitlements`). Gli acquisti arrivano con la Fase 8.
+/// Piano e utilizzo di oggi (funzione `get-entitlements`). Il piano arriva dagli abbonamenti verificati dal server (Fase 8).
 struct SupabaseEntitlementService: EntitlementService {
     let functions: EdgeFunctionClient
 

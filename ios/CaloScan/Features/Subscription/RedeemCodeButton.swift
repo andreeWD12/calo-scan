@@ -22,6 +22,7 @@ struct RedeemCodeButton: View {
             .modifier(OfferCodeSheet(isPresented: $isPresented) {
                 Task {
                     let before = app.entitlements.plan
+                    await app.services.purchases.syncCurrentEntitlements()
                     await app.refreshEntitlements()
                     if app.entitlements.plan > before { onRedeemed?() }
                 }

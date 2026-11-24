@@ -154,6 +154,15 @@ Funzioni riservate (filigrana con lucchetto `premiumLocked(_:title:)`: il conten
 
 Limiti in `SCAN_LIMITS` (`supabase/functions/_shared/scan.ts`), applicati da `analyze-food` e mostrati da `get-entitlements`: si cambiano con un nuovo deploy delle funzioni, senza rilasciare l'app. Lo scanner AI è riservato ai piani a pagamento per contenere i costi del fornitore AI (decisione del 23/11/2026). Le analisi fallite non contano. Costi AI: monitorare il costo medio per utente sul cruscotto del fornitore. Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`, più `caloscan.pro.monthly.pregnancy` (Pro, solo per l'offerta gravidanza); i prezzi si impostano in App Store Connect.
 
+### Acquisti e verifica (Fase 8)
+
+1. L'app compra con StoreKit 2 passando `appAccountToken` = ID utente, poi invia a `verify-purchase` solo gli ID delle transazioni.
+2. Il server rilegge lo stato dall'**App Store Server API** (produzione, poi sandbox per TestFlight e Xcode) con un JWT ES256 firmato dalla chiave In-App Purchase (`APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, solo segreti Supabase). Non si fida mai di quanto dichiara l'app.
+3. Ogni abbonamento (`original_transaction_id`) appartiene a un solo account: se `appAccountToken` o il collegamento esistente indicano un altro account, la richiesta è rifiutata con un messaggio chiaro.
+4. `app-store-notifications` riceve le Server Notifications V2 (rinnovo, scadenza, rimborso, problemi di addebito) e rilegge lo stato da Apple; aggiorna solo abbonamenti già collegati. Risponde 500 se Apple non è raggiungibile, così Apple riprova.
+5. Danno accesso solo gli stati 1 (attivo) e 4 (periodo di tolleranza) non scaduti; con più abbonamenti vale il piano più alto. `TESTER_USER_IDS` resta solo per lo sviluppo.
+6. L'app sincronizza gli abbonamenti attivi all'accesso e dopo "Riscatta un codice", e ascolta `Transaction.updates` per tutta la sessione. Eliminando l'account si eliminano anche le righe di `subscriptions` (l'abbonamento Apple va disdetto dalle Impostazioni dell'iPhone, come dice la schermata di eliminazione).
+
 ### Lista della spesa
 
 Da Home (icona carrello in alto a sinistra) e da Profilo. Prodotti raggruppati per reparto (`ShoppingCategory.guess` sceglie il reparto dal nome; l'utente lo cambia con la pressione prolungata), spunta con un tocco, eliminazione, rimozione dei prodotti presi, condivisione come testo.

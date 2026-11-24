@@ -9,8 +9,8 @@
 | 5 | AI Food Scanner e analisi nutrizionale | ✅ completata |
 | 6 | Diario e statistiche | ✅ completata |
 | 7 | AI Nutrition Coach | ✅ completata |
-| 8 | Abbonamenti Free / Plus / Pro | ⏳ prossima |
-| 9 | Notifiche, privacy, sicurezza | |
+| 8 | Abbonamenti Free / Plus / Pro | ✅ completata |
+| 9 | Notifiche, privacy, sicurezza | ⏳ prossima |
 | 10 | Test, bug fixing, preparazione App Store | |
 
 ## Fase 1 – consegnato
@@ -33,6 +33,15 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Promemoria locali reali (UserNotifications), tema chiaro/scuro/automatico.
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
+
+## Fase 8 – consegnato
+
+- Migrazione `20261128000001_fase8_abbonamenti.sql`: tabella `subscriptions` (un abbonamento Apple per riga, legato a un solo account), RLS in sola lettura, permessi espliciti.
+- Funzione `verify-purchase`: l'app invia solo gli ID delle transazioni; il server rilegge lo stato dall'**App Store Server API** con la chiave In-App Purchase e decide il piano. Un abbonamento con `appAccountToken` di un altro account viene rifiutato.
+- Funzione `app-store-notifications` (Server Notifications V2): rinnovi, scadenze, rimborsi e problemi di addebito aggiornano il piano anche ad app chiusa. Il contenuto della notifica serve solo a sapere quale abbonamento rileggere da Apple.
+- `get-entitlements` legge il piano dagli abbonamenti (attivo o in periodo di tolleranza), con scadenza e rinnovo automatico.
+- App: `StoreKitPurchaseService` (StoreKit 2) con prezzi e offerte reali, acquisto con `appAccountToken`, ripristino, codici offerta, ascolto di `Transaction.updates` e sincronizzazione all'accesso. Logica in `_shared/appstore.ts` con test.
+- Rimangono per la Fase 9: "Invita un amico" (codici offerta automatici), notifiche push, esportazione dei dati.
 
 ## Fase 7 – consegnato
 
@@ -73,7 +82,7 @@ Funzioni Plus e Pro segnate da una filigrana con lucchetto (vedi ARCHITECTURE §
 - Barra di navigazione: linea di separazione dietro il pulsante Scanner, icone più grandi.
 - Permessi espliciti per `authenticated` e `service_role` anche sulle tabelle della Fase 3 (migrazioni `…0002`, `…0003`).
 
-Ancora `NotConnectedService` dopo la Fase 7: abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
+Ancora `NotConnectedService` dopo la Fase 8: inviti, push ed export dati (Fase 9).
 
 ## Fase 3 – consegnato
 
