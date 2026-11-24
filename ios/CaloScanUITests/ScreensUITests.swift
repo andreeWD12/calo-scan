@@ -37,7 +37,10 @@ final class ScreensUITests: XCTestCase {
             app.launchArguments = ["-PreviewMode", "-PreviewCelebration", kind]
             app.launch()
             XCTAssertTrue(app.buttons.firstMatch.waitForExistence(timeout: 20))
-            sleep(kind == "big" ? 5 : 3)
+            let title = kind == "big" ? "7 giorni di fila" : "Metà piatto di verdura"
+            let element = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+            XCTAssertTrue(element.waitForExistence(timeout: 15), "\(kind): traguardo non mostrato")
+            sleep(1)
             save(app, "9-festa-\(kind)")
             app.terminate()
         }
