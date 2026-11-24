@@ -72,15 +72,15 @@ struct MainTabView: View {
         .onAppear { handle(app.router.pending) }
     }
 
-    /// Ogni sezione resta montata; quella attiva entra con una leggera dissolvenza e scala.
+    /// Ogni sezione resta montata; si passa da una all'altra all'istante.
     private func tab<Content: View>(_ tab: AppTab, @ViewBuilder content: () -> Content) -> some View {
         let isActive = selection == tab
+        // Cambio istantaneo, come le tab di sistema: una dissolvenza qui sembrava un rallentamento.
         return content()
             .opacity(isActive ? 1 : 0)
-            .scaleEffect(isActive || reduceMotion ? 1 : 0.985)
             .allowsHitTesting(isActive)
             .accessibilityHidden(!isActive)
-            .animation(reduceMotion ? .easeInOut(duration: 0.15) : DS.Motion.snappy, value: selection)
+            .transaction(value: selection) { $0.animation = nil }
     }
 
     /// Apre la schermata richiesta da una notifica o da un link `caloscan://`.
