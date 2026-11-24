@@ -40,6 +40,7 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Funzione `coach-chat`: risposte dell'AI con profilo, obiettivi effettivi (piano del professionista › gravidanza › calcolati), pasti di oggi e media della settimana. Chat solo Plus (30 messaggi al giorno) e Pro (150); Free riceve `plan_required`. Filtri di sicurezza in `_shared/coach.ts` con test.
 - Stesse funzione: proposte di stile alimentare (Pro, 5 al giorno, solo stili ammessi da `allowedStyles`) e lista della spesa AI (Plus e Pro, 5 al giorno, senza allergeni e, in gravidanza, senza alimenti a rischio).
 - Consigli del giorno gratuiti per tutti, calcolati sul telefono con regole fisse (`DailyTips`, con test): calorie rimaste, proteine, costanza, media della settimana. In Home e nel Coach.
+- Traguardi: feste con coriandoli (obiettivo del giorno, giorni di fila, peso obiettivo) e pop-up di incoraggiamento e sulle abitudini (`Milestones`, `CelebrationCenter`).
 - App: chat collegata, scheda con lucchetto per Free, "Cancella conversazione", messaggi rimasti da `get-entitlements`.
 
 ## Fase 6 – consegnato

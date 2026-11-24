@@ -135,6 +135,10 @@ Regole:
 - **Stile alimentare** (Pro) e **lista della spesa AI** (Plus e Pro): stessa funzione, azioni `eating_styles` e `shopping`, 5 al giorno ciascuna, output filtrato sul server (`sanitizeProposals`, `filterSuggestions`, `filterForPregnancy`).
 - Tutto richiede il consenso ai dati sanitari. Nei log nessun testo dell'utente.
 
+### Traguardi e incoraggiamenti
+
+`Milestones` (CaloScanCore, con test) decide dopo ogni pasto o peso salvato: obiettivo calorico del giorno (90–110% con la cena registrata, mai sotto), proteine raggiunte, colazione-pranzo-cena registrati, giorni di fila (3, 7, 14, 30, 60, 100, 200, 365), bentornato dopo almeno 3 giorni di pausa, un consiglio sulle abitudini al primo pasto del giorno, metà strada e peso obiettivo raggiunto (mai in gravidanza). `CelebrationCenter` mostra il primo non ancora visto: festa a schermo pieno con coriandoli (al massimo 1 al giorno) o pop-up in alto (al massimo 2 al giorno). Coriandoli disattivati con Riduci movimento; tutto disattivabile da Impostazioni › Animazioni per i traguardi.
+
 ## 8. Abbonamenti
 
 | Piano | Scansioni AI/giorno | Coach | Statistiche |
