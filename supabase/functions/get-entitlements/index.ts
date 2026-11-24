@@ -5,7 +5,7 @@
 import { errorResponse } from "../_shared/errors.ts";
 import { COACH_LIMITS, safeTimeZone, SCAN_LIMITS } from "../_shared/scan.ts";
 import { currentPlan } from "../_shared/plan.ts";
-import { scanUsage } from "../_shared/usage.ts";
+import { aiUsageToday, scanUsage } from "../_shared/usage.ts";
 import { adminClient, json, readJSON, requireUser } from "../_shared/supabase.ts";
 
 Deno.serve(async (req) => {
@@ -17,12 +17,16 @@ Deno.serve(async (req) => {
 
   const plan = await currentPlan(admin, auth.userId);
   try {
-    const usage = await scanUsage(admin, auth.userId, safeTimeZone(body.timeZone));
+    const tz = safeTimeZone(body.timeZone);
+    const [usage, coachUsed] = await Promise.all([
+      scanUsage(admin, auth.userId, tz),
+      aiUsageToday(admin, auth.userId, "coach", tz),
+    ]);
     return json({
       plan,
       scansUsedToday: usage.today,
       scansLimitToday: SCAN_LIMITS.daily[plan],
-      coachMessagesUsedToday: 0, // il coach arriva con la Fase 7
+      coachMessagesUsedToday: coachUsed,
       coachMessagesLimitToday: COACH_LIMITS[plan],
       expiresAt: null,
       willRenew: false,

@@ -3,9 +3,10 @@ import Supabase
 import CaloScanCore
 
 /// Lista della spesa (tabella `shopping_items`, RLS sul proprietario, massimo 200 prodotti).
-/// I suggerimenti dell'AI arrivano con la fase del coach: fino ad allora restano non collegati.
+/// I suggerimenti dell'AI (Plus e Pro) passano dalla funzione `coach-chat`, che esclude gli allergeni.
 struct SupabaseShoppingListService: ShoppingListService {
     let client: SupabaseClient
+    let functions: EdgeFunctionClient
 
     private struct Row: Codable, Sendable {
         let id: UUID
@@ -67,5 +68,13 @@ struct SupabaseShoppingListService: ShoppingListService {
         }
     }
 
-    func suggest(request: String?) async throws -> [ShoppingSuggestion] { throw APIError.notConnected }
+    private struct SuggestBody: Encodable, Sendable { let action = "shopping"; let request: String?; let timeZone: String }
+    private struct SuggestResponse: Decodable { let suggestions: [ShoppingSuggestion] }
+
+    func suggest(request: String?) async throws -> [ShoppingSuggestion] {
+        let text = request?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let response: SuggestResponse = try await functions.invoke(
+            .coachChat, body: SuggestBody(request: text?.isEmpty == false ? text : nil, timeZone: TimeZone.current.identifier))
+        return response.suggestions
+    }
 }

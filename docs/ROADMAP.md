@@ -8,8 +8,8 @@
 | 4 | Database (schema + RLS) e backend | ✅ completata |
 | 5 | AI Food Scanner e analisi nutrizionale | ✅ completata |
 | 6 | Diario e statistiche | ✅ completata |
-| 7 | AI Nutrition Coach | ⏳ prossima |
-| 8 | Abbonamenti Free / Plus / Pro | |
+| 7 | AI Nutrition Coach | ✅ completata |
+| 8 | Abbonamenti Free / Plus / Pro | ⏳ prossima |
 | 9 | Notifiche, privacy, sicurezza | |
 | 10 | Test, bug fixing, preparazione App Store | |
 
@@ -33,6 +33,14 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Promemoria locali reali (UserNotifications), tema chiaro/scuro/automatico.
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
+
+## Fase 7 – consegnato
+
+- Migrazione `20261127000001_fase7_coach.sql`: `coach_messages` (conversazione, l'utente la legge e la cancella) e `ai_events` (solo conteggio degli utilizzi, senza testo), RLS e permessi espliciti.
+- Funzione `coach-chat`: risposte dell'AI con profilo, obiettivi effettivi (piano del professionista › gravidanza › calcolati), pasti di oggi e media della settimana. Chat solo Plus (30 messaggi al giorno) e Pro (150); Free riceve `plan_required`. Filtri di sicurezza in `_shared/coach.ts` con test.
+- Stesse funzione: proposte di stile alimentare (Pro, 5 al giorno, solo stili ammessi da `allowedStyles`) e lista della spesa AI (Plus e Pro, 5 al giorno, senza allergeni e, in gravidanza, senza alimenti a rischio).
+- Consigli del giorno gratuiti per tutti, calcolati sul telefono con regole fisse (`DailyTips`, con test): calorie rimaste, proteine, costanza, media della settimana. In Home e nel Coach.
+- App: chat collegata, scheda con lucchetto per Free, "Cancella conversazione", messaggi rimasti da `get-entitlements`.
 
 ## Fase 6 – consegnato
 
@@ -64,7 +72,7 @@ Funzioni Plus e Pro segnate da una filigrana con lucchetto (vedi ARCHITECTURE §
 - Barra di navigazione: linea di separazione dietro il pulsante Scanner, icone più grandi.
 - Permessi espliciti per `authenticated` e `service_role` anche sulle tabelle della Fase 3 (migrazioni `…0002`, `…0003`).
 
-Ancora `NotConnectedService` dopo la Fase 6: coach e suggerimenti AI della spesa (Fase 7), abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
+Ancora `NotConnectedService` dopo la Fase 7: abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
 
 ## Fase 3 – consegnato
 

@@ -65,7 +65,11 @@ struct HomeView: View {
                 }
             }
         }
-        .task(id: app.diaryRevision) { await model.load() }
+        .task(id: app.diaryRevision) {
+            model.tipTargets = app.targets
+            model.tipProfile = app.profile
+            await model.load()
+        }
         .onChange(of: app.router.pending, initial: true) { _, link in
             if link == .coach { path = [.coach]; app.router.pending = nil }
         }

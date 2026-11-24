@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.get-entitlements]
 verify_jwt = false
+
+[functions.coach-chat]
+verify_jwt = false

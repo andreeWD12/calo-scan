@@ -6,10 +6,11 @@ struct CoachView: View {
     @Environment(AppState.self) private var app
     @State private var model: CoachViewModel
     @State private var showPaywall = false
+    @State private var confirmClear = false
     @FocusState private var inputFocused: Bool
 
     init(services: AppServices) {
-        _model = State(initialValue: CoachViewModel(coach: services.coach))
+        _model = State(initialValue: CoachViewModel(coach: services.coach, meals: services.meals))
     }
 
     var body: some View {
@@ -23,8 +24,16 @@ struct CoachView: View {
                         EatingStyleEntry(plan: app.entitlements.plan, current: app.profile?.eatingStyle?.style)
                     }
                     .buttonStyle(.pressable)
-                    ForEach(model.insights) { InsightRow(insight: $0) }
-                    conversation
+                    if !model.insights.isEmpty {
+                        Text("Consigli di oggi").font(DS.Font.caption.weight(.semibold))
+                            .foregroundStyle(DS.Palette.textSecondary).padding(.top, DS.Spacing.xs)
+                        ForEach(model.insights) { InsightRow(insight: $0) }
+                    }
+                    if app.entitlements.includesCoachChat {
+                        conversation
+                    } else {
+                        CoachChatLocked { showPaywall = true }
+                    }
                     if model.isSending { TypingIndicator().id("typing") }
                 }
                 .padding(DS.Spacing.screen)
@@ -41,13 +50,35 @@ struct CoachView: View {
         .background { AppBackground() }
         .navigationTitle("Coach AI")
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom) { inputBar }
-        .task { await model.load() }
-        .sheet(isPresented: $showPaywall) { PaywallView(services: app.services, highlight: .pro) }
+        .safeAreaInset(edge: .bottom) {
+            if app.entitlements.includesCoachChat { inputBar }
+        }
+        .toolbar {
+            if app.entitlements.includesCoachChat, model.messages.value?.isEmpty == false {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Cancella conversazione", systemImage: "trash", role: .destructive) { confirmClear = true }
+                    } label: { Image(systemName: "ellipsis.circle") }
+                    .accessibilityLabel(Text("Altre azioni"))
+                }
+            }
+        }
+        .confirmationDialog("Cancellare la conversazione con il coach?", isPresented: $confirmClear, titleVisibility: .visible) {
+            Button("Cancella conversazione", role: .destructive) { Task { await model.clear() } }
+        } message: {
+            Text("I messaggi vengono eliminati dal tuo account. I messaggi già usati oggi restano conteggiati.")
+        }
+        .task(id: app.entitlements.includesCoachChat) {
+            await model.load(chatIncluded: app.entitlements.includesCoachChat, targets: app.targets, profile: app.profile)
+        }
+        .sheet(isPresented: $showPaywall) { PaywallView(services: app.services, highlight: .plus) }
         .alert("Messaggio non inviato",
                isPresented: Binding(get: { model.sendError != nil }, set: { if !$0 { model.sendError = nil } }),
                presenting: model.sendError) { error in
-            if case .quotaExceeded = error { Button("Scopri i piani") { showPaywall = true } }
+            switch error {
+            case .quotaExceeded, .planRequired: Button("Scopri i piani") { showPaywall = true }
+            default: EmptyView()
+            }
             Button("OK", role: .cancel) {}
         } message: { Text($0.localizedDescription) }
     }
@@ -107,13 +138,44 @@ struct CoachView: View {
                 .sensoryFeedback(.impact(weight: .light), trigger: model.messages.value?.count)
                 .accessibilityLabel(Text("Invia"))
             }
-            let e = app.entitlements
-            Text("\(max(e.coachMessagesLimitToday - e.coachMessagesUsedToday, 0)) messaggi disponibili oggi")
+            Text("\(app.entitlements.coachMessagesRemaining) messaggi disponibili oggi")
                 .font(.caption2).foregroundStyle(DS.Palette.textTertiary)
         }
         .padding(.horizontal, DS.Spacing.screen)
         .padding(.vertical, DS.Spacing.xs)
         .background(.bar)
+    }
+}
+
+/// Free: la chat con il coach AI è inclusa in Plus e Pro. I consigli del giorno restano gratuiti.
+private struct CoachChatLocked: View {
+    let action: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.s) {
+            HStack(spacing: DS.Spacing.s) {
+                Image(systemName: "bubble.left.and.text.bubble.right.fill").font(.title2).foregroundStyle(DS.Palette.brand)
+                    .frame(width: 44, height: 44).background(DS.Palette.brandSoft, in: .circle)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Chatta con il coach AI").font(DS.Font.headline)
+                    Text("Incluso in Plus (30 messaggi al giorno) e Pro (150 al giorno)")
+                        .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                }
+                Spacer(minLength: 0)
+                PlanLockBadge(plan: .plus)
+            }
+            Text("Chiedi idee per i pasti, quante calorie ti restano o come aumentare le proteine: il coach risponde usando i tuoi obiettivi e il diario di oggi.")
+                .font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
+            Button(action: action) {
+                Text("Scopri Plus e Pro").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(DS.Palette.brand)
+        }
+        .padding(DS.Spacing.m)
+        .background(DS.Palette.surface, in: .rect(cornerRadius: DS.Radius.l))
+        .softShadow()
+        .padding(.top, DS.Spacing.s)
     }
 }
 

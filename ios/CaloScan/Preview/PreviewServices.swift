@@ -190,21 +190,20 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
 
     // MARK: Coach
 
-    func dailyInsights() async throws -> [CoachInsight] {
-        [CoachInsight(id: UUID(), text: "Modalità anteprima: qui compariranno i consigli generati dal coach AI sui tuoi dati.", tone: .info)]
-    }
-
     func history() async throws -> [CoachMessage] { messages }
 
     func send(_ text: String) async throws -> CoachMessage {
+        guard plan != .free else { throw APIError.planRequired(minimum: "Plus") }
         try await Task.sleep(for: .seconds(1))
         messages.append(CoachMessage(id: UUID(), role: .user, text: text, createdAt: .now))
         let reply = CoachMessage(id: UUID(), role: .assistant,
-                                 text: "Modalità anteprima: il coach AI risponderà qui quando il backend sarà collegato (Fase 7).",
+                                 text: "Modalità anteprima: qui risponde il coach AI, usando i tuoi obiettivi e i pasti di oggi.",
                                  createdAt: .now)
         messages.append(reply)
         return reply
     }
+
+    func clearHistory() async throws { messages.removeAll() }
 
     // MARK: Peso
 
@@ -220,7 +219,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     func refresh() async throws -> Entitlements {
         let limit: Int? = switch plan { case .free: 0; case .plus: 4; case .pro: 15 }
         return Entitlements(plan: plan, scansUsedToday: scansUsed, scansLimitToday: limit,
-                            coachMessagesUsedToday: messages.count / 2, coachMessagesLimitToday: plan == .free ? 5 : 30,
+                            coachMessagesUsedToday: messages.count / 2, coachMessagesLimitToday: switch plan { case .free: 0; case .plus: 30; case .pro: 150 },
                             expiresAt: plan == .free ? nil : Calendar.current.date(byAdding: .month, value: 1, to: .now),
                             willRenew: plan != .free)
     }
@@ -300,7 +299,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
 
     /// Anteprima: proposte fisse scelte tra gli stili ammessi, con le stesse regole di sicurezza del server.
     func proposeEatingStyles(_ request: EatingStyleRequest) async throws -> [EatingStyleProposal] {
-        guard plan != .free else { throw APIError.planRequired(minimum: "Plus") }
+        guard plan == .pro else { throw APIError.planRequired(minimum: "Pro") }
         try await Task.sleep(for: .seconds(1.2))
         guard let profile else { return [] }
         let allowed = EatingStyleSafety.allowedStyles(ageYears: profile.ageYears(), bmi: profile.bmi,

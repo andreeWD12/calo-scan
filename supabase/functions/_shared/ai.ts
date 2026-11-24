@@ -27,7 +27,7 @@ export function isAIConfigured(): boolean {
 }
 
 /** Richiesta con risposta JSON vincolata allo schema. null se il modello rifiuta. */
-async function structured(system: string, content: Anthropic.Beta.Messages.BetaContentBlockParam[],
+export async function structured(system: string, content: Anthropic.Beta.Messages.BetaContentBlockParam[],
   schema: Record<string, unknown>): Promise<unknown | null> {
   try {
     const response = await anthropic().beta.messages.create({
@@ -95,4 +95,28 @@ export async function toItalianNames(names: string[]): Promise<string[] | null> 
   return list.length === names.length && list.every((n) => typeof n === "string" && n.trim())
     ? list.map((n) => (n as string).trim().slice(0, 120))
     : null;
+}
+
+export interface ChatTurn { role: "user" | "assistant"; text: string }
+
+/** Risposta in testo del coach. null se il modello rifiuta. I turni devono alternarsi e finire con l'utente. */
+export async function chat(system: string, turns: ChatTurn[]): Promise<string | null> {
+  try {
+    const response = await anthropic().beta.messages.create({
+      model: AI_MODEL,
+      max_tokens: 4000,
+      system,
+      messages: turns.map((t) => ({ role: t.role, content: t.text })),
+      output_config: { effort: "low" },
+      ...(FALLBACK_MODELS.includes(AI_MODEL)
+        ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const }
+        : {}),
+    });
+    if (response.stop_reason === "refusal") return null;
+    return response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+  } catch (error) {
+    if (error instanceof AIUnavailableError) throw error;
+    console.error("ai: chat non riuscita", error instanceof Anthropic.APIError ? error.status : (error as Error).name);
+    throw new AIUnavailableError("richiesta AI non riuscita");
+  }
 }

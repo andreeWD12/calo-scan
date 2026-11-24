@@ -16,7 +16,8 @@ Legenda stato: ✅ implementato · 🟡 parziale (completato nella fase indicata
 | Informativa (art. 13) | Link in Welcome, Registrazione, Onboarding, Paywall, Impostazioni | ✅ link · ⏳ testo dell'informativa (a cura tua) |
 | Età minima per il consenso digitale (art. 8) | 16 anni, la soglia più alta nell'UE (`AgePolicy.minimumAccountAge`) | ✅ |
 | Piano del medico/dietista e descrizioni dei pasti: dati sanitari | Coperti dal consenso art. 9 dell'onboarding; inclusi in esportazione e cancellazione; nome del professionista facoltativo; nessun documento o ricetta caricato | ✅ UI · ✅ tabella `professional_plans`, scritta solo da `save-professional-plan` dopo la rivalidazione |
-| Lista della spesa AI | Richiesta facoltativa dell'utente e dati necessari inviati solo dal server; allergeni esclusi due volte (prompt + filtro `filterSuggestions`); avviso di controllare le etichette | ✅ UI · 🟡 `shopping-suggest` (Fase 7) |
+| Lista della spesa AI | Richiesta facoltativa dell'utente e dati necessari inviati solo dal server; allergeni esclusi due volte (prompt + filtro `filterSuggestions`); avviso di controllare le etichette | ✅ UI · ✅ `coach-chat` (azione `shopping`) |
+| Conversazione con il coach | Dato sanitario coperto dal consenso art. 9 (controllato dal server); salvata in `coach_messages`, cancellabile dall'utente (Coach › ⋯ › Cancella conversazione) e con l'account; inviata al fornitore AI solo per rispondere; i limiti si contano in `ai_events` senza testo | ✅ |
 | Descrizione testuale inviata al fornitore AI | Informativa nel foglio "Descrivi il piatto"; nessun addestramento; disponibile anche senza consenso alle foto, perché non invia immagini | ✅ UI · ✅ `analyze-food` controlla il consenso sanitario; il testo non viene salvato |
 | Minimizzazione (art. 5(1)(c)) | Sesso biologico facoltativo; foto ridimensionate e senza EXIF/GPS; nessun SDK di tracciamento | ✅ |
 | Limitazione della conservazione (art. 5(1)(e)) | Foto mai salvate sui server: inviate al fornitore AI solo per l'analisi; miniatura solo sul telefono, esclusa dal backup, cancellata con il pasto e all'uscita | ✅ |
@@ -44,7 +45,7 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 - piano indicato da un professionista: l'app **registra e mostra** i valori inseriti dall'utente (funzione di archivio e visualizzazione, esclusa dall'MDR secondo le linee guida MDCG 2019-11); non li calcola, non li corregge, non dà indicazioni cliniche. Conferma esplicita che i valori vengono da un professionista e avviso sotto le soglie dell'app ✅
 - pasti e grammature del piano: copiati dall'utente, mai generati o adattati dall'app; la registrazione "come da piano" salva le quantità realmente mangiate ✅
 - sgarri: etichetta facoltativa scelta dall'utente, linguaggio neutro e nessun invito a compensare (prevenzione dei disturbi alimentari, coerente con le avvertenze del coach) ✅
-- il coach rifiuta diagnosi e diete terapeutiche (prompt e filtri lato server, Fase 7) 🟡
+- il coach rifiuta diagnosi e diete terapeutiche (prompt in `_shared/coach.ts`); richieste su autolesionismo, disturbi alimentari o restrizioni estreme ricevono una risposta fissa con i numeri di aiuto (112, Telefono Amico, SOS Disturbi Alimentari 800 180 969) senza passare dal modello; mai obiettivi sotto la soglia minima ✅
 - soglie di sicurezza: mai sotto 1.200/1.500 kcal né sotto il BMR, nessun deficit per i minori, peso obiettivo non sotto BMI 18,5 ✅
 
 ## 4. Consumatori e accessibilità
