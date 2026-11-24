@@ -76,8 +76,9 @@ struct ProgressScreen: View {
                 }
                 .pickerStyle(.segmented)
                 if model.range == .all && app.entitlements.plan < .plus {
-                    // Storico completo del peso: Plus e Pro.
-                    WeightChart(entries: model.visibleEntries, goal: app.profile?.targetWeightKg)
+                    // Storico completo del peso: Plus e Pro. Sotto il lucchetto un disegno decorativo,
+                    // mai i dati veri: niente da leggere attraverso la sfocatura.
+                    LockedChartPlaceholder()
                         .frame(height: 220)
                         .premiumLocked(.plus, title: "Andamento del peso dall'inizio", cornerRadius: DS.Radius.m)
                 } else if model.visibleEntries.count >= 2 {
@@ -92,7 +93,13 @@ struct ProgressScreen: View {
             MeasurementsCard(measurements: model.measurements, onAdd: { showAddMeasurement = true },
                              onDelete: { m in Task { await model.delete(m) } })
                 .premiumLocked(.plus, title: "Misure corporee")
-            HistoryCard(entries: entries.reversed(), goal: app.profile?.targetWeightKg) { entry in Task { await model.delete(entry) } }
+            // Free: solo le pesate dell'ultimo mese. Le più vecchie non vengono nemmeno disegnate.
+            let monthAgo = Calendar.current.date(byAdding: .day, value: -31, to: .now) ?? .distantPast
+            let isFree = app.entitlements.plan < .plus
+            let newestFirst = Array(entries.reversed())
+            let visible = isFree ? newestFirst.filter { $0.date >= monthAgo } : newestFirst
+            HistoryCard(entries: visible, lockedCount: newestFirst.count - visible.count,
+                        goal: app.profile?.targetWeightKg) { entry in Task { await model.delete(entry) } }
         }
     }
 }
@@ -250,6 +257,8 @@ extension BodyMeasurement.Kind {
 private struct HistoryCard: View {
     /// Dal più recente al più vecchio.
     let entries: [WeightEntry]
+    /// Pesate più vecchie di un mese, nascoste per i Free (Plus e Pro le vedono tutte).
+    let lockedCount: Int
     let goal: Double?
     let onDelete: (WeightEntry) -> Void
     @State private var showAll = false
@@ -286,6 +295,9 @@ private struct HistoryCard: View {
     var body: some View {
         Card {
             SectionHeader(title: "Storico")
+            if entries.isEmpty {
+                Text("Nessuna pesata nell'ultimo mese.").font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
+            }
             ForEach(months) { month in
                 HStack {
                     Text(month.id.formatted(.dateTime.month(.wide).year()).capitalized)
@@ -310,6 +322,53 @@ private struct HistoryCard: View {
                 .font(DS.Font.callout.weight(.semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.top, DS.Spacing.xs)
+            }
+            if lockedCount > 0 {
+                LockedHistoryPlaceholder()
+                    .frame(height: 190)
+                    .premiumLocked(.plus, title: "Altre \(lockedCount) pesate", cornerRadius: DS.Radius.m)
+                    .padding(.top, DS.Spacing.xs)
+            }
+        }
+    }
+}
+
+/// Righe vuote decorative sotto il lucchetto: nessun numero né data, quindi nulla da leggere.
+private struct LockedHistoryPlaceholder: View {
+    var body: some View {
+        VStack(spacing: DS.Spacing.s) {
+            ForEach(0..<3, id: \.self) { i in
+                HStack(spacing: DS.Spacing.s) {
+                    RoundedRectangle(cornerRadius: DS.Radius.s).fill(DS.Palette.brandSoft).frame(width: 44, height: 44)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Capsule().fill(DS.Palette.surfaceMuted).frame(width: 70, height: 12)
+                        Capsule().fill(DS.Palette.brand.opacity(0.25)).frame(width: [150, 110, 180][i], height: 6)
+                    }
+                    Spacer()
+                    Capsule().fill(DS.Palette.brandSoft).frame(width: 64, height: 22)
+                }
+            }
+        }
+        .padding(.vertical, DS.Spacing.xs)
+    }
+}
+
+/// Curva decorativa sotto il lucchetto del grafico "Tutto": non usa i dati dell'utente.
+private struct LockedChartPlaceholder: View {
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let points = (0...12).map { i -> CGPoint in
+                let x = w * Double(i) / 12
+                return CGPoint(x: x, y: h * (0.35 + 0.25 * sin(Double(i) * 0.7) + 0.02 * Double(i)))
+            }
+            ZStack {
+                Path { p in p.addLines(points) }
+                    .stroke(DS.Palette.brand, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                Path { p in
+                    p.addLines(points); p.addLine(to: CGPoint(x: w, y: h)); p.addLine(to: CGPoint(x: 0, y: h)); p.closeSubpath()
+                }
+                .fill(LinearGradient(colors: [DS.Palette.brand.opacity(0.2), .clear], startPoint: .top, endPoint: .bottom))
             }
         }
     }
