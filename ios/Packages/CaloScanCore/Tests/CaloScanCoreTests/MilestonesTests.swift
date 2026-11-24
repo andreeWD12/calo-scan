@@ -31,7 +31,8 @@ final class MilestonesTests: XCTestCase {
         let logs = (0..<7).map { day($0, [(.lunch, 300)]) }
         XCTAssertTrue(Milestones.afterMeal(logs: logs, targets: nil, goal: nil, now: now, calendar: calendar).contains(.streak(7)))
         XCTAssertTrue(Milestone.streak(7).isCelebration)
-        XCTAssertFalse(Milestone.streak(3).isCelebration)
+        XCTAssertTrue(Milestone.streak(3).isCelebration, "la serie ha sempre la sua animazione")
+        XCTAssertFalse(Milestone.allMainMeals.isCelebration)
         let five = (0..<5).map { day($0, [(.lunch, 300)]) }
         XCTAssertFalse(Milestones.afterMeal(logs: five, targets: nil, goal: nil, now: now, calendar: calendar).contains { if case .streak = $0 { true } else { false } })
     }

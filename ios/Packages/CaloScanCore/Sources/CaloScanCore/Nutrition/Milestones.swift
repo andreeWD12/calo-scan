@@ -26,8 +26,7 @@ public enum Milestone: Equatable, Hashable, Sendable {
     /// Festa a schermo pieno con coriandoli; gli altri sono pop-up brevi.
     public var isCelebration: Bool {
         switch self {
-        case .dayOnTarget, .weightHalfway, .weightGoalReached: true
-        case .streak(let n): n >= 7
+        case .dayOnTarget, .weightHalfway, .weightGoalReached, .streak: true
         default: false
         }
     }

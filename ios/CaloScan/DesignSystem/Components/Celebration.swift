@@ -196,18 +196,22 @@ private struct CelebrationView: View {
                     .allowsHitTesting(false)
             }
             VStack(spacing: DS.Spacing.m) {
-                ZStack {
-                    Circle().fill(celebration.tint.opacity(0.15))
-                    Circle().trim(from: 0, to: appeared ? 1 : 0)
-                        .stroke(celebration.tint, style: StrokeStyle(lineWidth: 6, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                    Image(systemName: celebration.symbol)
-                        .font(.system(size: 52, weight: .bold))
-                        .foregroundStyle(celebration.tint.gradient)
-                        .symbolEffect(.bounce, value: bounce)
+                if case .streak(let days) = celebration.milestone {
+                    StreakHero(days: days, reduceMotion: reduceMotion)
+                } else {
+                    ZStack {
+                        Circle().fill(celebration.tint.opacity(0.15))
+                        Circle().trim(from: 0, to: appeared ? 1 : 0)
+                            .stroke(celebration.tint, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                        Image(systemName: celebration.symbol)
+                            .font(.system(size: 52, weight: .bold))
+                            .foregroundStyle(celebration.tint.gradient)
+                            .symbolEffect(.bounce, value: bounce)
+                    }
+                    .frame(width: 120, height: 120)
+                    .scaleEffect(appeared || reduceMotion ? 1 : 0.4)
                 }
-                .frame(width: 120, height: 120)
-                .scaleEffect(appeared || reduceMotion ? 1 : 0.4)
 
                 Text(celebration.title)
                     .font(DS.Font.title).multilineTextAlignment(.center)
@@ -235,6 +239,117 @@ private struct CelebrationView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
+    }
+}
+
+/// Serie di giorni: fiamma viva che tremola, scintille che salgono, alone che pulsa,
+/// numero che conta fino ai giorni raggiunti e pallini della settimana che si accendono uno dopo l'altro.
+private struct StreakHero: View {
+    let days: Int
+    let reduceMotion: Bool
+    @State private var shown = 0
+    @State private var litDots = 0
+    @State private var ignite = false
+    @State private var start = Date.now
+
+    private var dots: Int { min(days, 7) }
+
+    var body: some View {
+        VStack(spacing: DS.Spacing.s) {
+            TimelineView(.animation(paused: reduceMotion)) { timeline in
+                let t = reduceMotion ? 0 : timeline.date.timeIntervalSince(start)
+                ZStack {
+                    // Alone che respira.
+                    Circle()
+                        .fill(RadialGradient(colors: [DS.Palette.streak.opacity(0.45), DS.Palette.streak.opacity(0)],
+                                             center: .center, startRadius: 10, endRadius: 85))
+                        .scaleEffect(1 + 0.08 * sin(t * 2.4))
+                    // Anelli che si allargano e svaniscono.
+                    if !reduceMotion {
+                        ForEach(0..<2, id: \.self) { i in
+                            let phase = (t * 0.7 + Double(i) * 0.5).truncatingRemainder(dividingBy: 1)
+                            Circle().stroke(DS.Palette.streak.opacity(0.5 * (1 - phase)), lineWidth: 3)
+                                .scaleEffect(0.55 + phase * 0.75)
+                        }
+                        Embers(time: t).frame(width: 150, height: 170).offset(y: -20)
+                    }
+                    // Fiamma che tremola.
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 76, weight: .bold))
+                        .foregroundStyle(LinearGradient(colors: [DS.Palette.breakfast, DS.Palette.streak, .red],
+                                                        startPoint: .top, endPoint: .bottom))
+                        .scaleEffect(x: 1 + 0.04 * sin(t * 9), y: 1 + 0.09 * sin(t * 7 + 1), anchor: .bottom)
+                        .rotationEffect(.degrees(4 * sin(t * 5)), anchor: .bottom)
+                        .shadow(color: DS.Palette.streak.opacity(0.6), radius: 14 + 6 * sin(t * 3))
+                        .scaleEffect(ignite || reduceMotion ? 1 : 0.1, anchor: .bottom)
+                        .offset(y: 6)
+                }
+                .frame(width: 160, height: 160)
+            }
+
+            Text("\(shown)")
+                .font(.system(size: 54, weight: .heavy, design: .rounded))
+                .foregroundStyle(DS.Palette.streak)
+                .contentTransition(.numericText(value: Double(shown)))
+                .monospacedDigit()
+                .accessibilityLabel(Text("\(days) giorni di fila"))
+
+            HStack(spacing: 8) {
+                ForEach(0..<7, id: \.self) { i in
+                    Circle()
+                        .fill(i < litDots ? DS.Palette.streak : DS.Palette.separator)
+                        .frame(width: 14, height: 14)
+                        .scaleEffect(i < litDots ? 1.15 : 0.85)
+                        .overlay {
+                            if i < litDots {
+                                Image(systemName: "checkmark").font(.system(size: 7, weight: .black)).foregroundStyle(.white)
+                            }
+                        }
+                }
+            }
+            .accessibilityHidden(true)
+            .opacity(dots > 0 ? 1 : 0)
+        }
+        .task { await play() }
+    }
+
+    private func play() async {
+        guard !reduceMotion else { shown = days; litDots = dots; ignite = true; return }
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.5)) { ignite = true }
+        try? await Task.sleep(for: .seconds(0.35))
+        // Conta fino ai giorni raggiunti (al massimo ~25 passi, così anche 365 dura poco più di un secondo).
+        let steps = min(days, 25)
+        for k in 1...max(steps, 1) {
+            withAnimation(.snappy(duration: 0.12)) { shown = Int((Double(days) * Double(k) / Double(max(steps, 1))).rounded()) }
+            try? await Task.sleep(for: .milliseconds(steps > 10 ? 45 : 90))
+        }
+        for i in 1...max(dots, 1) where dots > 0 {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.45)) { litDots = i }
+            try? await Task.sleep(for: .milliseconds(110))
+        }
+    }
+}
+
+/// Scintille che salgono dalla fiamma.
+private struct Embers: View {
+    let time: Double
+    private static let seeds: [(x: Double, speed: Double, delay: Double, size: Double)] = (0..<18).map { i in
+        let r = Double((i * 7919) % 100) / 100
+        return (x: (r - 0.5) * 0.7, speed: 0.6 + r * 0.6, delay: Double(i) / 18, size: 3 + r * 4)
+    }
+
+    var body: some View {
+        Canvas { context, size in
+            for s in Self.seeds {
+                let p = (time * s.speed + s.delay).truncatingRemainder(dividingBy: 1)
+                let x = size.width / 2 + s.x * size.width + sin(time * 3 + s.delay * 10) * 8
+                let y = size.height * (0.85 - p * 0.85)
+                let rect = CGRect(x: x - s.size / 2, y: y - s.size / 2, width: s.size * (1 - p * 0.5), height: s.size * (1 - p * 0.5))
+                context.opacity = 1 - p
+                context.fill(Path(ellipseIn: rect), with: .color(p < 0.4 ? DS.Palette.breakfast : DS.Palette.streak))
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
