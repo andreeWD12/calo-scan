@@ -22,9 +22,9 @@ final class DailyTipsTests: XCTestCase {
     }
 
     func testRemainingAndProteinSuggestionRespectAllergensAndDiet() {
-        let tips = DailyTips.make(today: log(kcal: 1000), recent: [], targets: targets, diet: .vegetarian,
+        let tips = DailyTips.make(today: log(kcal: 1500), recent: [], targets: targets, diet: .vegetarian,
                                   allergens: [.eggs], now: at(hour: 18), calendar: calendar)
-        XCTAssertTrue(tips[0].text.contains("1000 kcal"))
+        XCTAssertTrue(tips[0].text.contains("500 kcal"))
         XCTAssertEqual(tips[1].tone, .suggestion)
         XCTAssertFalse(tips[1].text.contains("uova"))
         XCTAssertFalse(tips[1].text.contains("pesce"))
