@@ -178,6 +178,7 @@ struct DailyCaloriesChart: View {
 
 struct MacroTrendChart: View {
     let logs: [DayLog]
+    var unit: DailyCaloriesChart.AxisUnit = .weekday
 
     var body: some View {
         Chart {
@@ -197,7 +198,10 @@ struct MacroTrendChart: View {
             String(localized: "Grassi"): DS.Palette.fat,
         ])
         .chartXAxis {
-            AxisMarks(values: .stride(by: .day)) { _ in AxisValueLabel(format: .dateTime.weekday(.narrow)) }
+            AxisMarks(values: .stride(by: .day, count: unit == .weekday ? 1 : 7)) { _ in
+                AxisValueLabel(format: unit == .weekday ? .dateTime.weekday(.narrow) : .dateTime.day())
+                AxisGridLine()
+            }
         }
     }
 }
@@ -223,6 +227,7 @@ struct MonthStatsView: View {
                 }
                 CheatSummaryRow(summary: NutritionStats.cheatMeals(logs))
             }
+            MonthMacrosCard(logs: logs, stats: stats, targets: targets)
             Card {
                 SectionHeader(title: "Costanza")
                 HStack(alignment: .firstTextBaseline) {
@@ -256,6 +261,55 @@ struct MonthStatsView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+/// Macronutrienti del mese: andamento giorno per giorno, medie rispetto all'obiettivo e da dove arrivano le calorie.
+struct MonthMacrosCard: View {
+    let logs: [DayLog]
+    let stats: PeriodStats
+    let targets: DailyTargets
+
+    var body: some View {
+        let avg = stats.average
+        let kcalFromMacros = max(avg.proteinG * 4 + avg.carbsG * 4 + avg.fatG * 9, 1)
+        let split: [(String, Double, Color)] = [
+            (String(localized: "Proteine"), avg.proteinG * 4 / kcalFromMacros, DS.Palette.protein),
+            (String(localized: "Carboidrati"), avg.carbsG * 4 / kcalFromMacros, DS.Palette.carbs),
+            (String(localized: "Grassi"), avg.fatG * 9 / kcalFromMacros, DS.Palette.fat),
+        ]
+        Card {
+            SectionHeader(title: "Macronutrienti del mese")
+            MacroTrendChart(logs: logs, unit: .dayOfMonth).frame(height: 180)
+            HStack(spacing: DS.Spacing.xs) {
+                StatTile(title: "Proteine medie", value: Format.grams(avg.proteinG),
+                         caption: String(localized: "obiettivo \(targets.proteinG) g"), tint: DS.Palette.protein)
+                StatTile(title: "Carboidrati medi", value: Format.grams(avg.carbsG),
+                         caption: String(localized: "obiettivo \(targets.carbsG) g"), tint: DS.Palette.carbs)
+                StatTile(title: "Grassi medi", value: Format.grams(avg.fatG),
+                         caption: String(localized: "obiettivo \(targets.fatG) g"), tint: DS.Palette.fat)
+            }
+            Text("Da dove arrivano le calorie").font(DS.Font.caption.weight(.semibold))
+                .foregroundStyle(DS.Palette.textSecondary).padding(.top, DS.Spacing.xs)
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(split, id: \.0) { item in
+                        item.2.frame(width: max(geo.size.width * item.1 - 2, 0))
+                    }
+                }
+                .clipShape(.capsule)
+            }
+            .frame(height: 12)
+            HStack {
+                ForEach(split, id: \.0) { item in
+                    Label { Text("\(item.0) \(Format.percent(item.1))") } icon: { Circle().fill(item.2).frame(width: 8, height: 8) }
+                        .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                    if item.0 != split.last?.0 { Spacer(minLength: 4) }
+                }
+            }
+            Text("Medie sui \(stats.loggedDays) giorni registrati.")
+                .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
         }
     }
 }
