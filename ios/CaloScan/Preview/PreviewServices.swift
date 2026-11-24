@@ -218,8 +218,9 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
 
     func refresh() async throws -> Entitlements {
         let limit: Int? = switch plan { case .free: 0; case .plus: 4; case .pro: 15 }
+        let coachLimit = switch plan { case .free: 0; case .plus: 30; case .pro: 150 }
         return Entitlements(plan: plan, scansUsedToday: scansUsed, scansLimitToday: limit,
-                            coachMessagesUsedToday: messages.count / 2, coachMessagesLimitToday: switch plan { case .free: 0; case .plus: 30; case .pro: 150 },
+                            coachMessagesUsedToday: messages.count / 2, coachMessagesLimitToday: coachLimit,
                             expiresAt: plan == .free ? nil : Calendar.current.date(byAdding: .month, value: 1, to: .now),
                             willRenew: plan != .free)
     }
