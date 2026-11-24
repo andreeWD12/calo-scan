@@ -92,7 +92,7 @@ struct ProgressScreen: View {
             MeasurementsCard(measurements: model.measurements, onAdd: { showAddMeasurement = true },
                              onDelete: { m in Task { await model.delete(m) } })
                 .premiumLocked(.plus, title: "Misure corporee")
-            HistoryCard(entries: entries.reversed()) { entry in Task { await model.delete(entry) } }
+            HistoryCard(entries: entries.reversed(), goal: app.profile?.targetWeightKg) { entry in Task { await model.delete(entry) } }
         }
     }
 }
@@ -244,25 +244,142 @@ extension BodyMeasurement.Kind {
     }
 }
 
+/// Storico del peso raggruppato per mese: per ogni mese la variazione, per ogni pesata la data in un
+/// riquadro, il peso, una barra che mostra dove si colloca tra il minimo e il massimo e la differenza
+/// dalla pesata precedente. Colori neutri: verde quando ci si avvicina all'obiettivo, mai rosso.
 private struct HistoryCard: View {
+    /// Dal più recente al più vecchio.
     let entries: [WeightEntry]
+    let goal: Double?
     let onDelete: (WeightEntry) -> Void
+    @State private var showAll = false
+
+    private struct Month: Identifiable {
+        let id: Date
+        let entries: [(entry: WeightEntry, delta: Double?)]
+        var change: Double? {
+            guard let newest = entries.first?.entry.weightKg, let oldest = entries.last?.entry.weightKg, entries.count >= 2 else { return nil }
+            return newest - oldest
+        }
+    }
+
+    private var months: [Month] {
+        let calendar = Calendar.current
+        let shown = Array(entries.prefix(showAll ? 200 : 20))
+        var rows: [(WeightEntry, Double?)] = []
+        for (i, e) in shown.enumerated() {
+            let previous = i + 1 < entries.count ? entries[i + 1].weightKg : nil
+            rows.append((e, previous.map { e.weightKg - $0 }))
+        }
+        let groups = Dictionary(grouping: rows) { calendar.dateInterval(of: .month, for: $0.0.date)?.start ?? $0.0.date }
+        return groups.keys.sorted(by: >).map { key in
+            Month(id: key, entries: groups[key]!.sorted { $0.0.date > $1.0.date }.map { (entry: $0.0, delta: $0.1) })
+        }
+    }
+
+    private var range: ClosedRange<Double> {
+        let values = entries.prefix(showAll ? 200 : 20).map(\.weightKg)
+        let lo = values.min() ?? 0, hi = values.max() ?? 1
+        return lo...max(hi, lo + 0.1)
+    }
 
     var body: some View {
         Card {
             SectionHeader(title: "Storico")
-            ForEach(entries.prefix(30)) { entry in
+            ForEach(months) { month in
                 HStack {
-                    Text(entry.date.formatted(date: .abbreviated, time: .omitted)).font(DS.Font.callout)
+                    Text(month.id.formatted(.dateTime.month(.wide).year()).capitalized)
+                        .font(DS.Font.caption.weight(.semibold)).foregroundStyle(DS.Palette.textSecondary)
                     Spacer()
-                    Text(Format.kg(entry.weightKg)).font(DS.Font.callout.monospacedDigit())
+                    if let change = month.change {
+                        DeltaChip(delta: change, goal: goal, current: month.entries.first?.entry.weightKg, label: String(localized: "nel mese"))
+                    }
                 }
-                .frame(minHeight: 32)
-                .contextMenu {
-                    Button("Elimina", systemImage: "trash", role: .destructive) { onDelete(entry) }
+                .padding(.top, DS.Spacing.xs)
+                ForEach(month.entries, id: \.entry.id) { row in
+                    WeightRow(entry: row.entry, delta: row.delta, range: range, goal: goal)
+                        .contextMenu {
+                            Button("Elimina", systemImage: "trash", role: .destructive) { onDelete(row.entry) }
+                        }
                 }
             }
+            if entries.count > 20 {
+                Button(showAll ? "Mostra meno" : "Mostra tutte le \(entries.count) pesate") {
+                    withAnimation(DS.Motion.standard) { showAll.toggle() }
+                }
+                .font(DS.Font.callout.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.top, DS.Spacing.xs)
+            }
         }
+    }
+}
+
+private struct WeightRow: View {
+    let entry: WeightEntry
+    let delta: Double?
+    let range: ClosedRange<Double>
+    let goal: Double?
+
+    var body: some View {
+        HStack(spacing: DS.Spacing.s) {
+            VStack(spacing: 0) {
+                Text(entry.date.formatted(.dateTime.day())).font(DS.Font.headline.monospacedDigit())
+                Text(entry.date.formatted(.dateTime.weekday(.abbreviated))).font(.caption2).textCase(.uppercase)
+            }
+            .foregroundStyle(DS.Palette.brand)
+            .frame(width: 44, height: 44)
+            .background(DS.Palette.brandSoft, in: .rect(cornerRadius: DS.Radius.s))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(Format.kg(entry.weightKg)).font(DS.Font.headline.monospacedDigit())
+                    .foregroundStyle(DS.Palette.textPrimary)
+                GeometryReader { geo in
+                    let fraction = (entry.weightKg - range.lowerBound) / (range.upperBound - range.lowerBound)
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(DS.Palette.surfaceMuted)
+                        Capsule().fill(LinearGradient(colors: [DS.Palette.brand.opacity(0.35), DS.Palette.brand],
+                                                      startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(geo.size.width * (0.15 + 0.85 * fraction), 8))
+                    }
+                }
+                .frame(height: 6)
+            }
+            Spacer(minLength: 0)
+            if let delta {
+                DeltaChip(delta: delta, goal: goal, current: entry.weightKg, label: nil)
+            }
+        }
+        .frame(minHeight: 52)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Differenza di peso con freccia. Verde se va verso l'obiettivo, grigio altrimenti (mai rosso).
+private struct DeltaChip: View {
+    let delta: Double
+    let goal: Double?
+    let current: Double?
+    let label: String?
+
+    private var towardGoal: Bool {
+        guard let goal, let current else { return false }
+        let previous = current - delta
+        return abs(goal - current) < abs(goal - previous)
+    }
+
+    var body: some View {
+        let steady = abs(delta) < 0.05
+        let symbol = steady ? "equal" : (delta < 0 ? "arrow.down.right" : "arrow.up.right")
+        let tint = towardGoal ? DS.Palette.brand : DS.Palette.textSecondary
+        HStack(spacing: 3) {
+            Image(systemName: symbol).font(.caption2.weight(.bold))
+            Text(steady ? String(localized: "stabile") : Format.signedKg(delta)).font(DS.Font.caption.weight(.semibold).monospacedDigit())
+            if let label { Text(label).font(DS.Font.caption) }
+        }
+        .foregroundStyle(tint)
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(tint.opacity(0.12), in: .capsule)
     }
 }
 
