@@ -89,7 +89,9 @@ struct CoachView: View {
         case .idle, .loading:
             LoadingStateView()
         case .failed(let error):
-            ErrorStateView(error: error) { Task { await model.load() } }
+            ErrorStateView(error: error) {
+                Task { await model.load(chatIncluded: true, targets: app.targets, profile: app.profile) }
+            }
         case .empty:
             EmptyView()
         case .loaded(let messages):

@@ -99,13 +99,13 @@ extension CoachInsight {
     init(_ tip: DailyTip) {
         var bytes = [UInt8](repeating: 0, count: 16)
         for (i, b) in tip.text.utf8.enumerated() { bytes[i % 16] = bytes[i % 16] &* 31 &+ b }
+        let tone: Tone = switch tip.tone {
+        case .positive: .positive
+        case .suggestion: .suggestion
+        case .info: .info
+        }
         self.init(id: UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
                                   bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15])),
-                  text: tip.text,
-                  tone: switch tip.tone {
-                  case .positive: .positive
-                  case .suggestion: .suggestion
-                  case .info: .info
-                  })
+                  text: tip.text, tone: tone)
     }
 }
