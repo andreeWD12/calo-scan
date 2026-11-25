@@ -112,6 +112,29 @@ final class DiaryViewModel {
         }
     }
 
+    /// Salva un pasto modificato (grammi, alimento sostituito o tolto). Senza alimenti il pasto viene eliminato.
+    func update(_ meal: Meal) async {
+        if meal.items.isEmpty { await delete(meal); return }
+        do {
+            try await services.meals.save(meal)
+            await load()
+        } catch {
+            day = .failed(APIError.from(error))
+        }
+    }
+
+    /// Registra di nuovo lo stesso pasto adesso (es. la colazione di ieri).
+    func repeatNow(_ meal: Meal) async -> Bool {
+        do {
+            try await services.meals.save(meal.repeated())
+            await load()
+            return true
+        } catch {
+            day = .failed(APIError.from(error))
+            return false
+        }
+    }
+
     func delete(_ meal: Meal) async {
         do {
             try await services.meals.delete(mealID: meal.id)
@@ -152,4 +175,12 @@ struct FoodFrequency: Identifiable, Hashable {
     let name: String
     let count: Int
     var id: String { name }
+}
+
+extension Meal {
+    /// Copia del pasto registrata adesso, con nuovi id: nessun legame con la scansione o la foto originale.
+    func repeated(at date: Date = .now) -> Meal {
+        Meal(type: type, loggedAt: date, items: items.map { MealItem(food: $0.food, grams: $0.grams) },
+             source: source == .plan ? .plan : .manual, isCheatMeal: isCheatMeal)
+    }
 }

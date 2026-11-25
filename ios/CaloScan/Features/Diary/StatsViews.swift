@@ -12,6 +12,8 @@ struct DayStatsView: View {
     var plan: ProfessionalPlan? = nil
     var onLogPlanned: ((PlannedMeal) -> Void)? = nil
     var onToggleCheat: ((Meal) -> Void)? = nil
+    var onUpdate: ((Meal) -> Void)? = nil
+    var onRepeat: ((Meal) -> Void)? = nil
 
     var body: some View {
         let totals = log.totals
@@ -47,7 +49,8 @@ struct DayStatsView: View {
                                 planned: planned,
                                 onLogPlanned: planned.flatMap { p in onLogPlanned.map { handler in { handler(p) } } },
                                 onToggleCheat: onToggleCheat,
-                                plannedWeek: plan.flatMap { $0.rotationWeeks > 1 ? $0.rotationWeek(on: log.day) : nil })
+                                plannedWeek: plan.flatMap { $0.rotationWeeks > 1 ? $0.rotationWeek(on: log.day) : nil },
+                                onUpdate: onUpdate, onRepeat: onRepeat)
             }
         }
     }

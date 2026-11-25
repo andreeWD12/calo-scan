@@ -213,6 +213,7 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     func delete(entryID: UUID) async throws { weights.removeAll { $0.id == entryID } }
     func measurements() async throws -> [BodyMeasurement] { bodyMeasurements }
     func add(_ measurement: BodyMeasurement) async throws { bodyMeasurements.append(measurement) }
+    func delete(measurementID: UUID) async throws { bodyMeasurements.removeAll { $0.id == measurementID } }
 
     // MARK: Abbonamenti
 

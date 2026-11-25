@@ -124,7 +124,9 @@ struct HomeView: View {
                                 planned: planned,
                                 onLogPlanned: planned.map { p in { loggingPlanned = p } },
                                 onToggleCheat: { meal in Task { await model.toggleCheat(meal) } },
-                                plannedWeek: app.professionalPlan.flatMap { $0.rotationWeeks > 1 ? $0.rotationWeek(on: .now) : nil })
+                                plannedWeek: app.professionalPlan.flatMap { $0.rotationWeeks > 1 ? $0.rotationWeek(on: .now) : nil },
+                                onUpdate: { meal in Task { await model.update(meal) } },
+                                onRepeat: { meal in Task { if await model.repeatNow(meal) { app.mealSaved(meal.type) } } })
                     .appear(index: 3 + index)
                     .cardScrollEffect()
             }
@@ -252,12 +254,19 @@ struct MealSectionCard: View {
     var onToggleCheat: ((Meal) -> Void)? = nil
     /// Settimana della rotazione del piano, mostrata solo se il piano ruota su più settimane.
     var plannedWeek: Int? = nil
+    /// Pasto modificato (grammi o alimento cambiati, alimento tolto).
+    var onUpdate: ((Meal) -> Void)? = nil
+    /// Registra di nuovo il pasto adesso.
+    var onRepeat: ((Meal) -> Void)? = nil
+
+    @Environment(AppState.self) private var app
+    @State private var editing: Row?
 
     /// Miniature locali delle foto, per i pasti scansionati.
     @State private var photos: [UUID: UIImage] = [:]
 
     private var totals: Nutrients { meals.map(\.totals).total }
-    private struct Row: Identifiable {
+    private struct Row: Identifiable, Hashable {
         let meal: Meal
         let item: MealItem
         var id: UUID { item.id }
@@ -318,7 +327,21 @@ struct MealSectionCard: View {
                         Text(Format.kcal(item.nutrients.kcal)).font(DS.Font.callout.monospacedDigit())
                     }
                     .accessibilityElement(children: .combine)
+                    .contentShape(.rect)
+                    .onTapGesture { if onUpdate != nil { editing = row } }
+                    .accessibilityAction(named: Text("Modifica")) { if onUpdate != nil { editing = row } }
                     .contextMenu {
+                        if let onUpdate {
+                            Button("Modifica quantità o alimento", systemImage: "pencil") { editing = row }
+                            Button("Togli questo alimento", systemImage: "minus.circle") {
+                                var meal = row.meal
+                                meal.items.removeAll { $0.id == item.id }
+                                onUpdate(meal)
+                            }
+                        }
+                        if let onRepeat {
+                            Button("Registra di nuovo adesso", systemImage: "arrow.clockwise") { onRepeat(row.meal) }
+                        }
                         if let onToggleCheat {
                             Button(row.meal.isCheatMeal ? "Non è uno sgarro" : "Segna come sgarro",
                                    systemImage: row.meal.isCheatMeal ? "xmark.circle" : "party.popper") { onToggleCheat(row.meal) }
@@ -334,6 +357,27 @@ struct MealSectionCard: View {
         }
         .animation(DS.Motion.standard, value: items.map(\.id))
         .sensoryFeedback(.success, trigger: items.count) { old, new in new > old }
+        .sheet(item: $editing) { row in
+            NavigationStack {
+                FoodEditView(services: app.services,
+                             item: DraftItem(id: row.item.id, detectedName: row.item.food.name, food: row.item.food,
+                                             grams: row.item.grams, confidence: nil, ingredients: []),
+                             onSave: { draft in
+                                 var meal = row.meal
+                                 if let food = draft.food, let i = meal.items.firstIndex(where: { $0.id == row.item.id }) {
+                                     meal.items[i] = MealItem(id: row.item.id, food: food, grams: draft.grams)
+                                     onUpdate?(meal)
+                                 }
+                                 editing = nil
+                             },
+                             onDelete: {
+                                 var meal = row.meal
+                                 meal.items.removeAll { $0.id == row.item.id }
+                                 onUpdate?(meal)
+                                 editing = nil
+                             })
+            }
+        }
         .task(id: meals.map(\.id)) {
             var loaded: [UUID: UIImage] = [:]
             for meal in meals where meal.source == .scan || meal.source == .description {
