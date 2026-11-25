@@ -66,10 +66,11 @@ struct SettingsView: View {
                 LabeledContent("Versione", value: Bundle.main.appVersion)
                 Link("Termini di servizio", destination: LegalLinks.terms)
                 Link("Informativa sulla privacy", destination: LegalLinks.privacyPolicy)
+                NavigationLink("Fonti scientifiche e metodo") { SourcesView() }
                 NavigationLink("Assistenza") { SupportView() }
             }
             Section {
-                Text("I valori nutrizionali provengono da USDA FoodData Central e Open Food Facts (licenza ODbL). Le stime da foto e i consigli del coach sono generati dall'intelligenza artificiale e possono contenere errori.")
+                Text("I valori nutrizionali provengono da USDA FoodData Central e Open Food Facts (licenza ODbL); formule e valori di riferimento sono in “Fonti scientifiche e metodo”. Le stime da foto e i consigli del coach sono generati dall'intelligenza artificiale e possono contenere errori.")
                     .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
             }
         }

@@ -11,7 +11,7 @@
 | 7 | AI Nutrition Coach | ✅ completata |
 | 8 | Abbonamenti Free / Plus / Pro | ✅ completata |
 | 9 | Notifiche, privacy, sicurezza | ✅ completata |
-| 10 | Test, bug fixing, preparazione App Store | ⏳ prossima |
+| 10 | Test, bug fixing, preparazione App Store | ✅ completata (invio ad Apple: passi 22–31 di SETUP) |
 
 ## Fase 1 – consegnato
 
@@ -33,6 +33,16 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Promemoria locali reali (UserNotifications), tema chiaro/scuro/automatico.
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
+
+## Fase 10 – consegnato
+
+- **Fonti scientifiche e metodo** (Impostazioni): formule, valori di riferimento EFSA/OMS, fonti per la gravidanza e database alimentari con link, come chiede la linea guida App Store 1.4.1 per le app sulla salute.
+- **Manifest privacy completo**: aggiunti fitness, gravidanza (dato sensibile per Apple), ID utente, messaggi al coach e conteggio degli utilizzi; coincide con le risposte di *App Privacy*.
+- **Build come per l'App Store in CI**: compilazione Release per iPhone a ogni PR, con controlli su manifest, versione, crittografia e assenza dei dati d'anteprima.
+- **Screenshot per l'App Store automatici**: 5 schermate a 1320 × 2868 (iPhone 6,9") con barra di stato pulita, nell'artifact `app-store-screenshots`.
+- Versione e numero di build in `ios/Config/Version.xcconfig`.
+- Accessibilità: pulsanti con sola icona già etichettati per VoiceOver e animazioni con "Riduci movimento"; il pulsante Chiudi dei traguardi ora è di 44 pt.
+- `docs/APP_STORE.md`: testi della scheda, abbonamenti, classificazione per età, *App Privacy*, note per la revisione, lista di controllo e prova finale su TestFlight.
 
 ## Fase 9 – consegnato
 

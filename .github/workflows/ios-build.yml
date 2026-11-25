@@ -106,3 +106,86 @@ jobs:
           name: screens
           path: ios/screens/*.png
           if-no-files-found: warn
+
+  # Compila come per l'App Store (configurazione Release, per iPhone vero, senza firma):
+  # trova subito gli errori che compaiono solo nell'archivio (es. codice usato solo in Debug).
+  release:
+    runs-on: macos-26
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Genera il progetto
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Compila in Release per iPhone (come l'archivio per l'App Store)
+        run: |
+          xcodebuild build \
+            -project CaloScan.xcodeproj -scheme CaloScan -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO > release.log 2>&1 || { grep -E "error:" release.log | sort -u | head -80; tail -20 release.log; exit 1; }
+          grep -c "warning:" release.log || true
+          echo "Build Release riuscita"
+      - name: Controlli per l'App Store
+        run: |
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -path "*Release-iphoneos/CaloScan.app" -maxdepth 6 | head -1)
+          echo "App: $APP"
+          test -f "$APP/PrivacyInfo.xcprivacy" && echo "✓ Manifest privacy incluso"
+          plutil -lint "$APP/PrivacyInfo.xcprivacy"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" -c "Print :CFBundleVersion" -c "Print :ITSAppUsesNonExemptEncryption" "$APP/Info.plist"
+          # La modalità anteprima (dati finti) non deve esistere nella build per l'App Store.
+          if strings "$APP/CaloScan" | grep -q "PreviewStore"; then echo "✗ PreviewStore presente in Release"; exit 1; else echo "✓ Nessun dato d'anteprima in Release"; fi
+          test -f "$APP/AppIcon60x60@2x.png" -o -f "$APP/Assets.car" && echo "✓ Icone presenti"
+
+  # Screenshot per la pagina App Store: iPhone Pro Max (6,9", 1320 × 2868), piano Pro, dati d'esempio.
+  # Scaricali da GitHub › Actions › questa esecuzione › Artifacts › app-store-screenshots.
+  store-screenshots:
+    runs-on: macos-26
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Genera il progetto
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Prepara il simulatore (Pro Max, barra di stato pulita)
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone') and 'Pro Max' in x['name']))")
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 \
+            --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+          xcrun simctl privacy "$UDID" grant camera com.andrewnalini.caloscan.app || true
+      - name: Scatta gli screenshot
+        run: |
+          mkdir -p "$PWD/store"
+          STORE_SCREENSHOTS=1 TEST_RUNNER_STORE_SCREENSHOTS=1 TEST_RUNNER_SCREENSHOT_DIR="$PWD/store" xcodebuild test \
+            -project CaloScan.xcodeproj -scheme CaloScan \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -only-testing:CaloScanUITests/AppStoreScreenshotsUITests \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO > store.log 2>&1 || (grep -E "error:|failed|Failing|Skipped" store.log | head -40; exit 1)
+          grep -E "Skipped|passed|failed" store.log | tail -5
+          for f in store/*.png; do echo "$(basename "$f"): $(sips -g pixelWidth -g pixelHeight "$f" | tail -2 | awk '{print $2}' | tr '\n' 'x')"; done
+      - name: Anteprime ridotte nel log
+        if: success()
+        run: |
+          for f in store/*.png; do
+            sips -s format jpeg -s formatOptions 60 -Z 700 "$f" --out "${f%.png}.jpg" >/dev/null
+            echo "=== IMG store-$(basename "${f%.png}") ==="; base64 -i "${f%.png}.jpg" | tr -d '\n'; echo; echo "=== END ==="
+          done
+      - name: Carica gli screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-store-screenshots
+          path: ios/store/*.png
+          if-no-files-found: warn

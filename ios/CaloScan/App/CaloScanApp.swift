@@ -28,6 +28,10 @@ struct CaloScanApp: App {
                 }
                 state.celebrations.offer(args[i + 1] == "big" ? [.streak(7)] : [.habitTip(2)], delay: .seconds(2))
             }
+            // `-PreviewRoute coach|diary|progress|profile…`: apre subito una sezione (screenshot per l'App Store).
+            if let i = args.firstIndex(of: "-PreviewRoute"), i + 1 < args.count, let link = DeepLink(rawValue: args[i + 1]) {
+                state.router.open(link)
+            }
             return state
         }
         #endif
