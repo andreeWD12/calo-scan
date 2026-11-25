@@ -341,7 +341,9 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
         return .applied
     }
 
-    func deleteAccount() async throws {
+    func usesAppleSignIn() async -> Bool { false }
+
+    func deleteAccount(appleAuthorizationCode: String?) async throws {
         profile = nil; targets = nil; meals = []; weights = []; messages = []
         set(.signedOut)
     }

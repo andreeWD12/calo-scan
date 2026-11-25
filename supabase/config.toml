@@ -68,3 +68,19 @@ verify_jwt = false
 
 [functions.coach-chat]
 verify_jwt = false
+
+[functions.verify-purchase]
+verify_jwt = false
+
+[functions.app-store-notifications]
+verify_jwt = false
+
+[functions.export-data]
+verify_jwt = false
+
+[functions.referral]
+verify_jwt = false
+
+# Chiamata solo da pg_cron con x-cron-secret.
+[functions.push-dispatch]
+verify_jwt = false

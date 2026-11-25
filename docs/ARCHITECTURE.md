@@ -154,6 +154,15 @@ Funzioni riservate (filigrana con lucchetto `premiumLocked(_:title:)`: il conten
 
 Limiti in `SCAN_LIMITS` (`supabase/functions/_shared/scan.ts`), applicati da `analyze-food` e mostrati da `get-entitlements`: si cambiano con un nuovo deploy delle funzioni, senza rilasciare l'app. Lo scanner AI è riservato ai piani a pagamento per contenere i costi del fornitore AI (decisione del 23/11/2026). Le analisi fallite non contano. Costi AI: monitorare il costo medio per utente sul cruscotto del fornitore. Product ID: `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly`, più `caloscan.pro.monthly.pregnancy` (Pro, solo per l'offerta gravidanza); i prezzi si impostano in App Store Connect.
 
+### Acquisti e verifica (Fase 8)
+
+1. L'app compra con StoreKit 2 passando `appAccountToken` = ID utente, poi invia a `verify-purchase` solo gli ID delle transazioni.
+2. Il server rilegge lo stato dall'**App Store Server API** (produzione, poi sandbox per TestFlight e Xcode) con un JWT ES256 firmato dalla chiave In-App Purchase (`APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, solo segreti Supabase). Non si fida mai di quanto dichiara l'app.
+3. Ogni abbonamento (`original_transaction_id`) appartiene a un solo account: se `appAccountToken` o il collegamento esistente indicano un altro account, la richiesta è rifiutata con un messaggio chiaro.
+4. `app-store-notifications` riceve le Server Notifications V2 (rinnovo, scadenza, rimborso, problemi di addebito) e rilegge lo stato da Apple; aggiorna solo abbonamenti già collegati. Risponde 500 se Apple non è raggiungibile, così Apple riprova.
+5. Danno accesso solo gli stati 1 (attivo) e 4 (periodo di tolleranza) non scaduti; con più abbonamenti vale il piano più alto. `TESTER_USER_IDS` resta solo per lo sviluppo.
+6. L'app sincronizza gli abbonamenti attivi all'accesso e dopo "Riscatta un codice", e ascolta `Transaction.updates` per tutta la sessione. Eliminando l'account si eliminano anche le righe di `subscriptions` (l'abbonamento Apple va disdetto dalle Impostazioni dell'iPhone, come dice la schermata di eliminazione).
+
 ### Lista della spesa
 
 Da Home (icona carrello in alto a sinistra) e da Profilo. Prodotti raggruppati per reparto (`ShoppingCategory.guess` sceglie il reparto dal nome; l'utente lo cambia con la pressione prolungata), spunta con un tocco, eliminazione, rimozione dei prodotti presi, condivisione come testo.
@@ -201,7 +210,7 @@ Notifiche **locali** per i promemoria (pasti, peso, riepilogo giornaliero): funz
 ### Notifiche push (APNs)
 
 - `AppDelegate` registra il dispositivo solo dopo che l'utente ha attivato una notifica (mai al primo avvio).
-- Il token viene inviato a `PushTokenService` (tabella `push_tokens`, Fase 9); le notifiche remote partono da una Edge Function con chiave APNs `.p8`.
+- Il token viene salvato con la funzione SQL `register_push_token` (tabella `push_tokens`, un token per un solo account) anche dopo ogni accesso, e rimosso all'uscita. Le notifiche remote si accodano in `push_outbox` (trigger del database) e partono ogni 10 minuti dalla funzione `push-dispatch` (pg_cron) con la chiave dei servizi Apple. Testi fissi, mai dati sanitari.
 - Con l'app aperta le notifiche appaiono come banner; il tocco o un'azione rapida ("Scansiona il piatto", "Registra il peso") apre la schermata giusta tramite `DeepLinkRouter` (payload `{"route": "scanner"}` o URL `caloscan://scanner`).
 
 ## 11. Animazioni e feedback
@@ -250,7 +259,7 @@ I codici si creano in **App Store Connect** (Abbonamenti › Codici offerta): co
 - L'amico lo inserisce nell'onboarding (passo "Come ti chiami?", facoltativo) o da Profilo › Invita un amico, **entro 14 giorni** dall'iscrizione e **una sola volta**; non vale il proprio codice (`evaluateApply`).
 - L'invito diventa **valido** quando l'amico completa l'onboarding e registra almeno un pasto (`isQualified`), non al semplice download. Contro gli account multipli sullo stesso iPhone si usa **DeviceCheck** (2 bit per dispositivo, nessun identificatore salvato).
 - Al primo invito valido il server assegna al referrer un codice del lotto (`decideReward`): niente se ha già avuto un premio (non accumulabile) o se è già stato abbonato (lo sconto è sul primo mese). Il codice vale 60 giorni; l'utente lo riscatta con il link Apple precompilato (`https://apps.apple.com/redeem?ctx=offercodes&id=APP_STORE_ID&code=…`) o con il foglio "Riscatta un codice".
-- Notifica push al referrer quando il premio è pronto (Fase 9).
+- Notifica push al referrer quando il premio è pronto (`push_outbox`, tipo `referral_reward`). DeviceCheck: bit0 = questo iPhone ha già usato un codice, impostato all'inserimento. Il riscatto si riconosce dalle transazioni con `offerType` 3.
 
 **Tabelle** (RLS: ogni utente legge solo le proprie righe; scrittura solo dalla Edge Function `referral`):
 - `referral_codes` (user_id PK → users ON DELETE CASCADE, code UNIQUE).

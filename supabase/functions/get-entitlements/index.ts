@@ -4,7 +4,7 @@
  */
 import { errorResponse } from "../_shared/errors.ts";
 import { COACH_LIMITS, safeTimeZone, SCAN_LIMITS } from "../_shared/scan.ts";
-import { currentPlan } from "../_shared/plan.ts";
+import { planInfo } from "../_shared/plan.ts";
 import { aiUsageToday, scanUsage } from "../_shared/usage.ts";
 import { adminClient, json, readJSON, requireUser } from "../_shared/supabase.ts";
 
@@ -15,8 +15,8 @@ Deno.serve(async (req) => {
   if (auth instanceof Response) return auth;
   const body = (await readJSON(req, 1024) ?? {}) as { timeZone?: unknown };
 
-  const plan = await currentPlan(admin, auth.userId);
   try {
+    const { plan, expiresAt, willRenew } = await planInfo(admin, auth.userId);
     const tz = safeTimeZone(body.timeZone);
     const [usage, coachUsed] = await Promise.all([
       scanUsage(admin, auth.userId, tz),
@@ -28,8 +28,8 @@ Deno.serve(async (req) => {
       scansLimitToday: SCAN_LIMITS.daily[plan],
       coachMessagesUsedToday: coachUsed,
       coachMessagesLimitToday: COACH_LIMITS[plan],
-      expiresAt: null,
-      willRenew: false,
+      expiresAt,
+      willRenew,
     });
   } catch (e) {
     console.error("get-entitlements:", (e as Error).message);

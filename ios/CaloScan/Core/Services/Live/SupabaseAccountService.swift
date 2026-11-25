@@ -50,11 +50,28 @@ struct SupabaseAccountService: AccountService {
         }
     }
 
-    // Esportazione completa dei dati (art. 20 GDPR): Fase 9, quando tutte le tabelle esistono.
-    func exportData() async throws -> URL { throw APIError.notConnected }
+    private struct ExportResponse: Decodable { let fileName: String; let content: String }
+    private struct DeleteBody: Encodable, Sendable { let appleAuthorizationCode: String? }
 
-    func deleteAccount() async throws {
-        let response: DeleteResponse = try await functions.invoke(.deleteAccount, body: Empty())
+    /// Esportazione completa dei dati (art. 15 e 20 GDPR), preparata dal server (`export-data`) e salvata
+    /// in un file temporaneo da condividere. Il file non resta nell'app.
+    func exportData() async throws -> URL {
+        let response: ExportResponse = try await functions.invoke(.exportData, body: Empty())
+        let name = response.fileName.replacingOccurrences(of: "/", with: "-")
+        let url = FileManager.default.temporaryDirectory.appending(path: name)
+        do { try Data(response.content.utf8).write(to: url, options: [.atomic, .completeFileProtection]) }
+        catch { throw APIError.unknown }
+        return url
+    }
+
+    func usesAppleSignIn() async -> Bool {
+        guard let user = try? await client.auth.session.user else { return false }
+        return (user.identities ?? []).contains { $0.provider == "apple" }
+    }
+
+    func deleteAccount(appleAuthorizationCode: String?) async throws {
+        let response: DeleteResponse = try await functions.invoke(.deleteAccount,
+                                                                  body: DeleteBody(appleAuthorizationCode: appleAuthorizationCode))
         guard response.deleted else { throw APIError.unknown }
     }
 }

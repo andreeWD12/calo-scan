@@ -99,6 +99,9 @@ targets:
         SWIFT_STRICT_CONCURRENCY: minimal
     dependencies:
       - target: CaloScan
+# Visibile nel navigatore di Xcode, non incluso nell'app.
+fileGroups:
+  - StoreKit
 schemes:
   CaloScan:
     build:
@@ -109,3 +112,12 @@ schemes:
     test:
       targets: [CaloScanTests, CaloScanUITests]
       gatherCoverageData: true
+  # Prodotti finti di StoreKit/CaloScan.storekit: per vedere i prezzi del paywall (es. screenshot per la revisione)
+  # prima che App Store Connect li renda disponibili. Gli acquisti non passano dal server: per le prove vere usa lo schema CaloScan.
+  CaloScan StoreKit locale:
+    build:
+      targets:
+        CaloScan: all
+    run:
+      config: Debug
+      storeKitConfiguration: StoreKit/CaloScan.storekit

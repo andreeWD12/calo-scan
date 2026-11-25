@@ -116,6 +116,12 @@ struct ReferralView: View {
     private func rewardSection(_ s: ReferralStatus) -> some View {
         Section("Il tuo premio") {
             switch s.reward {
+            case .waiting where s.qualifiedCount > 0:
+                // Invito valido ma nessun codice offerta ancora disponibile (es. prima dell'approvazione di Apple):
+                // il server lo assegna appena ce n'è uno e manda una notifica.
+                Label("Hai diritto allo sconto: lo stiamo preparando. Ti avvisiamo con una notifica appena è pronto.",
+                      systemImage: "gift")
+                    .foregroundStyle(DS.Palette.textSecondary)
             case .waiting:
                 Label("In attesa del primo invito valido", systemImage: "hourglass")
                     .foregroundStyle(DS.Palette.textSecondary)

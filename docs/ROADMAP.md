@@ -9,9 +9,9 @@
 | 5 | AI Food Scanner e analisi nutrizionale | ✅ completata |
 | 6 | Diario e statistiche | ✅ completata |
 | 7 | AI Nutrition Coach | ✅ completata |
-| 8 | Abbonamenti Free / Plus / Pro | ⏳ prossima |
-| 9 | Notifiche, privacy, sicurezza | |
-| 10 | Test, bug fixing, preparazione App Store | |
+| 8 | Abbonamenti Free / Plus / Pro | ✅ completata |
+| 9 | Notifiche, privacy, sicurezza | ✅ completata |
+| 10 | Test, bug fixing, preparazione App Store | ⏳ prossima |
 
 ## Fase 1 – consegnato
 
@@ -33,6 +33,23 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Promemoria locali reali (UserNotifications), tema chiaro/scuro/automatico.
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
+
+## Fase 9 – consegnato
+
+- **Esportazione dei dati** (art. 15 e 20 GDPR): funzione `export-data`, un JSON leggibile con tutte le tabelle dell'utente e una descrizione per sezione (`_shared/export.ts`, con test). Gratis per tutti.
+- **Eliminazione dell'account**: con "Accedi con Apple" l'app chiede una conferma ad Apple e il server revoca l'accesso dell'app all'Apple ID (`_shared/siwa.ts`), come richiesto da App Store 5.1.1(v). Tutti i dati spariscono a cascata (verificato dai test del database).
+- **Notifiche push**: token APNs salvato con `register_push_token` (un token per un solo account, al massimo 10 dispositivi), coda `push_outbox`, funzione `push-dispatch` pianificata con pg_cron. Testi fissi senza dati sanitari. Prima notifica: "il tuo premio è pronto".
+- **Invita un amico** collegato: funzione `referral` (codice personale, inserimento entro 14 giorni, 10 tentativi al giorno), invito valido al primo pasto dell'amico con un trigger del database, premio unico con un codice offerta Apple dal lotto `offer_code_pool`, DeviceCheck contro gli account multipli sullo stesso iPhone, riscatto riconosciuto dalle transazioni con codice offerta.
+- **Sicurezza**: test automatici del database in CI (`supabase/tests`): RLS attivo ovunque, nessun permesso per gli utenti non autenticati, tabelle del server non scrivibili dall'app, isolamento tra utenti, regole degli inviti, cancellazione a cascata. Il controllo ha trovato e chiuso permessi di scrittura superflui su 6 tabelle.
+- **Pagine web**: informativa privacy (`privacy/`) e termini di servizio (`terms/`), accanto all'assistenza.
+
+## Fase 8 – consegnato
+
+- Migrazione `20261128000001_fase8_abbonamenti.sql`: tabella `subscriptions` (un abbonamento Apple per riga, legato a un solo account), RLS in sola lettura, permessi espliciti.
+- Funzione `verify-purchase`: l'app invia solo gli ID delle transazioni; il server rilegge lo stato dall'**App Store Server API** con la chiave In-App Purchase e decide il piano. Un abbonamento con `appAccountToken` di un altro account viene rifiutato.
+- Funzione `app-store-notifications` (Server Notifications V2): rinnovi, scadenze, rimborsi e problemi di addebito aggiornano il piano anche ad app chiusa. Il contenuto della notifica serve solo a sapere quale abbonamento rileggere da Apple.
+- `get-entitlements` legge il piano dagli abbonamenti (attivo o in periodo di tolleranza), con scadenza e rinnovo automatico.
+- App: `StoreKitPurchaseService` (StoreKit 2) con prezzi e offerte reali, acquisto con `appAccountToken`, ripristino, codici offerta, ascolto di `Transaction.updates` e sincronizzazione all'accesso. Logica in `_shared/appstore.ts` con test.
 
 ## Fase 7 – consegnato
 
@@ -73,7 +90,7 @@ Funzioni Plus e Pro segnate da una filigrana con lucchetto (vedi ARCHITECTURE §
 - Barra di navigazione: linea di separazione dietro il pulsante Scanner, icone più grandi.
 - Permessi espliciti per `authenticated` e `service_role` anche sulle tabelle della Fase 3 (migrazioni `…0002`, `…0003`).
 
-Ancora `NotConnectedService` dopo la Fase 7: abbonamenti e inviti (Fase 8), push ed export dati (Fase 9).
+Dalla Fase 9 tutti i servizi dell'app sono collegati al server.
 
 ## Fase 3 – consegnato
 

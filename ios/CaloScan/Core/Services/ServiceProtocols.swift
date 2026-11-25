@@ -193,6 +193,15 @@ protocol PurchaseService: Sendable {
     func offers() async throws -> [PlanOffer]
     func purchase(offerID: String) async throws -> PurchaseOutcome
     func restore() async throws
+    /// All'accesso: invia al server gli abbonamenti già attivi su questo Apple ID (es. acquistati su un altro dispositivo).
+    func syncCurrentEntitlements() async
+    /// Eventi di StoreKit fuori dall'app (rinnovi, Chiedi di acquistare, codici offerta, rimborsi): ognuno chiede di ricaricare il piano.
+    func transactionUpdates() -> AsyncStream<Void>
+}
+
+extension PurchaseService {
+    func syncCurrentEntitlements() async {}
+    func transactionUpdates() -> AsyncStream<Void> { AsyncStream { $0.finish() } }
 }
 
 // MARK: - Account e privacy
@@ -209,7 +218,11 @@ protocol AccountService: Sendable {
     /// Esporta tutti i dati dell'utente (art. 20 GDPR) e ritorna un file JSON locale.
     func exportData() async throws -> URL
     /// Cancella definitivamente account, dati e immagini (art. 17 GDPR, App Store 5.1.1(v)).
-    func deleteAccount() async throws
+    /// Con Sign in with Apple serve un codice di autorizzazione appena ottenuto: il server lo usa per revocare
+    /// l'accesso dell'app all'Apple ID (richiesto da Apple per l'eliminazione dell'account).
+    func deleteAccount(appleAuthorizationCode: String?) async throws
+    /// L'account usa Sign in with Apple.
+    func usesAppleSignIn() async -> Bool
 }
 
 // MARK: - Inviti
