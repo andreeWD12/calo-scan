@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     if (e instanceof AppStoreUnavailableError) {
       console.error("verify-purchase:", e.message);
-      return errorResponse("internal", { message: "Non riusciamo a verificare l'acquisto con Apple in questo momento. Riprova tra poco: l'abbonamento non è perso." });
+      return errorResponse("internal", { message: `Non riusciamo a verificare l'acquisto con Apple in questo momento. Riprova tra poco: l'abbonamento non è perso. (${e.message})` });
     }
     console.error("verify-purchase:", (e as Error).message);
     return errorResponse("internal");
