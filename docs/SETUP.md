@@ -85,8 +85,9 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
     `https://bvfwujdugqzlwikuycmi.supabase.co/functions/v1/app-store-notifications`. Il pulsante "Send test notification" deve dare esito positivo.
 14. **Prova con un account Sandbox** (*Users and Access* › *Sandbox*): sull'iPhone, Impostazioni › App Store › Account sandbox. Avvia l'app da Xcode,
     compra un piano dal paywall: il piano cambia subito e "Gestisci abbonamento" mostra scadenza e rinnovo. In Sandbox un mese dura 5 minuti.
-    `ios/StoreKit/CaloScan.storekit` serve solo a vedere i prezzi del paywall senza App Store Connect (Xcode › Scheme › Run › Options ›
-    StoreKit Configuration): con questo file gli acquisti non passano dal server, quindi il piano non cambia.
+    Per vedere il paywall con i prezzi prima che App Store Connect renda disponibili i prodotti (es. per lo screenshot di revisione),
+    scegli in Xcode lo schema **CaloScan StoreKit locale**: usa i prodotti finti di `ios/StoreKit/CaloScan.storekit`. Con questo schema
+    gli acquisti non passano dal server, quindi il piano non cambia: per le prove vere torna allo schema **CaloScan**.
 15. Prima della pubblicazione togli `TESTER_USER_IDS` (`supabase secrets unset TESTER_USER_IDS`): da qui in poi il piano arriva solo dagli abbonamenti.
 
 ## Fase 9–10 – Privacy e pubblicazione
