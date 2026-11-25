@@ -20,10 +20,12 @@ Deno.serve(async (req) => {
     .filter((x): x is string => x !== null).slice(0, 10);
   if (ids.length === 0) return errorResponse("invalid_input");
 
-  let otherAccount = false;
+  let otherAccount = false, found = 0;
   try {
     for (const id of ids) {
-      for (const s of await fetchSubscriptions(id)) {
+      const subs = await fetchSubscriptions(id);
+      found += subs.length;
+      for (const s of subs) {
         if (ownership(s, auth.userId, await linkedUser(admin, s.originalTransactionId)) !== "ok") {
           otherAccount = true;
           continue;
@@ -32,6 +34,12 @@ Deno.serve(async (req) => {
       }
     }
     const info = await planInfo(admin, auth.userId);
+    console.log(`verify-purchase: ${ids.length} transazioni, ${found} abbonamenti trovati da Apple, piano ${info.plan}`);
+    if (found === 0 && info.plan === "free") {
+      // Apple non conosce la transazione: acquisto fatto con lo schema "StoreKit locale" di Xcode, bundle ID diverso
+      // o prodotto non mappato in PRODUCTS. Meglio un messaggio chiaro che un acquisto "riuscito" che non sblocca nulla.
+      return errorResponse("invalid_input", { message: "Apple non ha trovato questo acquisto. Se stai provando da Xcode, usa lo schema \"CaloScan\" (non \"StoreKit locale\") e un account Sandbox." });
+    }
     if (otherAccount && info.plan === "free") {
       return errorResponse("invalid_input", { message: "Questo abbonamento è già collegato a un altro account CaloScan. Accedi con quell'account per usarlo." });
     }
