@@ -6,6 +6,7 @@
  * Logica pura (prodotti, lettura delle risposte) testata in appstore.test.ts; le chiamate di rete sono in fondo.
  */
 import type { Plan } from "./scan.ts";
+import { secret, signES256 } from "./applejwt.ts";
 
 export const PRODUCTS: Record<string, Plan> = {
   "caloscan.plus.monthly": "plus",
@@ -27,6 +28,8 @@ export interface SubscriptionRecord {
   willRenew: boolean;
   appAccountToken: string | null;
   environment: string;
+  /** Transazione con un codice offerta (offerType 3): serve a segnare come riscattato il premio degli inviti. */
+  offerCodeUsed: boolean;
 }
 
 /** Contenuto (non verificato) di un JWS: si usa solo su dati appena ricevuti da Apple via TLS. */
@@ -71,6 +74,7 @@ export function parseStatuses(body: unknown, bundleId: string): SubscriptionReco
         willRenew: renewal?.autoRenewStatus === 1,
         appAccountToken: typeof tx.appAccountToken === "string" ? tx.appAccountToken.toLowerCase() : null,
         environment: String(tx.environment ?? b.environment ?? "Production"),
+        offerCodeUsed: tx.offerType === 3,
       });
     }
   }
@@ -114,31 +118,16 @@ export function cleanTransactionId(v: unknown): string | null {
 
 export class AppStoreUnavailableError extends Error {}
 
-function pemToBytes(pem: string): Uint8Array<ArrayBuffer> {
-  const b64 = pem.replace(/-----[^-]+-----/g, "").replace(/\\n/g, "").replace(/\s+/g, "");
-  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-}
-
-const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-const b64urlJSON = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringify(o)));
-
 /** JWT ES256 per l'App Store Server API (valido 20 minuti). */
 async function apiToken(): Promise<string> {
-  const env = (k: string) => Deno.env.get(k)?.trim().replace(/^["']|["']$/g, "") || undefined;
-  const issuer = env("APPLE_ISSUER_ID"), keyId = env("APPLE_KEY_ID"), pem = env("APPLE_PRIVATE_KEY");
+  const issuer = secret("APPLE_ISSUER_ID"), keyId = secret("APPLE_KEY_ID"), pem = secret("APPLE_PRIVATE_KEY");
   if (!issuer || !keyId || !pem) throw new AppStoreUnavailableError("chiave App Store Server API non impostata");
-  const key = await crypto.subtle.importKey("pkcs8", pemToBytes(pem), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
   const now = Math.floor(Date.now() / 1000);
-  const unsigned = `${b64urlJSON({ alg: "ES256", kid: keyId, typ: "JWT" })}.${b64urlJSON({
-    iss: issuer, iat: now, exp: now + 1200, aud: "appstoreconnect-v1", bid: bundleId(),
-  })}`;
-  // WebCrypto restituisce la firma già nel formato r||s richiesto da JWS.
-  const sig = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(unsigned)));
-  return `${unsigned}.${b64url(sig)}`;
+  return await signES256(keyId, { iss: issuer, iat: now, exp: now + 1200, aud: "appstoreconnect-v1", bid: bundleId() }, pem);
 }
 
 export function bundleId(): string {
-  return Deno.env.get("APPLE_BUNDLE_ID")?.trim().replace(/^["']|["']$/g, "") || "com.andrewnalini.caloscan.app";
+  return secret("APPLE_BUNDLE_ID") || "com.andrewnalini.caloscan.app";
 }
 
 const HOSTS = ["https://api.storekit.itunes.apple.com", "https://api.storekit-sandbox.itunes.apple.com"];

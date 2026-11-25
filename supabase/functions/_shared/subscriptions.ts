@@ -15,6 +15,11 @@ export async function saveSubscription(admin: SupabaseClient, s: SubscriptionRec
     updated_at: new Date().toISOString(),
   }, { onConflict: "original_transaction_id" });
   if (error) throw new Error(`subscriptions: ${error.code}`);
+  if (s.offerCodeUsed) {
+    // Il premio degli inviti è un codice offerta: se l'utente ne aveva uno, ora risulta riscattato.
+    await admin.from("referral_rewards").update({ redeemed_at: new Date().toISOString() })
+      .eq("referrer_id", userId).is("redeemed_at", null);
+  }
 }
 
 export async function linkedUser(admin: SupabaseClient, originalTransactionId: string): Promise<string | null> {

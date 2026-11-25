@@ -58,7 +58,8 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func consents() async throws -> ConsentState { throw fail() }
     func update(consents: ConsentState) async throws { throw fail() }
     func exportData() async throws -> URL { throw fail() }
-    func deleteAccount() async throws { throw fail() }
+    func deleteAccount(appleAuthorizationCode: String?) async throws { throw fail() }
+    func usesAppleSignIn() async -> Bool { false }
 
     func register(deviceToken: String, environment: PushEnvironment) async throws { throw fail() }
     func unregister() async throws { throw fail() }
@@ -79,10 +80,10 @@ extension AppServices {
     /// Fase 5: scanner AI, ricerca alimenti, piano e scansioni di oggi.
     /// Fase 7: coach AI, proposte di stile alimentare e suggerimenti per la spesa.
     /// Fase 8: abbonamenti con StoreKit 2, verificati dal server con l'App Store Server API.
+    /// Fase 9: esportazione dei dati, notifiche push, inviti. Tutti i servizi sono collegati.
     /// Gli altri servizi restano `NotConnectedService` finché la loro fase non li collega.
     @MainActor
     static func live(container: AppContainer) -> AppServices {
-        let pending = NotConnectedService()
         let client = container.supabase
         return AppServices(auth: SupabaseAuthService(client: client),
                            profile: SupabaseProfileRepository(client: client, functions: container.functions),
@@ -92,6 +93,7 @@ extension AppServices {
                            weight: SupabaseWeightRepository(client: client),
                            entitlements: SupabaseEntitlementService(functions: container.functions), purchases: StoreKitPurchaseService(client: client, functions: container.functions),
                            account: SupabaseAccountService(client: client, functions: container.functions),
-                           push: pending, shopping: SupabaseShoppingListService(client: client, functions: container.functions), referrals: pending)
+                           push: SupabasePushTokenService(client: client), shopping: SupabaseShoppingListService(client: client, functions: container.functions),
+                           referrals: SupabaseReferralService(functions: container.functions))
     }
 }

@@ -5,6 +5,8 @@ import Observation
 enum DeepLink: String, Sendable {
     case home, diary, scanner, progress, profile, coach, logWeight = "log-weight"
     case professionalPlan = "professional-plan"
+    /// Notifica push "il tuo premio è pronto" (Invita un amico).
+    case referral
 
     init?(url: URL) {
         guard url.scheme == "caloscan", let host = url.host() else { return nil }

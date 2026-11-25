@@ -57,18 +57,23 @@ struct PrivacyAccountView: View {
             } header: {
                 Text("I tuoi dati")
             } footer: {
-                Text("Ricevi un file JSON con profilo, diario, pesi, conversazioni con il coach e consensi.")
+                Text("Ricevi un file JSON con tutti i dati che conserviamo: profilo, diario, pesi, misure, conversazioni con il coach, consensi, abbonamenti e inviti. Gratis, in qualsiasi momento.")
             }
 
             Section {
                 Link("Informativa sulla privacy", destination: LegalLinks.privacyPolicy)
                 Link("Termini di servizio", destination: LegalLinks.terms)
             } footer: {
-                Text("Le foto dei piatti vengono cancellate automaticamente dopo il periodo indicato nell'informativa. I dati sono cifrati in transito e conservati su server nell'Unione Europea.")
+                Text("Le foto dei piatti restano solo sul tuo iPhone: il server le usa per l'analisi e non le conserva. I dati sono cifrati in transito e conservati su server nell'Unione Europea.")
             }
 
             Section {
-                Button("Esci dall'account") { Task { try? await app.services.auth.signOut() } }
+                Button("Esci dall'account") {
+                    Task {
+                        try? await app.services.push.unregister()
+                        try? await app.services.auth.signOut()
+                    }
+                }
                 Button(role: .destructive) { confirmDelete = true } label: {
                     HStack {
                         Text("Elimina account e dati")
@@ -123,7 +128,13 @@ struct PrivacyAccountView: View {
         isDeleting = true
         defer { isDeleting = false }
         do {
-            try await app.services.account.deleteAccount()
+            // Con Sign in with Apple, Apple chiede di confermare l'identità: serve a revocare l'accesso dell'app.
+            // Se l'utente annulla, l'eliminazione procede comunque (il server registra la revoca mancata).
+            var appleCode: String?
+            if await app.services.account.usesAppleSignIn() {
+                appleCode = try? await AppleReauthorization.authorizationCode()
+            }
+            try await app.services.account.deleteAccount(appleAuthorizationCode: appleCode)
             try? await app.services.auth.signOut()
         } catch {
             self.error = APIError.from(error)

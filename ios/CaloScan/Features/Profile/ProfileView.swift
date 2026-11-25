@@ -117,6 +117,7 @@ struct ProfileView: View {
             }
             .onChange(of: app.router.pending, initial: true) { _, link in
                 if link == .professionalPlan { path = [.professionalPlan]; app.router.pending = nil }
+                if link == .referral { path = [.referral]; app.router.pending = nil }
             }
             .navigationDestination(for: ProfileRoute.self) { route in
                 switch route {

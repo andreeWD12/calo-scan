@@ -90,17 +90,58 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
     gli acquisti non passano dal server, quindi il piano non cambia: per le prove vere torna allo schema **CaloScan**.
 15. Prima della pubblicazione togli `TESTER_USER_IDS` (`supabase secrets unset TESTER_USER_IDS`): da qui in poi il piano arriva solo dagli abbonamenti.
 
-## Fase 9–10 – Privacy e pubblicazione
+## Fase 9 – Notifiche, privacy, inviti
 
-16. Pagine pubbliche per **Informativa privacy** e **Termini di servizio** (URL richiesti da App Store Connect).
-    Consigliato un controllo legale: l'app tratta dati relativi alla salute (art. 9 GDPR).
-    **Pagina di assistenza** (GitHub Pages, gratis perché il repository è pubblico): GitHub › Settings › Pages ›
-    *Deploy from a branch*, branch `main`, cartella `/ (root)`. La pagina è `support/index.html` e risponde su
-    `https://andreewd12.github.io/calo-scan/support/` (la radice del sito mostra il README). Si aggiorna da sola a ogni modifica su `main`.
-    Con un dominio tuo: Settings › Pages › *Custom domain*, poi aggiorna `SUPPORT_URL`. Privacy e termini andranno in `privacy/` e `terms/`.
-    In `Secrets.xcconfig` imposta anche `SUPPORT_URL` (pagina di assistenza, richiesta da App Store Connect come *Support URL*,
-    con un modo per contattarti) e `SUPPORT_EMAIL` (usata da Impostazioni › Assistenza › "Scrivici"; è visibile agli utenti).
-17. Chiave APNs (.p8) per le notifiche push remote: Apple Developer → Keys → nuova chiave con *Apple Push Notifications service*. Serve anche la capability *Push Notifications* sull'App ID (già dichiarata in `project.yml`). I promemoria locali funzionano senza.
-18. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect.
+16. Codice e database, dalla cartella `~/calo-scan`:
+    ```
+    git fetch && git checkout fase-9-privacy && git pull
+    supabase db push --remote
+    supabase functions deploy export-data referral push-dispatch delete-account verify-purchase app-store-notifications get-entitlements
+    cd ios && xcodegen generate
+    ```
+17. **Una chiave per i servizi Apple** (notifiche, DeviceCheck, revoca di "Accedi con Apple"): developer.apple.com › *Certificates, IDs & Profiles* ›
+    **Keys** › **+**. Nome "CaloScan servizi", spunta **Apple Push Notifications service (APNs)**, **DeviceCheck** e **Sign in with Apple**
+    (per quest'ultimo *Configure* › App ID principale `com.andrewnalini.caloscan.app`). *Continue* › *Register* › **Download** del `.p8`
+    (si scarica una volta sola) e annota il **Key ID**. Il **Team ID** è in alto a destra nella pagina (10 caratteri).
+    ```
+    supabase secrets set APPLE_TEAM_ID="XXXXXXXXXX" APPLE_SERVICES_KEY_ID="YYYYYYYYYY"
+    supabase secrets set APPLE_SERVICES_PRIVATE_KEY="$(tr -d '\n' < ~/Downloads/AuthKey_YYYYYYYYYY.p8)"
+    ```
+    È una chiave diversa da quella In-App Purchase della Fase 8: servono entrambe.
+18. **Invio pianificato delle notifiche** (ogni 10 minuti). Crea un segreto casuale e salvalo su Supabase:
+    ```
+    openssl rand -hex 32
+    supabase secrets set PUSH_CRON_SECRET="il-valore-appena-generato"
+    ```
+    Dashboard Supabase › **Database › Extensions**: attiva `pg_cron` e `pg_net`. Poi **SQL Editor** › New query, sostituisci il segreto e premi *Run*:
+    ```sql
+    select vault.create_secret('il-valore-appena-generato', 'push_cron_secret');
+    select cron.schedule('push-dispatch', '*/10 * * * *', $$
+      select net.http_post(
+        url := 'https://bvfwujdugqzlwikuycmi.supabase.co/functions/v1/push-dispatch',
+        headers := jsonb_build_object('x-cron-secret',
+          (select decrypted_secret from vault.decrypted_secrets where name = 'push_cron_secret')),
+        body := '{}'::jsonb);
+    $$);
+    ```
+    Verifica: Edge Functions › `push-dispatch` › Logs mostra ogni 10 minuti "0 inviate, 0 da riprovare".
+19. **Premi degli inviti** (codici offerta Apple). App Store Connect › Abbonamenti › `caloscan.plus.monthly` › **Codici offerta** › *Crea*:
+    nome di riferimento `ref30`, idoneità **Nuovi clienti**, *Pagamento a consumo* per **1 mese** al prezzo del 70% (es. 3,49 € su 4,99 €).
+    Poi *Genera codici monouso* (es. 500, scadenza la più lontana possibile) e scarica il CSV. Prepara un file `codici.csv` con le colonne
+    `code,offer_id,expires_at` (es. `ABCD1234EFGH,ref30,2027-03-31T23:59:59Z`) e importalo da **Table Editor** › `offer_code_pool` › *Insert* › *Import data from CSV*.
+    Facoltativi: `supabase secrets set APP_STORE_ID=1234567890` (il link condiviso apre la pagina dell'app) e `REFERRAL_DISCOUNT_LABEL="30%"`.
+    Quando restano pochi codici liberi (`select count(*) from offer_code_pool where assigned_to is null;`) generane un nuovo lotto.
+20. **Pagine web** (GitHub Pages, gratis perché il repository è pubblico): GitHub › Settings › Pages › *Deploy from a branch*, branch `main`,
+    cartella `/ (root)`. Dopo il merge rispondono:
+    `https://andreewd12.github.io/calo-scan/privacy/`, `.../terms/` e `.../support/`. Prima completa **l'indirizzo** del titolare
+    (evidenziato in giallo in `privacy/index.html` e `terms/index.html`). Consigliato un controllo legale: l'app tratta dati sulla salute (art. 9 GDPR).
+    Gli stessi URL vanno in `ios/Config/Secrets.xcconfig` (`PRIVACY_POLICY_URL`, `TERMS_URL`, `SUPPORT_URL`) e in App Store Connect.
+21. **Prova**: Profilo › Privacy e account › *Esporta i miei dati* (file JSON da condividere); Profilo › Invita un amico (codice personale);
+    con un secondo account inserisci il codice e registra un pasto: dopo al massimo 10 minuti il primo account riceve la notifica del premio.
+
+## Fase 10 – Pubblicazione
+
+22. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect (tabella in `docs/COMPLIANCE.md`).
+23. **Supabase Pro** (circa 25 $/mese) prima del lancio: i progetti gratuiti si sospendono dopo una settimana senza attività.
 
 Tutti i segreti server sono elencati in `supabase/.env.example`.
