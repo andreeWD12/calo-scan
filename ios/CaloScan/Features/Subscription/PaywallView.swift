@@ -162,12 +162,12 @@ private struct PregnancyOfferCard: View {
         .accessibilityElement(children: .contain)
     }
 
-    static let features: [LocalizedStringKey] = [
+    static var features: [LocalizedStringKey] { [
         "Energia, proteine e consigli per la tua settimana di gravidanza (EFSA)",
         "Avvisi automatici su scansioni, ricerca e lista della spesa",
         "Suggerimenti AI senza gli alimenti da evitare",
         "Tutte le funzioni di Pro",
-    ]
+    ] }
 }
 
 private struct PlanCard: View {

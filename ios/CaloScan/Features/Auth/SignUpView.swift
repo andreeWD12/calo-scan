@@ -1,4 +1,5 @@
 import SwiftUI
+import CaloScanCore
 
 struct SignUpView: View {
     @Bindable var model: AuthViewModel

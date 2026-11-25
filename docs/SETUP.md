@@ -12,13 +12,26 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 ## Fase 3 – Autenticazione
 
 3. **Apple Developer Program** (99 $/anno), necessario anche per Sign in with Apple e TestFlight.
-   - Crea l'App ID `com.caloscan.app` (o il tuo bundle ID) con la capability *Sign in with Apple* e *Push Notifications*.
+   - Crea l'App ID `com.andrewnalini.caloscan.app` con la capability *Sign in with Apple* e *Push Notifications*.
    - Crea un *Services ID* e una chiave *Sign in with Apple* → inseriscili in Supabase → Authentication → Providers → Apple.
 4. **Google Cloud Console**: crea un client OAuth **iOS** (per l'app) e uno **Web** (per Supabase).
    - Client iOS → `GOOGLE_IOS_CLIENT_ID` e `GOOGLE_REVERSED_CLIENT_ID` in `Secrets.xcconfig`.
    - Client Web → Supabase → Providers → Google.
-5. In Supabase → Authentication → URL Configuration aggiungi `caloscan://auth-callback` (recupero password e conferma email).
-6. Configura un SMTP personalizzato (es. Resend, Postmark) per le email di conferma: quello predefinito di Supabase ha limiti molto bassi.
+5. In Supabase → Authentication → URL Configuration: **Site URL** = `caloscan://auth-callback` e, in **Redirect URLs**, aggiungi
+   `caloscan://auth-callback` (conferma email e recupero password riaprono l'app da questo link).
+6. Supabase → Authentication → Sign In / Providers: **Email** attivo con *Confirm email* acceso; **Apple** e **Google** quando
+   hai i dati dei punti 3 e 4 (per Google spunta *Skip nonce checks*, richiesto dall'SDK iOS).
+7. Configura un SMTP personalizzato (es. Resend, Postmark) per le email di conferma: quello predefinito di Supabase ha limiti
+   molto bassi (poche email all'ora) e va bene solo per le prove.
+8. **Database e funzioni** (dal Mac, nella cartella `calo-scan`):
+   ```
+   brew install supabase/tap/supabase
+   supabase login
+   supabase link --project-ref <ref del progetto>
+   supabase db push                                   # crea tabelle e regole RLS (supabase/migrations)
+   supabase functions deploy save-profile delete-account
+   ```
+   `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` sono già disponibili alle funzioni: non vanno impostati.
 
 ## Fase 4–5 – Backend e AI
 

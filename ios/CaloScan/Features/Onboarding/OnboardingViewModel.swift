@@ -204,16 +204,34 @@ final class OnboardingViewModel {
         guard let profile = buildProfile(), let targets = finalTargets else { return nil }
         isSaving = true
         defer { isSaving = false }
+        var step = "consensi"
         do {
             try await services.account.update(consents: ConsentState(
                 healthDataProcessing: healthConsent, aiImageAnalysis: aiPhotoConsent, productEmails: false))
+            step = "profilo"
             try await services.profile.save(profile: profile, targets: targets)
+            step = "peso"
             try await services.weight.add(WeightEntry(date: .now, weightKg: profile.weightKg))
             return (profile, targets)
         } catch {
-            self.error = APIError.from(error)
+            Log.app.error("Onboarding: salvataggio non riuscito (\(step, privacy: .public)): \(String(describing: error), privacy: .private)")
+            self.error = Self.presentable(error, step: step)
             return nil
         }
+    }
+}
+
+extension OnboardingViewModel {
+    /// Nelle build di sviluppo aggiunge al messaggio il passaggio fallito e l'errore tecnico,
+    /// per capire subito cosa non va. Nelle build per l'App Store resta solo il messaggio per l'utente.
+    static func presentable(_ error: Error, step: String) -> APIError {
+        let base = APIError.from(error)
+        #if DEBUG
+        let detail = String(describing: error).prefix(400)
+        return .invalidInput("\(base.localizedDescription)\n\n[sviluppo] passaggio: \(step)\n\(detail)")
+        #else
+        return base
+        #endif
     }
 }
 

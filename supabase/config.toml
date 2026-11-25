@@ -44,3 +44,12 @@ skip_nonce_check = true
 [edge_runtime]
 enabled = true
 policy = "per_worker"
+
+# Le funzioni verificano da sole l'utente (requireUser → auth.getUser), che funziona sia con le
+# chiavi JWT legacy sia con le nuove chiavi di firma asimmetriche. Il controllo del gateway è
+# disattivato perché con le nuove chiavi API (sb_publishable_…) può rifiutare richieste valide.
+[functions.save-profile]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

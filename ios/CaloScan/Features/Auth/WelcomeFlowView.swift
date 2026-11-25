@@ -23,7 +23,6 @@ struct WelcomeFlowView: View {
                     }
                 }
         }
-        .onOpenURL { _ = GoogleSignInCoordinator.handle($0) }
     }
 }
 
@@ -106,7 +105,7 @@ struct SocialSignInButtons: View {
 /// Nota legale con link a termini e privacy.
 struct LegalFootnote: View {
     var body: some View {
-        Text(markdown: String(localized: "Continuando accetti i [Termini di servizio](\(LegalLinks.terms.absoluteString)) e confermi di aver letto l'[Informativa sulla privacy](\(LegalLinks.privacyPolicy.absoluteString))."))
+        Text(AttributedString.markdown(String(localized: "Continuando accetti i [Termini di servizio](\(LegalLinks.terms.absoluteString)) e confermi di aver letto l'[Informativa sulla privacy](\(LegalLinks.privacyPolicy.absoluteString)).")))
             .font(DS.Font.caption)
             .foregroundStyle(DS.Palette.textTertiary)
             .multilineTextAlignment(.center)

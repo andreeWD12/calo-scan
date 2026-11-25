@@ -1,6 +1,6 @@
 import SwiftUI
 import PhotosUI
-import AVFoundation
+@preconcurrency import AVFoundation
 
 /// Flusso di scansione a schermo intero: fotocamera → analisi → risultato modificabile → salvataggio.
 struct ScannerFlowView: View {
@@ -144,7 +144,7 @@ private struct CaptureView: View {
     private var controls: some View {
         HStack {
             PhotosPicker(selection: $pickerItem, matching: .images) {
-                circleIcon("photo.on.rectangle")
+                CircleIcon(name: "photo.on.rectangle")
             }
             .accessibilityLabel(Text("Scegli una foto dalla libreria"))
             Spacer()
@@ -166,20 +166,13 @@ private struct CaptureView: View {
             .accessibilityLabel(Text("Scatta la foto"))
             .sensoryFeedback(.impact, trigger: isCapturing)
             Spacer()
-            Button(action: onManual) { circleIcon("magnifyingglass") }
+            Button(action: onManual) { CircleIcon(name: "magnifyingglass") }
                 .accessibilityLabel(Text("Cerca un alimento manualmente"))
         }
         .padding(.horizontal, DS.Spacing.xl)
         .padding(.top, DS.Spacing.m)
     }
 
-    private func circleIcon(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.title2)
-            .foregroundStyle(.white)
-            .frame(width: 54, height: 54)
-            .background(.white.opacity(0.18), in: .circle)
-    }
 
     @ViewBuilder
     private var permissionPrompt: some View {
@@ -361,5 +354,18 @@ private struct AIConsentView: View {
         }
         .padding(DS.Spacing.screen)
         .background(DS.Palette.background.ignoresSafeArea())
+    }
+}
+
+/// Pulsante tondo della fotocamera. È una View a sé perché l'etichetta di PhotosPicker non è sul main actor.
+private struct CircleIcon: View {
+    let name: String
+
+    var body: some View {
+        Image(systemName: name)
+            .font(.title2)
+            .foregroundStyle(.white)
+            .frame(width: 54, height: 54)
+            .background(.white.opacity(0.18), in: .circle)
     }
 }

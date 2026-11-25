@@ -12,8 +12,17 @@ struct EdgeFunctionClient: Sendable {
         case foodSearch = "food-search"
         case verifyPurchase = "verify-purchase"
         case exportData = "export-data"
+        case saveProfile = "save-profile"
         case deleteAccount = "delete-account"
     }
+
+    /// Date in ISO 8601 e chiavi come nei modelli Swift (camelCase), le stesse che leggono le funzioni TS.
+    /// Il corpo viene codificato qui e non dall'SDK, che userebbe il formato data predefinito di Foundation.
+    static let encoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        return e
+    }()
 
     private static let decoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -28,15 +37,28 @@ struct EdgeFunctionClient: Sendable {
         as: Response.Type = Response.self
     ) async throws -> Response {
         do {
-            return try await client.functions.invoke(
-                function.rawValue,
-                options: FunctionInvokeOptions(body: body),
-                decoder: Self.decoder
-            )
+            return try await client.functions.invoke(function.rawValue, options: try options(body), decoder: Self.decoder)
         } catch let FunctionsError.httpError(code, data) {
+            Log.network.error("\(function.rawValue, privacy: .public): HTTP \(code) \(String(decoding: data.prefix(300), as: UTF8.self), privacy: .public)")
             throw APIError.from(status: code, body: data)
         } catch {
             throw APIError.from(error)
         }
+    }
+
+    /// Per le funzioni che non restituiscono dati (es. 204).
+    func send<Body: Encodable & Sendable>(_ function: Function, body: Body) async throws {
+        do {
+            try await client.functions.invoke(function.rawValue, options: try options(body))
+        } catch let FunctionsError.httpError(code, data) {
+            Log.network.error("\(function.rawValue, privacy: .public): HTTP \(code) \(String(decoding: data.prefix(300), as: UTF8.self), privacy: .public)")
+            throw APIError.from(status: code, body: data)
+        } catch {
+            throw APIError.from(error)
+        }
+    }
+
+    private func options<Body: Encodable>(_ body: Body) throws -> FunctionInvokeOptions {
+        FunctionInvokeOptions(headers: ["Content-Type": "application/json"], body: try Self.encoder.encode(body))
     }
 }

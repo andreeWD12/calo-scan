@@ -45,6 +45,8 @@ final class AppState {
     private(set) var diaryRevision = 0
 
     private var sessionTask: Task<Void, Never>?
+    /// Aperto dal link di recupero password: mostra la schermata per scegliere la nuova password.
+    var showsNewPassword = false
 
     init(services: AppServices) {
         self.services = services
@@ -69,6 +71,21 @@ final class AppState {
         }
         await reloadProfile()
         await refreshEntitlements()
+    }
+
+    /// Link esterni: accesso/recupero password (caloscan://auth-callback) o deep link interni.
+    func open(_ url: URL) async {
+        switch await services.auth.handle(url: url) {
+        case .passwordRecovery:
+            showsNewPassword = true
+        case .signedIn:
+            toasts.success(String(localized: "Email confermata"), symbol: "checkmark.seal.fill")
+        case .failed:
+            toasts.show(Toast(style: .warning, title: String(localized: "Link non valido o scaduto"),
+                              subtitle: String(localized: "Richiedine uno nuovo dalla schermata di accesso.")))
+        case .notHandled:
+            if let link = DeepLink(url: url) { router.open(link) }
+        }
     }
 
     func reloadProfile() async {

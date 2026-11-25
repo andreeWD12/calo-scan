@@ -1,0 +1,45 @@
+# Compila l'app iOS su un Mac di GitHub a ogni push sui branch di lavoro,
+# così gli errori di Swift si vedono prima di aprire Xcode.
+name: Build iOS
+
+on:
+  push:
+    branches: ["fase-*", "main"]
+    paths: ["ios/**", ".github/workflows/ios-build.yml"]
+  pull_request:
+    paths: ["ios/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versione di Xcode
+        run: xcodebuild -version
+      - name: Genera il progetto
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Compila app e test (simulatore, senza firma)
+        run: |
+          xcodebuild build-for-testing \
+            -project CaloScan.xcodeproj -scheme CaloScan \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO > build.log 2>&1
+      - name: Errori e avvisi di concorrenza
+        if: always()
+        run: |
+          grep -E "error:" build.log | sort -u | head -150 || true
+          echo "--- avvisi Sendable/isolamento ---"
+          grep -E "warning:.*(Sendable|isolat|concurren)" build.log | sort -u | head -60 || true
+          tail -5 build.log

@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 import UIKit
 import SwiftUI
 
@@ -15,7 +15,7 @@ final class CameraController: NSObject, @unchecked Sendable {
     }
 
     let session = AVCaptureSession()
-    private let queue = DispatchQueue(label: "com.caloscan.camera")
+    private let queue = DispatchQueue(label: "com.andrewnalini.caloscan.camera")
     private let output = AVCapturePhotoOutput()
     private var continuation: CheckedContinuation<Data, Error>?
 
@@ -47,8 +47,8 @@ final class CameraController: NSObject, @unchecked Sendable {
         }
     }
 
-    func start() { queue.async { [session] in if !session.isRunning { session.startRunning() } } }
-    func stop() { queue.async { [session] in if session.isRunning { session.stopRunning() } } }
+    func start() { queue.async { [self] in if !session.isRunning { session.startRunning() } } }
+    func stop() { queue.async { [self] in if session.isRunning { session.stopRunning() } } }
 
     func capture() async throws -> Data {
         try await withCheckedThrowingContinuation { cont in

@@ -22,7 +22,15 @@ protocol AuthService: Sendable {
     /// Ritorna `true` se serve la conferma via email prima del primo accesso.
     func signUp(email: String, password: String) async throws -> Bool
     func sendPasswordReset(email: String) async throws
+    /// Nuova password dopo il link di recupero (l'utente ha già una sessione di recupero).
+    func updatePassword(_ password: String) async throws
     func signOut() async throws
+    /// Link `caloscan://auth-callback` dalle email di conferma o di recupero password.
+    func handle(url: URL) async -> AuthCallback
+}
+
+enum AuthCallback: Sendable {
+    case notHandled, signedIn, passwordRecovery, failed
 }
 
 // MARK: - Profilo

@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import CaloScanCore
 
 @Observable
@@ -63,7 +64,7 @@ final class ShoppingListViewModel {
         let changed = merged.filter { item in !before.contains(item.id) || new.contains { $0.name.lowercased() == item.name.lowercased() } }
         state = .loaded(merged)
         do { try await services.shopping.save(changed) }
-        catch { error = APIError.from(error); await load() }
+        catch { self.error = APIError.from(error); await load() }
     }
 
     func toggle(_ item: ShoppingItem) async {
@@ -84,13 +85,13 @@ final class ShoppingListViewModel {
         list[i] = item
         state = .loaded(list)
         do { try await services.shopping.save([item]) }
-        catch { error = APIError.from(error); await load() }
+        catch { self.error = APIError.from(error); await load() }
     }
 
     func delete(_ ids: [UUID]) async {
         state = .loaded(items.filter { !ids.contains($0.id) })
         do { try await services.shopping.delete(itemIDs: ids) }
-        catch { error = APIError.from(error); await load() }
+        catch { self.error = APIError.from(error); await load() }
     }
 
     func removeChecked() async {

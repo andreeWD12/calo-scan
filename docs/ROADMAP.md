@@ -4,8 +4,8 @@
 |---|---|---|
 | 1 | Architettura e struttura del progetto | ✅ completata |
 | 2 | Design system e schermate principali | ✅ completata |
-| 3 | Registrazione, login, onboarding (collegamento a Supabase Auth) | ⏳ prossima |
-| 4 | Database (schema + RLS) e backend | |
+| 3 | Registrazione, login, onboarding (collegamento a Supabase Auth) | ✅ completata |
+| 4 | Database (schema + RLS) e backend | ⏳ prossima |
 | 5 | AI Food Scanner e analisi nutrizionale | |
 | 6 | Diario e statistiche | |
 | 7 | AI Nutrition Coach | |
@@ -33,5 +33,17 @@ Nota: il codice Swift è stato scritto in un ambiente Linux senza Xcode e non è
 - Promemoria locali reali (UserNotifications), tema chiaro/scuro/automatico.
 - Requisiti UE e App Store nell'interfaccia: vedi `docs/COMPLIANCE.md`.
 - Modalità anteprima solo Debug (`-PreviewMode`, `-PreviewOnboarding`) per provare l'app nel simulatore prima che il backend sia collegato.
+
+## Fase 3 – consegnato
+
+- Accesso con Apple, Google ed email/password su Supabase Auth (`SupabaseAuthService`); sessione nel Keychain, rinnovo automatico.
+- Link delle email (`caloscan://auth-callback`): conferma registrazione e recupero password con schermata "Nuova password".
+- Dopo l'accesso: se il profilo non esiste parte l'onboarding, altrimenti la Home (con cache locale solo dell'ID per l'uso offline).
+- Migrazione `20261123000001_fase3_profili_consensi.sql`: `profiles`, `professional_plans`, `consents` + storico `consent_events`, `weight_entries`, tutte con RLS e cancellazione a cascata.
+- Funzione `save-profile`: rivalida profilo e obiettivi sul server (`_shared/profile.ts`, test inclusi: età minima 16 anni, intervalli, obiettivo calorico sicuro).
+- Funzione `delete-account`: cancella account e dati.
+- Bundle ID `com.andrewnalini.caloscan.app`.
+
+Ancora `NotConnectedService` dopo la Fase 3: pasti, ricerca, scanner, coach, misure corporee, abbonamenti, push, lista della spesa, inviti, export dati, salvataggio del piano del professionista.
 
 I servizi di produzione restano `NotConnectedService` (errore esplicito, nessun dato finto) finché ogni fase non collega il proprio backend.

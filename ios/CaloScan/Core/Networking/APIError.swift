@@ -56,6 +56,13 @@ enum APIError: LocalizedError, Equatable {
             }
         }
         if status == 401 { return .unauthorized }
+        #if DEBUG
+        // In sviluppo si mostra la risposta del server (es. codice Postgres o errore della funzione).
+        if let body, !body.isEmpty {
+            return .invalidInput(String(localized: "Si è verificato un problema sul server. Riprova.")
+                + "\n[sviluppo] HTTP \(status): " + String(decoding: body.prefix(300), as: UTF8.self))
+        }
+        #endif
         return .server(status: status)
     }
 
@@ -66,6 +73,11 @@ enum APIError: LocalizedError, Equatable {
             return .offline
         }
         if error is DecodingError { return .decoding }
+        #if DEBUG
+        // In sviluppo si mostra l'errore originale (es. di PostgREST o di Auth) per capire subito la causa.
+        return .invalidInput(String(localized: "Si è verificato un errore imprevisto.") + "\n[sviluppo] " + String(String(describing: error).prefix(400)))
+        #else
         return .unknown
+        #endif
     }
 }
