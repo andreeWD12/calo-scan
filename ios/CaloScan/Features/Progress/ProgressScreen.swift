@@ -32,7 +32,10 @@ struct ProgressScreen: View {
             .sheet(isPresented: $showAddWeight) {
                 AddWeightSheet(initial: model.entries.value?.last?.weightKg ?? app.profile?.weightKg) { kg, date in
                     let saved = await model.add(weightKg: kg, date: date)
-                    if saved { app.toasts.success(String(localized: "Peso registrato"), subtitle: Format.kg(kg), symbol: "scalemass.fill") }
+                    if saved {
+                        app.toasts.success(String(localized: "Peso registrato"), subtitle: Format.kg(kg), symbol: "scalemass.fill")
+                        app.weightSaved(entries: model.entries.value ?? [])
+                    }
                     return saved
                 }
             }
@@ -73,8 +76,9 @@ struct ProgressScreen: View {
                 }
                 .pickerStyle(.segmented)
                 if model.range == .all && app.entitlements.plan < .plus {
-                    // Storico completo del peso: Plus e Pro.
-                    WeightChart(entries: model.visibleEntries, goal: app.profile?.targetWeightKg)
+                    // Storico completo del peso: Plus e Pro. Sotto il lucchetto un disegno decorativo,
+                    // mai i dati veri: niente da leggere attraverso la sfocatura.
+                    LockedChartPlaceholder()
                         .frame(height: 220)
                         .premiumLocked(.plus, title: "Andamento del peso dall'inizio", cornerRadius: DS.Radius.m)
                 } else if model.visibleEntries.count >= 2 {
@@ -89,7 +93,13 @@ struct ProgressScreen: View {
             MeasurementsCard(measurements: model.measurements, onAdd: { showAddMeasurement = true },
                              onDelete: { m in Task { await model.delete(m) } })
                 .premiumLocked(.plus, title: "Misure corporee")
-            HistoryCard(entries: entries.reversed()) { entry in Task { await model.delete(entry) } }
+            // Free: solo le pesate dell'ultimo mese. Le più vecchie non vengono nemmeno disegnate.
+            let monthAgo = Calendar.current.date(byAdding: .day, value: -31, to: .now) ?? .distantPast
+            let isFree = app.entitlements.plan < .plus
+            let newestFirst = Array(entries.reversed())
+            let visible = isFree ? newestFirst.filter { $0.date >= monthAgo } : newestFirst
+            HistoryCard(entries: visible, lockedCount: newestFirst.count - visible.count,
+                        goal: app.profile?.targetWeightKg) { entry in Task { await model.delete(entry) } }
         }
     }
 }
@@ -241,25 +251,194 @@ extension BodyMeasurement.Kind {
     }
 }
 
+/// Storico del peso raggruppato per mese: per ogni mese la variazione, per ogni pesata la data in un
+/// riquadro, il peso, una barra che mostra dove si colloca tra il minimo e il massimo e la differenza
+/// dalla pesata precedente. Colori neutri: verde quando ci si avvicina all'obiettivo, mai rosso.
 private struct HistoryCard: View {
+    /// Dal più recente al più vecchio.
     let entries: [WeightEntry]
+    /// Pesate più vecchie di un mese, nascoste per i Free (Plus e Pro le vedono tutte).
+    let lockedCount: Int
+    let goal: Double?
     let onDelete: (WeightEntry) -> Void
+    @State private var showAll = false
+
+    private struct Month: Identifiable {
+        let id: Date
+        let entries: [(entry: WeightEntry, delta: Double?)]
+        var change: Double? {
+            guard let newest = entries.first?.entry.weightKg, let oldest = entries.last?.entry.weightKg, entries.count >= 2 else { return nil }
+            return newest - oldest
+        }
+    }
+
+    private var months: [Month] {
+        let calendar = Calendar.current
+        let shown = Array(entries.prefix(showAll ? 200 : 20))
+        var rows: [(WeightEntry, Double?)] = []
+        for (i, e) in shown.enumerated() {
+            let previous = i + 1 < entries.count ? entries[i + 1].weightKg : nil
+            rows.append((e, previous.map { e.weightKg - $0 }))
+        }
+        let groups = Dictionary(grouping: rows) { calendar.dateInterval(of: .month, for: $0.0.date)?.start ?? $0.0.date }
+        return groups.keys.sorted(by: >).map { key in
+            Month(id: key, entries: groups[key]!.sorted { $0.0.date > $1.0.date }.map { (entry: $0.0, delta: $0.1) })
+        }
+    }
+
+    private var range: ClosedRange<Double> {
+        let values = entries.prefix(showAll ? 200 : 20).map(\.weightKg)
+        let lo = values.min() ?? 0, hi = values.max() ?? 1
+        return lo...max(hi, lo + 0.1)
+    }
 
     var body: some View {
         Card {
             SectionHeader(title: "Storico")
-            ForEach(entries.prefix(30)) { entry in
+            if entries.isEmpty {
+                Text("Nessuna pesata nell'ultimo mese.").font(DS.Font.callout).foregroundStyle(DS.Palette.textSecondary)
+            }
+            ForEach(months) { month in
                 HStack {
-                    Text(entry.date.formatted(date: .abbreviated, time: .omitted)).font(DS.Font.callout)
+                    Text(month.id.formatted(.dateTime.month(.wide).year()).capitalized)
+                        .font(DS.Font.caption.weight(.semibold)).foregroundStyle(DS.Palette.textSecondary)
                     Spacer()
-                    Text(Format.kg(entry.weightKg)).font(DS.Font.callout.monospacedDigit())
+                    if let change = month.change {
+                        DeltaChip(delta: change, goal: goal, current: month.entries.first?.entry.weightKg, label: String(localized: "nel mese"))
+                    }
                 }
-                .frame(minHeight: 32)
-                .contextMenu {
-                    Button("Elimina", systemImage: "trash", role: .destructive) { onDelete(entry) }
+                .padding(.top, DS.Spacing.xs)
+                ForEach(month.entries, id: \.entry.id) { row in
+                    WeightRow(entry: row.entry, delta: row.delta, range: range, goal: goal)
+                        .contextMenu {
+                            Button("Elimina", systemImage: "trash", role: .destructive) { onDelete(row.entry) }
+                        }
+                }
+            }
+            if entries.count > 20 {
+                Button(showAll ? "Mostra meno" : "Mostra tutte le \(entries.count) pesate") {
+                    withAnimation(DS.Motion.standard) { showAll.toggle() }
+                }
+                .font(DS.Font.callout.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.top, DS.Spacing.xs)
+            }
+            if lockedCount > 0 {
+                LockedHistoryPlaceholder()
+                    .frame(height: 190)
+                    .premiumLocked(.plus, title: "Altre \(lockedCount) pesate", cornerRadius: DS.Radius.m)
+                    .padding(.top, DS.Spacing.xs)
+            }
+        }
+    }
+}
+
+/// Righe vuote decorative sotto il lucchetto: nessun numero né data, quindi nulla da leggere.
+private struct LockedHistoryPlaceholder: View {
+    var body: some View {
+        VStack(spacing: DS.Spacing.s) {
+            ForEach(0..<3, id: \.self) { i in
+                HStack(spacing: DS.Spacing.s) {
+                    RoundedRectangle(cornerRadius: DS.Radius.s).fill(DS.Palette.brandSoft).frame(width: 44, height: 44)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Capsule().fill(DS.Palette.surfaceMuted).frame(width: 70, height: 12)
+                        Capsule().fill(DS.Palette.brand.opacity(0.25)).frame(width: [150, 110, 180][i], height: 6)
+                    }
+                    Spacer()
+                    Capsule().fill(DS.Palette.brandSoft).frame(width: 64, height: 22)
                 }
             }
         }
+        .padding(.vertical, DS.Spacing.xs)
+    }
+}
+
+/// Curva decorativa sotto il lucchetto del grafico "Tutto": non usa i dati dell'utente.
+private struct LockedChartPlaceholder: View {
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let points = (0...12).map { i -> CGPoint in
+                let x = w * Double(i) / 12
+                return CGPoint(x: x, y: h * (0.35 + 0.25 * sin(Double(i) * 0.7) + 0.02 * Double(i)))
+            }
+            ZStack {
+                Path { p in p.addLines(points) }
+                    .stroke(DS.Palette.brand, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                Path { p in
+                    p.addLines(points); p.addLine(to: CGPoint(x: w, y: h)); p.addLine(to: CGPoint(x: 0, y: h)); p.closeSubpath()
+                }
+                .fill(LinearGradient(colors: [DS.Palette.brand.opacity(0.2), .clear], startPoint: .top, endPoint: .bottom))
+            }
+        }
+    }
+}
+
+private struct WeightRow: View {
+    let entry: WeightEntry
+    let delta: Double?
+    let range: ClosedRange<Double>
+    let goal: Double?
+
+    var body: some View {
+        HStack(spacing: DS.Spacing.s) {
+            VStack(spacing: 0) {
+                Text(entry.date.formatted(.dateTime.day())).font(DS.Font.headline.monospacedDigit())
+                Text(entry.date.formatted(.dateTime.weekday(.abbreviated))).font(.caption2).textCase(.uppercase)
+            }
+            .foregroundStyle(DS.Palette.brand)
+            .frame(width: 44, height: 44)
+            .background(DS.Palette.brandSoft, in: .rect(cornerRadius: DS.Radius.s))
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(Format.kg(entry.weightKg)).font(DS.Font.headline.monospacedDigit())
+                    .foregroundStyle(DS.Palette.textPrimary)
+                GeometryReader { geo in
+                    let fraction = (entry.weightKg - range.lowerBound) / (range.upperBound - range.lowerBound)
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(DS.Palette.surfaceMuted)
+                        Capsule().fill(LinearGradient(colors: [DS.Palette.brand.opacity(0.35), DS.Palette.brand],
+                                                      startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(geo.size.width * (0.15 + 0.85 * fraction), 8))
+                    }
+                }
+                .frame(height: 6)
+            }
+            Spacer(minLength: 0)
+            if let delta {
+                DeltaChip(delta: delta, goal: goal, current: entry.weightKg, label: nil)
+            }
+        }
+        .frame(minHeight: 52)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Differenza di peso con freccia. Verde se va verso l'obiettivo, grigio altrimenti (mai rosso).
+private struct DeltaChip: View {
+    let delta: Double
+    let goal: Double?
+    let current: Double?
+    let label: String?
+
+    private var towardGoal: Bool {
+        guard let goal, let current else { return false }
+        let previous = current - delta
+        return abs(goal - current) < abs(goal - previous)
+    }
+
+    var body: some View {
+        let steady = abs(delta) < 0.05
+        let symbol = steady ? "equal" : (delta < 0 ? "arrow.down.right" : "arrow.up.right")
+        let tint = towardGoal ? DS.Palette.brand : DS.Palette.textSecondary
+        HStack(spacing: 3) {
+            Image(systemName: symbol).font(.caption2.weight(.bold))
+            Text(steady ? String(localized: "stabile") : Format.signedKg(delta)).font(DS.Font.caption.weight(.semibold).monospacedDigit())
+            if let label { Text(label).font(DS.Font.caption) }
+        }
+        .foregroundStyle(tint)
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(tint.opacity(0.12), in: .capsule)
     }
 }
 

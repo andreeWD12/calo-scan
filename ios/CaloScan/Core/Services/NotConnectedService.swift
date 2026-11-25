@@ -39,9 +39,9 @@ struct NotConnectedService: AuthService, ProfileRepository, MealRepository, Food
     func analyze(jpegData: Data) async throws -> ScanResult { throw fail() }
     func analyze(description: String, jpegData: Data?) async throws -> ScanResult { throw fail() }
 
-    func dailyInsights() async throws -> [CoachInsight] { throw fail() }
     func history() async throws -> [CoachMessage] { throw fail() }
     func send(_ text: String) async throws -> CoachMessage { throw fail() }
+    func clearHistory() async throws { throw fail() }
 
     func entries() async throws -> [WeightEntry] { throw fail() }
     func add(_ entry: WeightEntry) async throws { throw fail() }
@@ -77,6 +77,7 @@ extension AppServices {
     /// Servizi di produzione. Fase 3: autenticazione, profilo, consensi, peso ed eliminazione account.
     /// Fase 4: diario dei pasti, lista della spesa e piano del professionista.
     /// Fase 5: scanner AI, ricerca alimenti, piano e scansioni di oggi.
+    /// Fase 7: coach AI, proposte di stile alimentare e suggerimenti per la spesa.
     /// Gli altri servizi restano `NotConnectedService` finché la loro fase non li collega.
     @MainActor
     static func live(container: AppContainer) -> AppServices {
@@ -85,10 +86,11 @@ extension AppServices {
         return AppServices(auth: SupabaseAuthService(client: client),
                            profile: SupabaseProfileRepository(client: client, functions: container.functions),
                            meals: SupabaseMealRepository(client: client), foods: SupabaseFoodSearchService(functions: container.functions),
-                           scanner: SupabaseScanService(functions: container.functions), coach: pending,
+                           scanner: SupabaseScanService(functions: container.functions),
+                           coach: SupabaseCoachService(functions: container.functions),
                            weight: SupabaseWeightRepository(client: client),
                            entitlements: SupabaseEntitlementService(functions: container.functions), purchases: pending,
                            account: SupabaseAccountService(client: client, functions: container.functions),
-                           push: pending, shopping: SupabaseShoppingListService(client: client), referrals: pending)
+                           push: pending, shopping: SupabaseShoppingListService(client: client, functions: container.functions), referrals: pending)
     }
 }

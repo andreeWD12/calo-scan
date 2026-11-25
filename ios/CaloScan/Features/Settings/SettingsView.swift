@@ -19,13 +19,20 @@ struct SettingsView: View {
     /// Notifiche push dal server: report settimanale e suggerimenti (massimo 2 a settimana).
     @AppStorage("push.weeklyReport") private var weeklyReport = false
     @AppStorage("push.tips") private var tips = false
+    /// Feste per i traguardi e pop-up di incoraggiamento (`CelebrationCenter`).
+    @AppStorage(CelebrationCenter.enabledKey) private var celebrations = true
 
     var body: some View {
         Form {
-            Section("Aspetto") {
+            Section {
                 Picker("Tema", selection: $appearance) {
                     ForEach(AppearancePreference.allCases) { Text($0.title).tag($0) }
                 }
+                Toggle("Animazioni per i traguardi", isOn: $celebrations)
+            } header: {
+                Text("Aspetto")
+            } footer: {
+                Text("Festeggia gli obiettivi raggiunti e mostra brevi incoraggiamenti e consigli sulle abitudini (al massimo tre al giorno).")
             }
             Section {
                 reminderRow("Colazione", $reminders.breakfast)

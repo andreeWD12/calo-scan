@@ -45,7 +45,7 @@ jobs:
         run: xcodebuild -version
       - name: Test della logica condivisa (CaloScanCore)
         working-directory: ios/Packages/CaloScanCore
-        run: set -o pipefail; swift test 2>&1 | tail -40
+        run: set -o pipefail; swift test 2>&1 | grep -E "error|failed|Executed" | tail -40
       - name: Genera il progetto
         run: |
           brew install xcodegen

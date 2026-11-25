@@ -16,7 +16,7 @@ private struct PremiumLockModifier: ViewModifier {
             content
         } else {
             content
-                .blur(radius: 5)
+                .blur(radius: 14, opaque: true)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
                 .overlay {

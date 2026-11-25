@@ -15,8 +15,8 @@ export const SCAN_LIMITS = {
   burstMax: 20,
 } as const;
 
-/** Messaggi al coach al giorno per piano (Fase 7); qui solo per l'esposizione dei limiti. */
-export const COACH_LIMITS: Record<Plan, number> = { free: 5, plus: 30, pro: 150 };
+/** Messaggi al coach AI al giorno: la chat è solo Plus e Pro (decisione 2026-11-24); i consigli del giorno sono gratuiti. */
+export const COACH_LIMITS: Record<Plan, number> = { free: 0, plus: 30, pro: 150 };
 
 export type QuotaDecision = { ok: true } | { ok: false; reason: "daily" | "burst" };
 

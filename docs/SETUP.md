@@ -51,6 +51,15 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
    al tuo account: copia il tuo User UID da Supabase → Authentication → Users e poi
    `supabase secrets set TESTER_USER_IDS=<il tuo UID>` (più account separati da virgola).
 
+## Fase 7 – Coach
+
+9. Nessuna nuova chiave (usa `ANTHROPIC_API_KEY`):
+   ```
+   supabase db push --remote
+   supabase functions deploy coach-chat get-entitlements
+   ```
+   La chat è solo per Plus e Pro: per provarla prima della Fase 8 usa `TESTER_USER_IDS` come per lo scanner.
+
 ## Fase 8 – Abbonamenti
 
 10. **App Store Connect**: crea l'app, poi un *Subscription Group* "CaloScan Premium" con i 4 prodotti

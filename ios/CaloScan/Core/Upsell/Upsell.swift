@@ -96,7 +96,8 @@ final class UpsellCenter {
 
     /// Dopo un messaggio al coach.
     func coachMessageSent(entitlements e: Entitlements) {
-        let remaining = max(e.coachMessagesLimitToday - e.coachMessagesUsedToday, 0)
+        guard e.includesCoachChat else { return }
+        let remaining = e.coachMessagesRemaining
         if remaining <= 1 { offer(.coachRunningLow, plan: e.plan, remaining: remaining) }
     }
 

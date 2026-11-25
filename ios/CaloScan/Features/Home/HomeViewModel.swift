@@ -10,6 +10,10 @@ final class HomeViewModel {
     /// Giorni consecutivi con almeno un alimento registrato (fino a oggi o ieri).
     private(set) var streak = 0
 
+    /// Obiettivi e profilo per i consigli del giorno, aggiornati dalla vista prima di ogni caricamento.
+    var tipTargets: DailyTargets?
+    var tipProfile: UserProfile?
+
     private let services: AppServices
 
     init(services: AppServices) {
@@ -25,12 +29,16 @@ final class HomeViewModel {
             let from = calendar.date(byAdding: .day, value: -59, to: todayStart) ?? todayStart
             let logs = try await services.meals.dayLogs(from: from, to: todayStart)
             streak = Self.streak(in: logs, today: todayStart, calendar: calendar)
-            today = .loaded(logs.last { calendar.isDate($0.day, inSameDayAs: todayStart) } ?? DayLog(day: todayStart, meals: []))
+            let todayLog = logs.last { calendar.isDate($0.day, inSameDayAs: todayStart) } ?? DayLog(day: todayStart, meals: [])
+            today = .loaded(todayLog)
+            // Consigli del giorno: regole fisse sul telefono, senza AI e gratuiti per tutti.
+            let weekStart = calendar.date(byAdding: .day, value: -7, to: todayStart) ?? todayStart
+            let recent = logs.filter { $0.day >= weekStart && !calendar.isDate($0.day, inSameDayAs: todayStart) }
+            insights = DailyTips.make(today: todayLog, recent: recent, targets: tipTargets, diet: tipProfile?.diet,
+                                      allergens: tipProfile?.allergens ?? [], calendar: calendar).map(CoachInsight.init)
         } catch {
             today = .failed(APIError.from(error))
         }
-        // I consigli sono accessori: un errore qui non blocca la dashboard.
-        insights = (try? await services.coach.dailyInsights()) ?? []
     }
 
 

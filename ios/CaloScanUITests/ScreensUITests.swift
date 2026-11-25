@@ -29,6 +29,23 @@ final class ScreensUITests: XCTestCase {
         }
     }
 
+    /// Festa a schermo pieno e pop-up di incoraggiamento.
+    @MainActor
+    func testCelebrations() throws {
+        for kind in ["big", "small"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-PreviewMode", "-PreviewCelebration", kind]
+            app.launch()
+            XCTAssertTrue(app.buttons.firstMatch.waitForExistence(timeout: 20))
+            let title = kind == "big" ? "7 giorni di fila" : "Metà piatto di verdura"
+            let element = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+            XCTAssertTrue(element.waitForExistence(timeout: 15), "\(kind): traguardo non mostrato")
+            sleep(kind == "big" ? 2 : 1)
+            save(app, "9-festa-\(kind)")
+            app.terminate()
+        }
+    }
+
     @MainActor
     private func save(_ app: XCUIApplication, _ name: String) {
         let shot = app.screenshot()

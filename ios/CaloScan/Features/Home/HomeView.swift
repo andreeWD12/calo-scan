@@ -65,7 +65,11 @@ struct HomeView: View {
                 }
             }
         }
-        .task(id: app.diaryRevision) { await model.load() }
+        .task(id: "\(app.diaryRevision)-\(app.targets?.calorieTarget ?? 0)") {
+            model.tipTargets = app.targets
+            model.tipProfile = app.profile
+            await model.load()
+        }
         .onChange(of: app.router.pending, initial: true) { _, link in
             if link == .coach { path = [.coach]; app.router.pending = nil }
         }
@@ -227,7 +231,7 @@ private struct InsightCard: View {
             HStack(alignment: .top, spacing: DS.Spacing.s) {
                 Image(systemName: "sparkles").foregroundStyle(DS.Palette.brand).font(.title3)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Il consiglio del coach AI").font(DS.Font.caption.weight(.semibold))
+                    Text("Il consiglio di oggi").font(DS.Font.caption.weight(.semibold))
                         .foregroundStyle(DS.Palette.textSecondary)
                     Text(insight.text).font(DS.Font.callout).foregroundStyle(DS.Palette.textPrimary)
                         .multilineTextAlignment(.leading)

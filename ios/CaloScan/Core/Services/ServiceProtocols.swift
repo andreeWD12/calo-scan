@@ -99,10 +99,13 @@ struct CoachMessage: Identifiable, Codable, Hashable, Sendable {
     let createdAt: Date
 }
 
+/// Chat con il coach AI (solo Plus e Pro: Plus 30 messaggi al giorno, Pro 150; controllo sul server).
+/// I consigli del giorno non passano di qui: sono regole fisse calcolate sul telefono (`DailyTips`), gratuite per tutti.
 protocol CoachService: Sendable {
-    func dailyInsights() async throws -> [CoachInsight]
     func history() async throws -> [CoachMessage]
     func send(_ text: String) async throws -> CoachMessage
+    /// Cancella la conversazione salvata (non azzera i messaggi già usati oggi).
+    func clearHistory() async throws
     /// Fino a 3 stili del catalogo adatti all'utente (solo Plus e Pro, controllo sul server).
     /// Il server esclude gli stili non sicuri per età, BMI, risposte di sicurezza e piano del professionista,
     /// e filtra l'output del modello con `sanitizeProposals`.
@@ -145,12 +148,15 @@ struct Entitlements: Codable, Equatable, Sendable {
     let willRenew: Bool
 
     static let free = Entitlements(plan: .free, scansUsedToday: 0, scansLimitToday: 0,
-                                   coachMessagesUsedToday: 0, coachMessagesLimitToday: 5,
+                                   coachMessagesUsedToday: 0, coachMessagesLimitToday: 0,
                                    expiresAt: nil, willRenew: false)
 
     var hasUnlimitedScans: Bool { scansLimitToday == nil }
     /// Lo scanner AI è incluso solo nei piani a pagamento.
     var includesAIScans: Bool { scansLimitToday != 0 }
+    /// La chat con il coach AI è inclusa solo in Plus (30 al giorno) e Pro (150 al giorno).
+    var includesCoachChat: Bool { coachMessagesLimitToday > 0 }
+    var coachMessagesRemaining: Int { max(coachMessagesLimitToday - coachMessagesUsedToday, 0) }
     var scansRemaining: Int { scansLimitToday.map { max($0 - scansUsedToday, 0) } ?? .max }
 }
 

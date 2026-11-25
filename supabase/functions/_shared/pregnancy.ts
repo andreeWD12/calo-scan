@@ -108,7 +108,7 @@ export function pregnancyWeekPlan(rawWeek: number): PregnancyWeekPlan {
   const phase: PregnancyPhase = week <= 13 ? "early" : week <= 27 ? "middle" : week <= 36 ? "late" : "term";
   const next = tri === 1 ? 14 : tri === 2 ? 28 : null;
   return { week, trimester: tri, phase, extraKcal: EXTRA_KCAL[tri - 1], extraProteinG: EXTRA_PROTEIN_G[tri - 1],
-    nextChangeWeek: next, nextExtraKcal: next === null ? null : EXTRA_KCAL[tri] };
+    nextChangeWeek: next, nextExtraKcal: next === null ? null : (EXTRA_KCAL as readonly number[])[tri] };
 }
 
 export const EXTRA_KCAL = [70, 260, 500] as const;

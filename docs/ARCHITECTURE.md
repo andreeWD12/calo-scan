@@ -128,13 +128,24 @@ Regole:
 - Vincoli `CHECK` su grammi, kcal, peso, altezza; date validate.
 - Cancellazione account → `ON DELETE CASCADE` da `auth.users` + pulizia Storage.
 
+## 7b. AI Nutrition Coach
+
+- **Consigli del giorno** (tutti i piani, senza AI): `DailyTips` in CaloScanCore, sul telefono, dal diario di oggi e degli ultimi 7 giorni. Mai inviti a mangiare meno dell'obiettivo; sopra l'obiettivo un messaggio rassicurante.
+- **Chat** (Plus 30, Pro 150 messaggi al giorno): `coach-chat` legge profilo, obiettivi effettivi, piano del professionista, gravidanza e pasti dal database (mai dati inviati dall'app) e li passa al modello tra tag `<dati_utente>`. Prima del modello, `safetyTopic` intercetta autolesionismo, disturbi alimentari e restrizioni estreme e risponde con un testo fisso con i numeri di aiuto (non conta nel limite). Il prompt vieta diagnosi, diete terapeutiche, obiettivi sotto `calorieFloor`, indicazioni sulla salute non autorizzate. Il limite si conta in `ai_events`, così cancellare la conversazione non lo azzera.
+- **Stile alimentare** (Pro) e **lista della spesa AI** (Plus e Pro): stessa funzione, azioni `eating_styles` e `shopping`, 5 al giorno ciascuna, output filtrato sul server (`sanitizeProposals`, `filterSuggestions`, `filterForPregnancy`).
+- Tutto richiede il consenso ai dati sanitari. Nei log nessun testo dell'utente.
+
+### Traguardi e incoraggiamenti
+
+`Milestones` (CaloScanCore, con test) decide dopo ogni pasto o peso salvato: obiettivo calorico del giorno (90–110% con la cena registrata, mai sotto), proteine raggiunte, colazione-pranzo-cena registrati, giorni di fila (3, 7, 14, 30, 60, 100, 200, 365), bentornato dopo almeno 3 giorni di pausa, un consiglio sulle abitudini al primo pasto del giorno, metà strada e peso obiettivo raggiunto (mai in gravidanza). `CelebrationCenter` mostra il primo non ancora visto: festa a schermo pieno con coriandoli (al massimo 1 al giorno) o pop-up in alto (al massimo 2 al giorno). Coriandoli disattivati con Riduci movimento; tutto disattivabile da Impostazioni › Animazioni per i traguardi.
+
 ## 8. Abbonamenti
 
 | Piano | Scansioni AI/giorno | Coach | Statistiche |
 |---|---|---|---|
-| Free | 0 (ricerca, codice a barre e inserimento manuale gratuiti) | messaggi base limitati (5/giorno) | settimanali di base |
-| Plus | 4 (una per pasto) | consigli personalizzati (30 msg/giorno) | settimanali + mensili complete |
-| Pro | 15 | coach avanzato, piani pasto, ricette, lista spesa (150 msg/giorno) | report mensili avanzati |
+| Free | 0 (ricerca, codice a barre e inserimento manuale gratuiti) | consigli del giorno (regole fisse, senza AI); niente chat | settimanali di base |
+| Plus | 4 (una per pasto) | chat 30 msg/giorno, lista della spesa AI (5/giorno) | settimanali + mensili complete |
+| Pro | 15 | chat 150 msg/giorno, lista della spesa AI, stile alimentare (5/giorno ciascuno) | mensili complete |
 
 Funzioni riservate (filigrana con lucchetto `premiumLocked(_:title:)`: il contenuto con i dati veri resta sfocato sotto un velo, un tocco apre i piani):
 - **Plus**: distribuzione delle calorie tra i pasti, andamento dei macronutrienti, statistiche mensili, misure corporee, storico completo del peso ("Tutto"), piano del medico o dietista (salvataggio bloccato anche dal server in `save-professional-plan`; eliminazione sempre possibile).
@@ -164,7 +175,7 @@ Schede compatte sopra la barra delle sezioni (`UpsellBanner`), mai a schermo int
 | Momento | Chi lo vede | Messaggio |
 |---|---|---|
 | Dopo aver salvato un pasto analizzato dall'AI, se resta 1 scansione o nessuna | Free → Plus, Plus → Pro | "Ti resta 1 scansione AI oggi · Con Plus hai 20 scansioni al giorno" |
-| Dopo un messaggio al coach, se resta 1 messaggio o nessuno | Free → Plus, Plus → Pro | "Ultimo messaggio al coach per oggi · Con Plus hai 30 messaggi al giorno" |
+| Dopo un messaggio al coach, se resta 1 messaggio o nessuno | Plus → Pro (Free non ha la chat) | "Ultimo messaggio al coach per oggi · Con Plus hai 30 messaggi al giorno" |
 | Dal 10° pasto salvato (utente costante) | Solo Free | "Stai registrando con costanza · Con Plus vedi le statistiche mensili" |
 
 Regole (`UpsellPolicy`, testate in `UpsellPolicyTests`): mai per Pro; nessun invito nei primi 2 giorni dal primo avvio (tranne le scansioni in esaurimento, che è un'informazione utile); al massimo 1 al giorno e 2 a settimana; lo stesso invito al massimo una volta a settimana; dopo 3 chiusure con la X quel tipo di invito non compare più. Lo stato resta solo sul dispositivo (UserDefaults), senza tracciamento. Restano anche le schede fisse dove una funzione è riservata ai piani a pagamento (statistiche mensili, macronutrienti settimanali) e la schermata "Scansioni di oggi esaurite".
@@ -255,7 +266,7 @@ I codici si creano in **App Store Connect** (Abbonamenti › Codici offerta): co
 
 Da Coach o da Profilo › Stile alimentare l'utente sceglie, con l'aiuto del coach AI, uno stile da un **catalogo chiuso** (`EatingStyle`, Swift / `EATING_STYLES`, TS): equilibrata, mediterranea, ricca di proteine, pochi carboidrati (moderata), vegetariana, vegana, digiuno intermittente 12:12, 14:10, 16:8. Esclusi per scelta: digiuni oltre 16 ore, 5:2, digiuni di giorni interi, chetogenica, diete a bassissimo contenuto calorico. Gli obiettivi calorici restano quelli calcolati (con le soglie minime) o del professionista: lo stile cambia *come* si distribuiscono i pasti, non abbassa le calorie.
 
-**Flusso**: 4 domande di sicurezza obbligatorie (gravidanza/allattamento, farmaci per il diabete, disturbi alimentari, altre condizioni seguite dal medico) → abitudini (pasti al giorno, quando si ha fame, allenamento, nota) → Edge Function `coach-eating-style` → fino a 3 proposte con motivazione e primi passi → scelta → per i digiuni, orario della finestra e promemoria facoltativi (spenti di default, locali).
+**Flusso**: 4 domande di sicurezza obbligatorie (gravidanza/allattamento, farmaci per il diabete, disturbi alimentari, altre condizioni seguite dal medico) → abitudini (pasti al giorno, quando si ha fame, allenamento, nota) → Edge Function `coach-chat` (azione `eating_styles`) → fino a 3 proposte con motivazione e primi passi → scelta → per i digiuni, orario della finestra e promemoria facoltativi (spenti di default, locali).
 
 **Sicurezza** (`EatingStyleSafety` / `styleBlocks`, stessi test):
 - Digiuni: esclusi sotto i 18 anni e con BMI < 18,5.

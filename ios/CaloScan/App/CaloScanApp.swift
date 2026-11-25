@@ -18,7 +18,17 @@ struct CaloScanApp: App {
         // Modalità anteprima per sviluppo e UI test: servizi in memoria con dati d'esempio.
         // Si attiva solo nelle build Debug con l'argomento di avvio `-PreviewMode`; mai in Release.
         if ProcessInfo.processInfo.arguments.contains("-PreviewMode") {
-            return AppState(services: .preview())
+            let state = AppState(services: .preview())
+            // `-PreviewCelebration big|small`: mostra subito una festa o un pop-up (solo per gli screenshot dei test).
+            let args = ProcessInfo.processInfo.arguments
+            if let i = args.firstIndex(of: "-PreviewCelebration"), i + 1 < args.count {
+                let defaults = UserDefaults.standard
+                for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("celebrations.") && key != CelebrationCenter.enabledKey {
+                    defaults.removeObject(forKey: key)
+                }
+                state.celebrations.offer(args[i + 1] == "big" ? [.streak(7)] : [.habitTip(2)], delay: .seconds(2))
+            }
+            return state
         }
         #endif
         let container = AppContainer(config: try AppConfig.load())
@@ -32,6 +42,7 @@ struct CaloScanApp: App {
                 RootView()
                     .environment(state)
                     .toastOverlay(state.toasts)
+                    .celebrationOverlay(state.celebrations)
                     .onOpenURL { url in
                         if GoogleSignInCoordinator.handle(url) { return }
                         Task { await state.open(url) }
