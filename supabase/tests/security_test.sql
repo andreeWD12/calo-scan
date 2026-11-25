@@ -57,7 +57,6 @@ end $$;
 insert into auth.users (id) values
   ('00000000-0000-0000-0000-00000000000a'), ('00000000-0000-0000-0000-00000000000b'),
   ('00000000-0000-0000-0000-00000000000c'), ('00000000-0000-0000-0000-00000000000d');
-insert into public.offer_code_pool (code, offer_id, expires_at) values ('CODEONE1', 'ref30', now() + interval '90 days');
 insert into public.referrals (referred_id, referrer_id) values
   ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000a'),
   ('00000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-00000000000a');
@@ -72,6 +71,13 @@ end $$;
 insert into public.profiles (user_id, profile, targets) values ('00000000-0000-0000-0000-00000000000b', '{}', '{}');
 insert into public.meals (id, user_id, type, logged_at, source)
 values (gen_random_uuid(), '00000000-0000-0000-0000-00000000000b', 'dinner', now(), 'manual');
+-- Lotto vuoto (es. prima dell'approvazione di Apple): l'invito è valido, il pasto si salva, il premio resta in attesa.
+do $$ begin
+  if exists (select 1 from public.referral_rewards) then raise exception 'premio senza codici disponibili'; end if;
+end $$;
+-- Arrivano i codici: la funzione referral (stato) riprova l'assegnazione.
+insert into public.offer_code_pool (code, offer_id, expires_at) values ('CODEONE1', 'ref30', now() + interval '90 days');
+select public.assign_referral_reward('00000000-0000-0000-0000-00000000000a');
 do $$ begin
   if not exists (select 1 from public.referrals where referred_id = '00000000-0000-0000-0000-00000000000b' and qualified_at is not null) then
     raise exception 'invito non qualificato dopo il primo pasto';

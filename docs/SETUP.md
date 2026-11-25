@@ -125,8 +125,12 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
     $$);
     ```
     Verifica: Edge Functions › `push-dispatch` › Logs mostra ogni 10 minuti "0 inviate, 0 da riprovare".
-19. **Premi degli inviti** (codici offerta Apple). App Store Connect › Abbonamenti › `caloscan.plus.monthly` › **Codici offerta** › *Crea*:
-    nome di riferimento `ref30`, idoneità **Nuovi clienti**, *Pagamento a consumo* per **1 mese** al prezzo del 70% (es. 3,49 € su 4,99 €).
+19. **Premi degli inviti** (codici offerta Apple) – **da fare dopo la prima approvazione**: Apple genera codici monouso solo quando
+    l'abbonamento è approvato e l'app è "Pronta per la distribuzione". Fino ad allora gli inviti funzionano lo stesso: chi ha un invito
+    valido vede "lo stiamo preparando" e riceve codice e notifica appena importi il lotto (alla prossima apertura di Invita un amico).
+    App Store Connect › Abbonamenti › `caloscan.plus.monthly` › **Codici offerta** › *Crea*:
+    nome di riferimento `ref30`, idoneità **Nuovi clienti**, *Pagamento a consumo* per **1 mese** al prezzo scontato più vicino al 70%
+    tra quelli proposti (es. 2,99 € su 4,99 € = 40%). Se lo sconto non è il 30%, imposta l'etichetta mostrata in app: `supabase secrets set REFERRAL_DISCOUNT_LABEL="40%"`.
     Poi *Genera codici monouso* (es. 500, scadenza la più lontana possibile) e scarica il CSV. Prepara un file `codici.csv` con le colonne
     `code,offer_id,expires_at` (es. `ABCD1234EFGH,ref30,2027-03-31T23:59:59Z`) e importalo da **Table Editor** › `offer_code_pool` › *Insert* › *Import data from CSV*.
     Facoltativi: `supabase secrets set APP_STORE_ID=1234567890` (il link condiviso apre la pagina dell'app) e `REFERRAL_DISCOUNT_LABEL="30%"`.

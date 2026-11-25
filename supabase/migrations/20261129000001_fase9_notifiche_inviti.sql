@@ -144,7 +144,7 @@ begin
   limit 1
   for update skip locked;
   if v_code is null then
-    raise warning 'referral: nessun codice offerta libero';
+    raise notice 'referral: nessun codice offerta libero, premio in attesa';
     return false;
   end if;
   update public.offer_code_pool set assigned_to = p_referrer, assigned_at = now() where code = v_code;
