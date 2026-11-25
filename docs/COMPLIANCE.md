@@ -54,8 +54,8 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 |---|---|---|
 | Pratiche commerciali (dir. 2005/29/CE) e dark pattern (DSA art. 25) negli inviti all'upgrade | Inviti legati a un limite reale o a un momento d'uso, nessuna urgenza finta o conto alla rovescia, chiusura sempre visibile, l'app resta usabile, massimo 2 a settimana, stop dopo 3 chiusure; nessun profilo inviato al server | ✅ |
 | Direttiva 2011/83/UE e Omnibus: prezzi chiari, rinnovo, recesso | Paywall: prezzo localizzato da StoreKit, periodo, rinnovo automatico, come disdire; il recesso è gestito da Apple | ✅ |
-| European Accessibility Act (dal 28/06/2025) | Dynamic Type, etichette VoiceOver, contrasti WCAG AA, target ≥ 44 pt, dark mode, animazioni che rispettano "Riduci movimento", popup annunciati da VoiceOver | ✅ base · ⏳ audit completo (Fase 10) |
-| Lingua | Interfaccia in italiano; localizzazioni aggiuntive in `Localizable.xcstrings` | 🟡 Fase 10 |
+| European Accessibility Act (dal 28/06/2025) | Dynamic Type, etichette VoiceOver, contrasti WCAG AA, target ≥ 44 pt, dark mode, animazioni che rispettano "Riduci movimento", popup annunciati da VoiceOver | ✅ (verifica Fase 10: etichette VoiceOver su tutti i pulsanti con sola icona, target 44 pt, Riduci movimento) |
+| Lingua | Interfaccia, scheda App Store e pagine legali in italiano; lancio in Italia. Altre lingue con `Localizable.xcstrings` dopo il lancio | ✅ |
 
 ## 5. App Store Review Guidelines
 
@@ -93,6 +93,10 @@ CaloScan è un'app di benessere: non diagnostica, non tratta e non monitora pato
 | 5.1.1(v) Cancellazione dell'account in app | Privacy e account, con revoca di "Accedi con Apple" | ✅ |
 | 5.1.2 Nessun uso dei dati sanitari per pubblicità o data mining | Nessun SDK pubblicitario o di analytics di terze parti | ✅ |
 | 5.1.3 Salute: dati sanitari non salvati in iCloud | Dati solo su Supabase; nessun uso di iCloud/HealthKit | ✅ |
-| Privacy Manifest (`PrivacyInfo.xcprivacy`) | `ios/CaloScan/Resources/` | ✅ |
+| Privacy Manifest (`PrivacyInfo.xcprivacy`) | `ios/CaloScan/Resources/`; stessi tipi di dati delle risposte *App Privacy* (`docs/APP_STORE.md` § 5), gravidanza dichiarata come dato sensibile | ✅ Fase 10 |
+| 1.4.1 Salute: fonti delle informazioni | Impostazioni › Fonti scientifiche e metodo (Mifflin-St Jeor, EFSA, OMS, Ministero della Salute, USDA, Open Food Facts) | ✅ Fase 10 |
+| Classificazione per età | 16+ come l'età minima dell'account | ✅ Fase 10 (in App Store Connect) |
+| Digital Services Act art. 30 – tracciabilità dei trader | Stato di trader dichiarato in App Store Connect, recapiti mostrati agli utenti UE | ⏳ a cura tua (SETUP passo 25) |
+| 2.3 Metadati accurati | Screenshot reali dell'app (anteprima con dati d'esempio), limiti dei piani in numeri nella descrizione | ✅ Fase 10 |
 | Permessi con motivazione (`NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`) | `project.yml` | ✅ |
 | Notifiche: facoltative, non promozionali senza consenso (4.5.4) | Promemoria locali e push disattivati di default; permesso chiesto solo quando l'utente attiva un'opzione; massimo 2 push a settimana | ✅ |

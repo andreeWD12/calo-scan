@@ -145,7 +145,50 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 ## Fase 10 – Pubblicazione
 
-22. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect (tabella in `docs/COMPLIANCE.md`).
-23. **Supabase Pro** (circa 25 $/mese) prima del lancio: i progetti gratuiti si sospendono dopo una settimana senza attività.
+Testi, risposte e liste di controllo pronti da copiare sono in **`docs/APP_STORE.md`**. Qui l'ordine dei passaggi.
+
+22. **Codice aggiornato**, dalla cartella `~/calo-scan` (dopo il merge della PR della Fase 10):
+    ```
+    git checkout main && git pull
+    cd ios && xcodegen generate && cd ..
+    ```
+    Versione e numero di build sono in `ios/Config/Version.xcconfig` (1.0.0, build 1).
+23. **Server pronto per il lancio**:
+    ```
+    supabase db push --remote
+    supabase functions deploy
+    supabase secrets unset TESTER_USER_IDS
+    ```
+    (`functions deploy` senza nomi pubblica tutte le funzioni.) Poi passa a **Supabase Pro** (circa 25 $/mese,
+    Dashboard › Organization › Billing): i progetti gratuiti si sospendono dopo una settimana senza attività e hanno backup limitati.
+    In Authentication › URL Configuration controlla che `caloscan://auth-callback` sia tra i Redirect URLs.
+24. **Indirizzo del titolare** nelle pagine legali (evidenziato in giallo in `privacy/index.html` e `terms/index.html`), commit e push su `main`.
+    Le pagine devono essere online prima dell'invio: Apple le apre durante la revisione.
+25. **Stato di trader UE**: App Store Connect › *Business* › la tua organizzazione › *Compliance* › Digital Services Act ›
+    "Sono un trader" e inserisci indirizzo, telefono ed email (Apple li mostra agli utenti UE). Senza, l'app non esce in Italia.
+26. **Carica la build** da Xcode sul Mac:
+    1. In alto scegli lo schema **CaloScan** e come dispositivo **Any iOS Device (arm64)**.
+    2. Menu **Product › Archive** (qualche minuto). Si apre l'Organizer.
+    3. **Distribute App › App Store Connect › Distribute**. Lascia le opzioni predefinite (firma automatica).
+    4. Dopo 10–30 minuti la build compare in App Store Connect › **TestFlight** (arriva anche un'email). Alla domanda
+       sulla crittografia non devi rispondere: è già nel progetto.
+    Per ogni nuovo caricamento aumenta `CURRENT_PROJECT_VERSION` in `ios/Config/Version.xcconfig` (2, 3, …) e rifai `xcodegen generate`,
+    altrimenti Apple rifiuta la build con "bundle version already used".
+27. **TestFlight**: TestFlight › *Internal Testing* › **+** › aggiungi te stesso. Installa l'app **TestFlight** sull'iPhone, apri CaloScan da lì
+    e segui la lista di prova in `docs/APP_STORE.md` § 9. Le notifiche push di TestFlight usano i server di produzione di Apple:
+    è normale, è già gestito.
+    Sempre da TestFlight crea l'**account di revisione**: registrati con un'email nuova che controlli tu (es. un alias iCloud),
+    conferma la mail, completa l'onboarding e registra due o tre pasti. Lascialo sul piano Free.
+28. **Scheda dell'app** in App Store Connect › la tua app › versione **1.0**: testi, parole chiave, URL, screenshot (scaricali da GitHub ›
+    Actions › ultima esecuzione "Build iOS" › Artifacts › `app-store-screenshots`), *App Privacy*, classificazione per età,
+    *App Review Information* con l'account di revisione e le note. Tutto in `docs/APP_STORE.md` §§ 1–7.
+    In *Build* scegli la build caricata.
+29. **Abbonamenti nella prima versione**: nella pagina della versione 1.0, sezione *In-App Purchases and Subscriptions*, premi **+**
+    e seleziona tutti e 5 gli abbonamenti. Devono essere "Ready to Submit" (nome, descrizione, prezzo e screenshot di revisione).
+30. **Invia**: *Add for Review* › *Submit to App Review*. La revisione richiede di solito 1–3 giorni. Se Apple chiede chiarimenti o rifiuta,
+    copia il messaggio di Apple in questo progetto: lo sistemiamo insieme. Puoi scegliere "Rilascia manualmente" per decidere tu il giorno.
+31. **Dopo l'approvazione**: crea i codici offerta `ref30` degli inviti (passo 19) e imposta `APP_STORE_ID`
+    (App Store Connect › *App Information* › Apple ID) sia in `ios/Config/Secrets.xcconfig` sia con
+    `supabase secrets set APP_STORE_ID=...`. L'`APP_STORE_ID` nell'app vale dalla versione successiva.
 
 Tutti i segreti server sono elencati in `supabase/.env.example`.
