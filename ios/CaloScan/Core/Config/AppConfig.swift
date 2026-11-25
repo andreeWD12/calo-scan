@@ -17,6 +17,13 @@ struct AppConfig: Sendable {
         }
     }
 
+    /// ID numerico dell'app su App Store (pubblico). Nil finché l'app non è registrata.
+    static var appStoreID: String? {
+        guard let v = Bundle.main.object(forInfoDictionaryKey: "APP_STORE_ID") as? String,
+              !v.isEmpty, v.allSatisfy(\.isNumber) else { return nil }
+        return v
+    }
+
     static func load(from bundle: Bundle = .main) throws -> AppConfig {
         func value(_ key: String) -> String? {
             guard let v = bundle.object(forInfoDictionaryKey: key) as? String,

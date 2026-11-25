@@ -31,6 +31,7 @@ targets:
     platform: iOS
     sources:
       - path: CaloScan
+        excludes: ["**/*.md"]
     info:
       path: CaloScan/Resources/Info.plist
       properties:
@@ -44,12 +45,18 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes: [remote-notification]
         NSCameraUsageDescription: "CaloScan usa la fotocamera per fotografare i tuoi piatti e stimarne i valori nutrizionali."
         NSPhotoLibraryUsageDescription: "CaloScan accede alle foto che scegli per analizzare un piatto già fotografato."
         # Valori iniettati dagli xcconfig (vedi Config/Secrets.example.xcconfig)
         SUPABASE_URL: "$(SUPABASE_URL)"
         SUPABASE_ANON_KEY: "$(SUPABASE_ANON_KEY)"
         GIDClientID: "$(GOOGLE_IOS_CLIENT_ID)"
+        PRIVACY_POLICY_URL: "$(PRIVACY_POLICY_URL)"
+        TERMS_URL: "$(TERMS_URL)"
+        SUPPORT_URL: "$(SUPPORT_URL)"
+        SUPPORT_EMAIL: "$(SUPPORT_EMAIL)"
+        APP_STORE_ID: "$(APP_STORE_ID)"
         CFBundleURLTypes:
           - CFBundleURLSchemes: ["$(GOOGLE_REVERSED_CLIENT_ID)", "caloscan"]
     entitlements:

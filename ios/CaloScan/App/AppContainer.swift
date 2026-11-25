@@ -1,8 +1,7 @@
-import SwiftUI
+import Foundation
 import Supabase
 
-/// Container delle dipendenze. Creato una sola volta all'avvio e passato nell'Environment.
-/// Le fasi successive aggiungono qui i servizi concreti (auth, pasti, scanner, abbonamenti…).
+/// Client di infrastruttura condivisi dai servizi live. Creato una sola volta all'avvio.
 @MainActor
 final class AppContainer {
     let config: AppConfig
@@ -14,16 +13,5 @@ final class AppContainer {
         // supabase-swift salva la sessione nel Keychain su iOS e rinnova il token in automatico.
         self.supabase = SupabaseClient(supabaseURL: config.supabaseURL, supabaseKey: config.supabaseAnonKey)
         self.functions = EdgeFunctionClient(client: supabase)
-    }
-}
-
-private struct AppContainerKey: EnvironmentKey {
-    static let defaultValue: AppContainer? = nil
-}
-
-extension EnvironmentValues {
-    var container: AppContainer? {
-        get { self[AppContainerKey.self] }
-        set { self[AppContainerKey.self] = newValue }
     }
 }

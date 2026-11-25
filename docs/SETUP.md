@@ -31,6 +31,10 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 10. **App Store Connect**: crea l'app, poi un *Subscription Group* "CaloScan Premium" con i 4 prodotti
     `caloscan.plus.monthly`, `caloscan.plus.yearly`, `caloscan.pro.monthly`, `caloscan.pro.yearly` e imposta i prezzi.
+    **Offerta gravidanza**: nello stesso gruppo crea anche `caloscan.pro.monthly.pregnancy` (nome "CaloScan Pro – Gravidanza",
+    durata 1 mese, **stesso prezzo** di `caloscan.pro.monthly`, stesso livello di servizio). Nella sua pagina → *Subscription Prices* →
+    *Introductory Offers* → **Pay as you go**, durata **3 mesi**, prezzo pari al 70% del normale (es. 6,99 € se Pro costa 9,99 €),
+    in tutti i paesi in vendita. Se cambi il prezzo di Pro mensile, aggiorna anche questo prodotto e la sua offerta.
 11. Firma il *Paid Applications Agreement* e inserisci dati fiscali e bancari (senza, gli acquisti non funzionano).
 12. Crea una chiave **App Store Connect API (In-App Purchase)** → `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`.
 13. Imposta l'URL delle **App Store Server Notifications V2** sulla funzione `app-store-notifications`.
@@ -39,7 +43,13 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
 
 14. Pagine pubbliche per **Informativa privacy** e **Termini di servizio** (URL richiesti da App Store Connect).
     Consigliato un controllo legale: l'app tratta dati relativi alla salute (art. 9 GDPR).
-15. Chiave APNs (.p8) per le notifiche push remote.
+    **Pagina di assistenza** (GitHub Pages, gratis perché il repository è pubblico): GitHub › Settings › Pages ›
+    *Deploy from a branch*, branch `main`, cartella `/ (root)`. La pagina è `support/index.html` e risponde su
+    `https://andreewd12.github.io/calo-scan/support/` (la radice del sito mostra il README). Si aggiorna da sola a ogni modifica su `main`.
+    Con un dominio tuo: Settings › Pages › *Custom domain*, poi aggiorna `SUPPORT_URL`. Privacy e termini andranno in `privacy/` e `terms/`.
+    In `Secrets.xcconfig` imposta anche `SUPPORT_URL` (pagina di assistenza, richiesta da App Store Connect come *Support URL*,
+    con un modo per contattarti) e `SUPPORT_EMAIL` (usata da Impostazioni › Assistenza › "Scrivici"; è visibile agli utenti).
+15. Chiave APNs (.p8) per le notifiche push remote: Apple Developer → Keys → nuova chiave con *Apple Push Notifications service*. Serve anche la capability *Push Notifications* sull'App ID (già dichiarata in `project.yml`). I promemoria locali funzionano senza.
 16. Icona dell'app 1024×1024, screenshot, descrizione e compilazione delle *App Privacy* in App Store Connect.
 
 Tutti i segreti server sono elencati in `supabase/.env.example`.

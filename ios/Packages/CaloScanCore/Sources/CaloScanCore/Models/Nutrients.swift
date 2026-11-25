@@ -29,6 +29,7 @@ public extension Sequence where Element == Nutrients {
     var total: Nutrients { reduce(.zero, +) }
 }
 
-public enum MealType: String, Codable, CaseIterable, Sendable {
+public enum MealType: String, Codable, CaseIterable, Identifiable, Sendable {
     case breakfast, lunch, dinner, snack
+    public var id: String { rawValue }
 }

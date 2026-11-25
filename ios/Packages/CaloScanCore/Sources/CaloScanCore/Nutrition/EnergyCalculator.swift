@@ -9,6 +9,13 @@ public struct DailyTargets: Codable, Equatable, Sendable {
     public let carbsG: Int
     public let fatG: Int
     public let isAdjustedForSafety: Bool
+
+    public init(bmr: Int, tdee: Int, calorieTarget: Int, proteinG: Int, carbsG: Int, fatG: Int,
+                isAdjustedForSafety: Bool) {
+        self.bmr = bmr; self.tdee = tdee; self.calorieTarget = calorieTarget
+        self.proteinG = proteinG; self.carbsG = carbsG; self.fatG = fatG
+        self.isAdjustedForSafety = isAdjustedForSafety
+    }
 }
 
 /// Calcoli energetici. Algoritmo identico a `supabase/functions/_shared/nutrition.ts`:

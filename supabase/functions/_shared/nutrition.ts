@@ -98,3 +98,164 @@ export function targets(
 export function isSafeManualTarget(kcal: number, m: BodyMetrics): boolean {
   return kcal >= calorieFloor(m.sex) && kcal <= 6000;
 }
+
+// ---------------------------------------------------------------------------
+// Piano indicato da un professionista sanitario (stesse regole di ProfessionalPlan.swift).
+
+export type HealthProfessional = "doctor" | "dietitian" | "nutritionist";
+
+export interface ProfessionalPlan {
+  professional: HealthProfessional;
+  professionalName?: string | null;
+  calorieTarget: number;
+  proteinG?: number | null;
+  carbsG?: number | null;
+  fatG?: number | null;
+  notes?: string | null;
+  startDate: string; // ISO 8601
+  reviewDate?: string | null;
+  confirmedAt: string;
+  mealPlan?: PlannedDay[] | null;
+  /** Settimane dopo cui il piano ricomincia (1–4; 1 = ogni settimana uguale). */
+  rotationWeeks?: number | null;
+  /** Data (YYYY-MM-DD o ISO) che cade nella settimana 1 della rotazione; null = startDate. */
+  rotationAnchor?: string | null;
+}
+
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export interface PlannedFood {
+  id: string;
+  name: string;
+  grams: number;
+  food?: { id: string } | null; // corrispondenza nel database alimenti
+}
+
+export interface PlannedMeal {
+  type: MealType;
+  foods: PlannedFood[];
+}
+
+/** weekday come Calendar di Apple: 1 = domenica … 7 = sabato; null = ogni giorno.
+ *  week = settimana della rotazione (assente = 1). */
+export interface PlannedDay {
+  week?: number | null;
+  weekday: number | null;
+  meals: PlannedMeal[];
+}
+
+export type ProfessionalPlanIssue =
+  | "caloriesOutOfRange"
+  | "macroOutOfRange"
+  | "macrosDoNotMatchCalories"
+  | "notesTooLong"
+  | "nameTooLong"
+  | "reviewBeforeStart"
+  | "mealPlanInvalid";
+
+export const PROFESSIONAL_PLAN_LIMITS = {
+  minKcal: 800,
+  maxKcal: 6000,
+  maxMacroG: 1000,
+  notesMaxLength: 1000,
+  nameMaxLength: 80,
+  macroTolerance: 0.15,
+  maxFoodsPerMeal: 30,
+  minGrams: 1,
+  maxGrams: 3000,
+  maxRotationWeeks: 4,
+} as const;
+
+const MEAL_TYPES: MealType[] = ["breakfast", "lunch", "dinner", "snack"];
+
+export function isValidMealPlan(days: PlannedDay[], rotationWeeks = 1): boolean {
+  const L = PROFESSIONAL_PLAN_LIMITS;
+  if (!Number.isInteger(rotationWeeks) || rotationWeeks < 1 || rotationWeeks > L.maxRotationWeeks) return false;
+  if (!Array.isArray(days) || days.length > 8 * rotationWeeks) return false;
+  const weeks = days.map((d) => d.week ?? 1);
+  if (weeks.some((w) => !Number.isInteger(w) || w < 1 || w > rotationWeeks)) return false;
+  const weekdays = days.map((d) => d.weekday ?? null);
+  const keys = days.map((_, i) => `${weeks[i]}-${weekdays[i] ?? 0}`);
+  if (new Set(keys).size !== keys.length) return false;
+  if (weekdays.some((w) => w !== null && (!Number.isInteger(w) || w < 1 || w > 7))) return false;
+  for (const day of days) {
+    const types = day.meals.map((m) => m.type);
+    if (new Set(types).size !== types.length || types.some((t) => !MEAL_TYPES.includes(t))) return false;
+    for (const meal of day.meals) {
+      if (meal.foods.length > L.maxFoodsPerMeal) return false;
+      for (const f of meal.foods) {
+        const name = typeof f.name === "string" ? f.name.trim() : "";
+        if (!name || chars(name) > L.nameMaxLength) return false;
+        if (typeof f.grams !== "number" || f.grams < L.minGrams || f.grams > L.maxGrams) return false;
+      }
+    }
+  }
+  return true;
+}
+
+const chars = (s?: string | null) => (s ? [...s].length : 0);
+
+/** Lunedì (UTC) della settimana che contiene la data "YYYY-MM-DD…", in giorni dall'epoca. */
+const mondayIndex = (date: string) => {
+  const d = Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10)) / 86_400_000;
+  const dow = (((d + 3) % 7) + 7) % 7; // 0 = lunedì (1970-01-01 era giovedì)
+  return d - dow;
+};
+
+/** Settimana della rotazione (1…weeks) del giorno `date`, con settimane da lunedì.
+ *  Identica a `ProfessionalPlan.rotationWeek` in Swift con calendario italiano. */
+export function rotationWeek(date: string, anchor: string, weeks: number): number {
+  if (!Number.isInteger(weeks) || weeks <= 1) return 1;
+  const elapsed = Math.floor((mondayIndex(date) - mondayIndex(anchor)) / 7);
+  return (((elapsed % weeks) + weeks) % weeks) + 1;
+}
+
+export function validateProfessionalPlan(p: ProfessionalPlan): ProfessionalPlanIssue[] {
+  const L = PROFESSIONAL_PLAN_LIMITS;
+  const issues: ProfessionalPlanIssue[] = [];
+  if (!Number.isInteger(p.calorieTarget) || p.calorieTarget < L.minKcal || p.calorieTarget > L.maxKcal) {
+    issues.push("caloriesOutOfRange");
+  }
+  const macros = [p.proteinG, p.carbsG, p.fatG].filter((v): v is number => v != null);
+  if (macros.some((v) => !Number.isInteger(v) || v < 0 || v > L.maxMacroG)) issues.push("macroOutOfRange");
+  if (p.proteinG != null && p.carbsG != null && p.fatG != null && p.calorieTarget > 0) {
+    const fromMacros = p.proteinG * 4 + p.carbsG * 4 + p.fatG * 9;
+    if (Math.abs(fromMacros - p.calorieTarget) / p.calorieTarget > L.macroTolerance) {
+      issues.push("macrosDoNotMatchCalories");
+    }
+  }
+  if (chars(p.notes) > L.notesMaxLength) issues.push("notesTooLong");
+  if (chars(p.professionalName) > L.nameMaxLength) issues.push("nameTooLong");
+  if (p.reviewDate && Date.parse(p.reviewDate) < Date.parse(p.startDate)) issues.push("reviewBeforeStart");
+  if (!isValidMealPlan(p.mealPlan ?? [], p.rotationWeeks ?? 1)) issues.push("mealPlanInvalid");
+  return issues;
+}
+
+/** Obiettivi effettivi: i macro non indicati seguono le proporzioni degli obiettivi calcolati. */
+export function professionalPlanTargets(p: ProfessionalPlan, fallback: DailyTargets | null): DailyTargets {
+  const kcal = p.calorieTarget;
+  const baseKcal = Math.max(fallback?.calorieTarget ?? 0, 1);
+  const proteinShare = fallback ? (fallback.proteinG * 4) / baseKcal : 0.25;
+  const fatShare = fallback ? (fallback.fatG * 9) / baseKcal : 0.3;
+  const proteinG = p.proteinG ?? Math.round((kcal * proteinShare) / 4);
+  const fatG = p.fatG ?? Math.round((kcal * fatShare) / 9);
+  const carbsG = p.carbsG ?? Math.max(Math.round((kcal - proteinG * 4 - fatG * 9) / 4), 0);
+  return {
+    bmr: fallback?.bmr ?? 0, tdee: fallback?.tdee ?? 0, calorieTarget: kcal,
+    proteinG, carbsG, fatG, isAdjustedForSafety: false,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Descrizione testuale del pasto (stesse regole di FoodDescription in ProfessionalPlan.swift).
+
+export const FOOD_DESCRIPTION_LIMITS = { minLength: 3, maxLength: 500 } as const;
+
+export function sanitizeFoodDescription(text: unknown): string | null {
+  if (typeof text !== "string") return null;
+  const cleaned = text.replace(/[\p{Cc}\p{Cf}]/gu, " ").split(/\s+/u).filter(Boolean).join(" ");
+  const n = [...cleaned].length;
+  if (n < FOOD_DESCRIPTION_LIMITS.minLength || n > FOOD_DESCRIPTION_LIMITS.maxLength) return null;
+  if (!/\p{L}/u.test(cleaned)) return null;
+  return cleaned;
+}

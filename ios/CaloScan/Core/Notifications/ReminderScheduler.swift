@@ -1,0 +1,133 @@
+import Foundation
+import UserNotifications
+import CaloScanCore
+
+/// Promemoria locali (nessun dato lascia il dispositivo). Tutti disattivati di default;
+/// al massimo un promemoria per tipo, con orari scelti dall'utente.
+struct ReminderSettings: Codable, Equatable, Sendable {
+    var breakfast = Reminder(enabled: false, hour: 8, minute: 30)
+    var lunch = Reminder(enabled: false, hour: 13, minute: 0)
+    var dinner = Reminder(enabled: false, hour: 20, minute: 0)
+    var dailySummary = Reminder(enabled: false, hour: 21, minute: 30)
+    /// Settimanale, il lunedì.
+    var weighIn = Reminder(enabled: false, hour: 8, minute: 0)
+
+    struct Reminder: Codable, Equatable, Sendable {
+        var enabled: Bool
+        var hour: Int
+        var minute: Int
+    }
+
+    private static let key = "reminderSettings.v1"
+
+    static func load(from defaults: UserDefaults = .standard) -> ReminderSettings {
+        guard let data = defaults.data(forKey: key),
+              let value = try? JSONDecoder().decode(ReminderSettings.self, from: data) else { return ReminderSettings() }
+        return value
+    }
+
+    func save(to defaults: UserDefaults = .standard) {
+        if let data = try? JSONEncoder().encode(self) { defaults.set(data, forKey: Self.key) }
+    }
+
+    var anyEnabled: Bool { [breakfast, lunch, dinner, dailySummary, weighIn].contains { $0.enabled } }
+}
+
+enum ReminderScheduler {
+    private static let ids = ["reminder.breakfast", "reminder.lunch", "reminder.dinner", "reminder.summary", "reminder.weighin"]
+
+    /// Chiede il permesso solo quando l'utente attiva un promemoria.
+    @MainActor
+    static func requestAuthorization() async -> Bool {
+        await PushPermission.request()
+    }
+
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    private static let reviewID = "reminder.professional-review"
+
+    /// Promemoria locale il giorno dopo il controllo con il professionista, per aggiornare il piano.
+    /// Con `nil` lo rimuove. Non chiede permessi: se le notifiche non sono autorizzate non viene mostrato.
+    static func scheduleProfessionalReview(on date: Date?) async {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [reviewID])
+        guard let date,
+              let day = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: date)),
+              day > .now else { return }
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Com'è andato il controllo?")
+        content.body = String(localized: "Se il tuo piano è cambiato, aggiorna calorie e indicazioni in CaloScan.")
+        content.sound = .default
+        content.userInfo = ["route": DeepLink.professionalPlan.rawValue]
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: day)
+        components.hour = 10
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        try? await center.add(UNNotificationRequest(identifier: reviewID, content: content, trigger: trigger))
+    }
+
+    private static let windowIDs = ["reminder.window.open", "reminder.window.close"]
+
+    /// Promemoria di inizio e fine della finestra alimentare (digiuno intermittente), solo se l'utente li attiva.
+    /// Toni neutri: nessun invito a "resistere" o a saltare pasti. Con `nil` li rimuove.
+    static func scheduleEatingWindow(_ window: EatingWindow?) async {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: windowIDs)
+        guard let window else { return }
+        let items = [
+            (windowIDs[0], window.startMinute, String(localized: "Finestra alimentare aperta"),
+             String(localized: "Da ora puoi fare il tuo primo pasto, se ne hai voglia.")),
+            (windowIDs[1], (window.endMinute - 30 + 1440) % 1440, String(localized: "Finestra alimentare"),
+             String(localized: "Tra 30 minuti si chiude la finestra di oggi.")),
+        ]
+        for (id, minute, title, body) in items {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            var components = DateComponents()
+            components.hour = minute / 60
+            components.minute = minute % 60
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+            try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+        }
+    }
+
+    /// Sostituisce tutti i promemoria con quelli attivi nelle impostazioni.
+    static func apply(_ settings: ReminderSettings) async {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+        guard settings.anyEnabled else { return }
+
+        let items: [(String, ReminderSettings.Reminder, String, String, Int?)] = [
+            (ids[0], settings.breakfast, String(localized: "Colazione"), String(localized: "Ricordati di registrare la colazione."), nil),
+            (ids[1], settings.lunch, String(localized: "Pranzo"), String(localized: "Hai pranzato? Registra il pasto in pochi secondi."), nil),
+            (ids[2], settings.dinner, String(localized: "Cena"), String(localized: "Ricordati di registrare la cena."), nil),
+            (ids[3], settings.dailySummary, String(localized: "Riepilogo della giornata"), String(localized: "Dai un'occhiata a come è andata oggi."), nil),
+            (ids[4], settings.weighIn, String(localized: "Aggiorna il peso"), String(localized: "È il momento della pesata settimanale."), 2),
+        ]
+        for (id, reminder, title, body, weekday) in items where reminder.enabled {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            switch id {
+            case ids[4]:
+                content.categoryIdentifier = NotificationCategory.weighIn
+                content.userInfo = ["route": DeepLink.logWeight.rawValue]
+            case ids[3]:
+                content.categoryIdentifier = NotificationCategory.report
+                content.userInfo = ["route": DeepLink.diary.rawValue]
+            default:
+                content.categoryIdentifier = NotificationCategory.mealReminder
+                content.userInfo = ["route": DeepLink.scanner.rawValue]
+            }
+            var components = DateComponents()
+            components.hour = reminder.hour
+            components.minute = reminder.minute
+            components.weekday = weekday
+            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+            try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+        }
+    }
+}
