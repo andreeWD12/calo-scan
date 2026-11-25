@@ -374,7 +374,7 @@ private struct EncouragementCard: View {
             Spacer(minLength: 0)
             Button(action: onDismiss) {
                 Image(systemName: "xmark").font(.caption.weight(.bold)).foregroundStyle(DS.Palette.textTertiary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .accessibilityLabel(Text("Chiudi"))
         }

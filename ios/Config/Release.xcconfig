@@ -1,2 +1,3 @@
 #include? "Secrets.xcconfig"
+#include "Version.xcconfig"
 SWIFT_COMPILATION_MODE = wholemodule

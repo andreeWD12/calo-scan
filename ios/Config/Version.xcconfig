@@ -1,0 +1,6 @@
+// Versione dell'app (incluso da Debug e Release).
+// MARKETING_VERSION: la versione che vedono gli utenti sull'App Store (es. 1.0.0, poi 1.0.1, 1.1.0…).
+// CURRENT_PROJECT_VERSION: il numero di build. Ogni caricamento su App Store Connect deve averne uno
+// più alto del precedente con la stessa versione: 1, 2, 3… Cambialo qui prima di ogni Product › Archive.
+MARKETING_VERSION = 1.0.0
+CURRENT_PROJECT_VERSION = 1

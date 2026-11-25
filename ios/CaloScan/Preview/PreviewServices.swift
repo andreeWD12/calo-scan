@@ -28,7 +28,8 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
     private var plan: Plan = .free
     private var scansUsed = 0
 
-    init(startOnboarding: Bool) {
+    init(startOnboarding: Bool, plan: Plan = .free) {
+        self.plan = plan
         let pair = AsyncStream.makeStream(of: SessionState.self)
         stateStream = pair.stream
         continuation = pair.continuation
@@ -43,6 +44,21 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
             targets = EnergyCalculator.targets(metrics: try! p.metrics(), activity: p.activity, goal: p.goal, diet: p.diet)
             consentState = ConsentState(healthDataProcessing: true, aiImageAnalysis: true, productEmails: false)
             (meals, weights) = Self.seedHistory()
+            if plan != .free { messages = Self.sampleConversation() }
+        }
+    }
+
+    /// Conversazione d'esempio per gli screenshot dell'App Store (`-PreviewPlan plus|pro`).
+    static func sampleConversation() -> [CoachMessage] {
+        let start = Date.now.addingTimeInterval(-600)
+        let texts: [(CoachMessage.Role, String)] = [
+            (.user, "Stasera ho una cena fuori, come mi organizzo?"),
+            (.assistant, "Oggi ti restano circa 750 kcal e 45 g di proteine. Una buona scelta: secondo di pesce o carne alla griglia con verdure e un po' di pane. Se ti va il dolce, dividilo: domani si riparte normalmente, senza compensare."),
+            (.user, "E per colazione domani?"),
+            (.assistant, "Yogurt greco con frutta e una manciata di fiocchi d'avena: circa 300 kcal e 20 g di proteine, ti tiene sazia fino a pranzo."),
+        ]
+        return texts.enumerated().map { i, t in
+            CoachMessage(id: UUID(), role: t.0, text: t.1, createdAt: start.addingTimeInterval(Double(i) * 60))
         }
     }
 
@@ -351,11 +367,19 @@ actor PreviewStore: AuthService, ProfileRepository, MealRepository, FoodSearchSe
 
 extension AppServices {
     /// `-PreviewOnboarding` parte dalla schermata di benvenuto invece che dalla Home.
-    static func preview(startOnboarding: Bool = ProcessInfo.processInfo.arguments.contains("-PreviewOnboarding")) -> AppServices {
-        let store = PreviewStore(startOnboarding: startOnboarding)
+    /// `-PreviewPlan plus|pro` parte con un abbonamento attivo (screenshot per l'App Store).
+    static func preview(startOnboarding: Bool = ProcessInfo.processInfo.arguments.contains("-PreviewOnboarding"),
+                        plan: Plan = launchArgumentPlan) -> AppServices {
+        let store = PreviewStore(startOnboarding: startOnboarding, plan: plan)
         return AppServices(auth: store, profile: store, meals: store, foods: store, scanner: store, coach: store,
                            weight: store, entitlements: store, purchases: store, account: store, push: store,
                            shopping: store, referrals: store)
+    }
+
+    private static var launchArgumentPlan: Plan {
+        let args = ProcessInfo.processInfo.arguments
+        guard let i = args.firstIndex(of: "-PreviewPlan"), i + 1 < args.count else { return .free }
+        return switch args[i + 1] { case "pro": .pro; case "plus": .plus; default: .free }
     }
 }
 #endif
