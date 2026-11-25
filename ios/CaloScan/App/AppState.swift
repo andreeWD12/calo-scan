@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 import CaloScanCore
 
 /// Stato globale condiviso tra le schermate: sessione, profilo, obiettivi, permessi del piano.
@@ -82,6 +83,10 @@ final class AppState {
         }
         await reloadProfile()
         await refreshEntitlements()
+        // Token push: all'avvio non c'era ancora la sessione, ora il server può collegarlo all'account.
+        if await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .authorized {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
         // Abbonamenti già attivi su questo Apple ID (altro dispositivo, reinstallazione): il server li verifica con Apple.
         await services.purchases.syncCurrentEntitlements()
         await refreshEntitlements()

@@ -16,6 +16,7 @@ struct EdgeFunctionClient: Sendable {
         case saveProfessionalPlan = "save-professional-plan"
         case getEntitlements = "get-entitlements"
         case deleteAccount = "delete-account"
+        case referral
     }
 
     /// Date in ISO 8601 e chiavi come nei modelli Swift (camelCase), le stesse che leggono le funzioni TS.

@@ -31,6 +31,8 @@ test("appstore: lettura degli stati", () => {
   assert.equal(s.appAccountToken, USER);
   assert.equal(s.expiresAt, "2027-11-24T10:00:00.000Z");
   assert.equal(s.environment, "Sandbox");
+  assert.equal(s.offerCodeUsed, false);
+  assert.equal(parseStatuses(statuses(1, tx({ offerType: 3, offerIdentifier: "ref30" })), BUNDLE)[0].offerCodeUsed, true);
 });
 
 test("appstore: scarta altre app, prodotti sconosciuti e segna i rimborsi", () => {

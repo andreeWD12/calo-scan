@@ -218,7 +218,11 @@ protocol AccountService: Sendable {
     /// Esporta tutti i dati dell'utente (art. 20 GDPR) e ritorna un file JSON locale.
     func exportData() async throws -> URL
     /// Cancella definitivamente account, dati e immagini (art. 17 GDPR, App Store 5.1.1(v)).
-    func deleteAccount() async throws
+    /// Con Sign in with Apple serve un codice di autorizzazione appena ottenuto: il server lo usa per revocare
+    /// l'accesso dell'app all'Apple ID (richiesto da Apple per l'eliminazione dell'account).
+    func deleteAccount(appleAuthorizationCode: String?) async throws
+    /// L'account usa Sign in with Apple.
+    func usesAppleSignIn() async -> Bool
 }
 
 // MARK: - Inviti

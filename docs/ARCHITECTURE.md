@@ -210,7 +210,7 @@ Notifiche **locali** per i promemoria (pasti, peso, riepilogo giornaliero): funz
 ### Notifiche push (APNs)
 
 - `AppDelegate` registra il dispositivo solo dopo che l'utente ha attivato una notifica (mai al primo avvio).
-- Il token viene inviato a `PushTokenService` (tabella `push_tokens`, Fase 9); le notifiche remote partono da una Edge Function con chiave APNs `.p8`.
+- Il token viene salvato con la funzione SQL `register_push_token` (tabella `push_tokens`, un token per un solo account) anche dopo ogni accesso, e rimosso all'uscita. Le notifiche remote si accodano in `push_outbox` (trigger del database) e partono ogni 10 minuti dalla funzione `push-dispatch` (pg_cron) con la chiave dei servizi Apple. Testi fissi, mai dati sanitari.
 - Con l'app aperta le notifiche appaiono come banner; il tocco o un'azione rapida ("Scansiona il piatto", "Registra il peso") apre la schermata giusta tramite `DeepLinkRouter` (payload `{"route": "scanner"}` o URL `caloscan://scanner`).
 
 ## 11. Animazioni e feedback
@@ -259,7 +259,7 @@ I codici si creano in **App Store Connect** (Abbonamenti › Codici offerta): co
 - L'amico lo inserisce nell'onboarding (passo "Come ti chiami?", facoltativo) o da Profilo › Invita un amico, **entro 14 giorni** dall'iscrizione e **una sola volta**; non vale il proprio codice (`evaluateApply`).
 - L'invito diventa **valido** quando l'amico completa l'onboarding e registra almeno un pasto (`isQualified`), non al semplice download. Contro gli account multipli sullo stesso iPhone si usa **DeviceCheck** (2 bit per dispositivo, nessun identificatore salvato).
 - Al primo invito valido il server assegna al referrer un codice del lotto (`decideReward`): niente se ha già avuto un premio (non accumulabile) o se è già stato abbonato (lo sconto è sul primo mese). Il codice vale 60 giorni; l'utente lo riscatta con il link Apple precompilato (`https://apps.apple.com/redeem?ctx=offercodes&id=APP_STORE_ID&code=…`) o con il foglio "Riscatta un codice".
-- Notifica push al referrer quando il premio è pronto (Fase 9).
+- Notifica push al referrer quando il premio è pronto (`push_outbox`, tipo `referral_reward`). DeviceCheck: bit0 = questo iPhone ha già usato un codice, impostato all'inserimento. Il riscatto si riconosce dalle transazioni con `offerType` 3.
 
 **Tabelle** (RLS: ogni utente legge solo le proprie righe; scrittura solo dalla Edge Function `referral`):
 - `referral_codes` (user_id PK → users ON DELETE CASCADE, code UNIQUE).
