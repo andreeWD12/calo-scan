@@ -124,7 +124,8 @@ const b64urlJSON = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringif
 
 /** JWT ES256 per l'App Store Server API (valido 20 minuti). */
 async function apiToken(): Promise<string> {
-  const issuer = Deno.env.get("APPLE_ISSUER_ID"), keyId = Deno.env.get("APPLE_KEY_ID"), pem = Deno.env.get("APPLE_PRIVATE_KEY");
+  const env = (k: string) => Deno.env.get(k)?.trim().replace(/^["']|["']$/g, "") || undefined;
+  const issuer = env("APPLE_ISSUER_ID"), keyId = env("APPLE_KEY_ID"), pem = env("APPLE_PRIVATE_KEY");
   if (!issuer || !keyId || !pem) throw new AppStoreUnavailableError("chiave App Store Server API non impostata");
   const key = await crypto.subtle.importKey("pkcs8", pemToBytes(pem), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
   const now = Math.floor(Date.now() / 1000);
@@ -137,7 +138,7 @@ async function apiToken(): Promise<string> {
 }
 
 export function bundleId(): string {
-  return Deno.env.get("APPLE_BUNDLE_ID") || "com.andrewnalini.caloscan.app";
+  return Deno.env.get("APPLE_BUNDLE_ID")?.trim().replace(/^["']|["']$/g, "") || "com.andrewnalini.caloscan.app";
 }
 
 const HOSTS = ["https://api.storekit.itunes.apple.com", "https://api.storekit-sandbox.itunes.apple.com"];
@@ -151,8 +152,13 @@ export async function fetchSubscriptions(transactionId: string): Promise<Subscri
     }).catch(() => null);
     if (!res) throw new AppStoreUnavailableError("App Store non raggiungibile");
     if (res.status === 404) continue; // transazione dell'altro ambiente
+    // Finché l'app non è pubblicata, la produzione può rispondere 401 anche con una chiave valida: si prova la sandbox.
+    if (res.status === 401 && host !== HOSTS[HOSTS.length - 1]) {
+      console.warn("appstore: 401 dalla produzione, provo la sandbox");
+      continue;
+    }
     if (!res.ok) {
-      console.error("appstore: risposta", res.status);
+      console.error("appstore: risposta", res.status, host.includes("sandbox") ? "(sandbox)" : "(produzione)");
       throw new AppStoreUnavailableError(`App Store ${res.status}`);
     }
     return parseStatuses(await res.json(), bundleId());
