@@ -24,11 +24,13 @@ struct DayStatsView: View {
                     StatTile(title: "Carboidrati", value: Format.grams(totals.carbsG), tint: DS.Palette.carbs)
                     StatTile(title: "Grassi", value: Format.grams(totals.fatG), tint: DS.Palette.fat)
                 }
-                if totals.kcal > 0 {
-                    Text("Distribuzione dei pasti").font(DS.Font.caption.weight(.semibold))
-                        .foregroundStyle(DS.Palette.textSecondary)
+            }
+            if totals.kcal > 0 {
+                Card {
+                    SectionHeader(title: "Distribuzione dei pasti")
                     MealDistributionChart(distribution: DiaryViewModel.mealDistribution([log]))
                 }
+                .premiumLocked(.plus, title: "Distribuzione dei pasti")
             }
             let cheats = NutritionStats.cheatMeals([log])
             if cheats.count > 0 {
@@ -96,8 +98,6 @@ struct WeekStatsView: View {
     let logs: [DayLog]
     let interval: DateInterval
     let targets: DailyTargets
-    /// Andamento dei macronutrienti e analisi dettagliata: Plus e Pro.
-    let isAdvanced: Bool
 
     var body: some View {
         let stats = NutritionStats.summarize(logs, calorieTarget: targets.calorieTarget)
@@ -121,20 +121,17 @@ struct WeekStatsView: View {
                 DailyCaloriesChart(logs: logs, target: targets.calorieTarget, unit: .weekday)
                     .frame(height: 180)
             }
-            if isAdvanced {
-                Card {
-                    SectionHeader(title: "Andamento dei macronutrienti")
-                    MacroTrendChart(logs: logs).frame(height: 180)
-                    HStack(spacing: DS.Spacing.xs) {
-                        StatTile(title: "Proteine medie", value: Format.grams(stats.average.proteinG), tint: DS.Palette.protein)
-                        StatTile(title: "Carboidrati medi", value: Format.grams(stats.average.carbsG), tint: DS.Palette.carbs)
-                        StatTile(title: "Grassi medi", value: Format.grams(stats.average.fatG), tint: DS.Palette.fat)
-                    }
+            // Andamento dei macronutrienti: Plus e Pro.
+            Card {
+                SectionHeader(title: "Andamento dei macronutrienti")
+                MacroTrendChart(logs: logs).frame(height: 180)
+                HStack(spacing: DS.Spacing.xs) {
+                    StatTile(title: "Proteine medie", value: Format.grams(stats.average.proteinG), tint: DS.Palette.protein)
+                    StatTile(title: "Carboidrati medi", value: Format.grams(stats.average.carbsG), tint: DS.Palette.carbs)
+                    StatTile(title: "Grassi medi", value: Format.grams(stats.average.fatG), tint: DS.Palette.fat)
                 }
-            } else {
-                UpgradeCard(title: "Analisi dettagliata dei macronutrienti",
-                            message: "Con Plus vedi l'andamento giornaliero di proteine, carboidrati e grassi e le medie della settimana.")
             }
+            .premiumLocked(.plus, title: "Andamento dei macronutrienti")
         }
     }
 }

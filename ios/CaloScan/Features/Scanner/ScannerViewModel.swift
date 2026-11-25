@@ -27,7 +27,8 @@ final class ScannerViewModel {
     private(set) var phase: Phase = .capture
     private(set) var imageData: Data?
     private(set) var scanID: UUID?
-    private(set) var questions: [String] = []
+    /// Domande sì/no sul piatto ancora senza risposta.
+    private(set) var followUps: [ScanFollowUp] = []
     private(set) var overallConfidence: Confidence?
     private(set) var isSaving = false
     private(set) var hasAIConsent: Bool?
@@ -99,7 +100,7 @@ final class ScannerViewModel {
 
     private func apply(_ result: ScanResult, emptyMessage: String) {
         scanID = result.id
-        questions = result.questions
+        followUps = result.allFollowUps
         overallConfidence = Confidence(score: result.overallConfidenceScore)
         items = result.items.map {
             DraftItem(id: $0.id, detectedName: $0.detectedName, food: $0.matchedFood,
@@ -116,7 +117,7 @@ final class ScannerViewModel {
         imageData = nil
         analyzedDescription = nil
         items = []
-        questions = []
+        followUps = []
         scanID = nil
     }
 
@@ -129,6 +130,14 @@ final class ScannerViewModel {
     func update(_ item: DraftItem) {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         items[index] = item
+    }
+
+    /// Risposta a una domanda: "Sì" aggiunge l'alimento proposto (modificabile come gli altri), "No" la chiude.
+    func answer(_ followUp: ScanFollowUp, yes: Bool) {
+        followUps.removeAll { $0.id == followUp.id }
+        guard yes, let item = followUp.item else { return }
+        items.append(DraftItem(id: item.id, detectedName: item.detectedName, food: item.matchedFood,
+                               grams: item.estimatedGrams, confidence: nil, ingredients: []))
     }
 
     func remove(_ item: DraftItem) {
@@ -152,6 +161,8 @@ final class ScannerViewModel {
                         isCheatMeal: isCheatMeal)
         do {
             try await services.meals.save(meal)
+            // La foto resta solo sul telefono, come miniatura del pasto nel diario.
+            if let imageData { await MealPhotoStore.shared.save(jpegData: imageData, for: meal.id) }
             return true
         } catch {
             saveError = APIError.from(error)

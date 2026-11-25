@@ -67,6 +67,10 @@ struct ScannerFlowView: View {
             }
         }
         .task { await model.loadConsent() }
+        // Una scansione riuscita consuma il limite di oggi: si aggiorna il conteggio mostrato.
+        .onChange(of: model.phase) { _, phase in
+            if phase == .result { Task { await app.refreshEntitlements() } }
+        }
         .sheet(isPresented: $showManualEntry) {
             AddFoodFlowView(services: app.services, mealType: model.mealType) {
                 app.mealSaved(model.mealType)
@@ -267,7 +271,7 @@ private struct AnalyzingView: View {
         }
         .padding(DS.Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .onAppear {
             guard !reduceMotion else { pulse = true; return }
             withAnimation(.easeInOut(duration: 0.9).repeatForever()) { pulse = true }
@@ -302,7 +306,7 @@ private struct ScanFailureView: View {
             Button("Cerca gli alimenti manualmente", action: onManual)
         }
         .tint(DS.Palette.brand)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
     }
 }
 
@@ -313,19 +317,28 @@ private struct QuotaReachedView: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label("Scansioni di oggi esaurite", systemImage: "hourglass")
+            if plan == .free {
+                Label("Scanner AI con Plus e Pro", systemImage: "camera.viewfinder")
+            } else {
+                Label("Scansioni di oggi esaurite", systemImage: "hourglass")
+            }
         } description: {
-            Text(plan == .pro
-                 ? "Hai usato tutte le scansioni disponibili oggi. Si rinnovano domani."
-                 : "Hai usato le scansioni AI incluse oggi nel piano \(plan.displayName). Si rinnovano domani, oppure puoi passare a un piano superiore.")
+            switch plan {
+            case .free:
+                Text("Fotografa o descrivi il piatto e l'AI riconosce alimenti e quantità. Plus include 4 scansioni al giorno, Pro 15. Gratis puoi sempre cercare un alimento, leggere il codice a barre o inserire i valori dell'etichetta.")
+            case .plus:
+                Text("Hai usato le 4 scansioni AI di oggi. Si rinnovano domani, oppure con Pro ne hai 15 al giorno.")
+            case .pro:
+                Text("Hai usato le 15 scansioni AI di oggi. Si rinnovano domani.")
+            }
         } actions: {
             if plan < .pro {
-                Button("Scopri i piani Premium", action: onUpgrade).buttonStyle(.borderedProminent)
+                Button(plan == .free ? "Scopri Plus e Pro" : "Passa a Pro", action: onUpgrade).buttonStyle(.borderedProminent)
             }
-            Button("Inserisci manualmente", action: onManual)
+            Button(plan == .free ? "Cerca o inserisci a mano" : "Inserisci manualmente", action: onManual)
         }
         .tint(DS.Palette.brand)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
     }
 }
 
@@ -339,7 +352,7 @@ private struct AIConsentView: View {
         VStack(alignment: .leading, spacing: DS.Spacing.m) {
             Image(systemName: "sparkles.rectangle.stack").font(.system(size: 44)).foregroundStyle(DS.Palette.brand)
             Text("Analisi delle foto con l'AI").font(DS.Font.title)
-            Text("Per riconoscere gli alimenti, la foto del piatto viene inviata in modo cifrato al nostro fornitore di intelligenza artificiale. La foto non contiene la tua posizione, non viene usata per addestrare modelli e viene cancellata automaticamente dopo l'analisi entro il periodo indicato nell'informativa.")
+            Text("Per riconoscere gli alimenti, la foto del piatto viene inviata in modo cifrato al nostro fornitore di intelligenza artificiale. La foto non contiene la tua posizione e non viene usata per addestrare modelli. CaloScan non la salva sui propri server: resta solo sul tuo iPhone; il fornitore la cancella entro il periodo indicato nell'informativa.")
                 .foregroundStyle(DS.Palette.textSecondary)
             Link("Leggi l'informativa sulla privacy", destination: LegalLinks.privacyPolicy)
                 .font(DS.Font.callout.weight(.semibold))
@@ -353,7 +366,7 @@ private struct AIConsentView: View {
                 .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
         }
         .padding(DS.Spacing.screen)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
     }
 }
 

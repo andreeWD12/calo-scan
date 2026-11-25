@@ -51,7 +51,7 @@ struct PaywallContent: View {
             VStack(alignment: .leading, spacing: DS.Spacing.l) {
                 VStack(alignment: .leading, spacing: DS.Spacing.xs) {
                     Text("Sblocca CaloScan Premium").font(DS.Font.title)
-                    Text("Più scansioni, statistiche complete e un coach che conosce i tuoi obiettivi.")
+                    Text("Lo scanner AI, statistiche complete e un coach che conosce i tuoi obiettivi.")
                         .foregroundStyle(DS.Palette.textSecondary)
                 }
                 Picker("Durata", selection: $model.period) {
@@ -88,7 +88,7 @@ struct PaywallContent: View {
             }
             .padding(DS.Spacing.screen)
         }
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .task { if case .idle = model.offers { await model.load() } }
         .alert("Acquisto non riuscito",
                isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } }),
@@ -241,7 +241,7 @@ struct PlanChoiceView: View {
                     .buttonStyle(.secondary)
                 Text(isPregnant
                      ? "Con il piano Free in gravidanza: obiettivo di mantenimento (mai in deficit), niente digiuni e l'elenco degli alimenti da evitare."
-                     : "Il piano Free include diario, inserimento manuale, calcolo del fabbisogno e alcune scansioni AI al giorno.")
+                     : "Il piano Free include diario, ricerca alimenti, codici a barre, inserimento manuale e calcolo del fabbisogno. Lo scanner AI è incluso in Plus e Pro.")
                     .font(DS.Font.caption)
                     .foregroundStyle(DS.Palette.textSecondary)
                     .multilineTextAlignment(.center)

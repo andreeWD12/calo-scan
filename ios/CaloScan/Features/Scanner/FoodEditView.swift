@@ -18,6 +18,8 @@ struct FoodEditView: View {
         self.onDelete = onDelete
         _item = State(initialValue: item)
         _gramsText = State(initialValue: item.grams)
+        // Alimento senza valori: si apre subito la ricerca già compilata con il nome riconosciuto.
+        _replacing = State(initialValue: item.food == nil)
     }
 
     private var gramsError: String? {
@@ -61,6 +63,7 @@ struct FoodEditView: View {
                         }
                     }
                 }
+                .contentMargins(.vertical, 0, for: .scrollContent)
             }
 
             if let food = item.food, let g = gramsText, gramsError == nil {
@@ -91,12 +94,25 @@ struct FoodEditView: View {
                 .disabled(gramsError != nil || item.food == nil)
             }
         }
-        .navigationDestination(isPresented: $replacing) {
-            FoodSearchView(services: services) { food in
+        // In un foglio con la sua barra: dentro la navigazione la barra di ricerca copriva la prima riga.
+        .sheet(isPresented: $replacing) {
+            NavigationStack {
+            FoodSearchView(services: services, initialQuery: item.detectedName) { food in
+                let wasUnresolved = item.food == nil
                 item.food = food
                 replacing = false
+                // Se mancava solo la corrispondenza, la scelta conclude la modifica: niente "Fatto" in più.
+                if wasUnresolved, let g = gramsText, gramsError == nil {
+                    item.grams = g
+                    onSave(item)
+                }
             }
             .navigationTitle("Cambia alimento")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Annulla") { replacing = false } }
+            }
+            }
         }
     }
 

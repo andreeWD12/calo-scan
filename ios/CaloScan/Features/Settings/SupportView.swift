@@ -83,7 +83,7 @@ struct SupportFAQ: Identifiable, Sendable {
 
     static let all: [SupportFAQ] = [
         SupportFAQ(id: 1, question: "Quante scansioni AI ho?",
-                   answer: "Free: 3 al giorno. Plus: 20 al giorno. Pro: illimitate. Le analisi non riuscite non vengono contate. Puoi sempre aggiungere un pasto a mano o descriverlo a parole."),
+                   answer: "Lo scanner AI (foto o descrizione) è incluso in Plus, con 4 scansioni al giorno, e in Pro, con 15. Con Free puoi cercare gli alimenti, leggere il codice a barre e inserire i valori dell'etichetta. Le analisi non riuscite non vengono contate."),
         SupportFAQ(id: 2, question: "I valori di una scansione sono esatti?",
                    answer: "Sono stime: l'AI riconosce gli alimenti e stima le quantità, i valori nutrizionali vengono da USDA e Open Food Facts. Prima di salvare puoi correggere alimenti e grammi."),
         SupportFAQ(id: 3, question: "Come disdico l'abbonamento?",

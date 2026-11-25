@@ -28,7 +28,7 @@ struct HomeView: View {
                 .padding(.horizontal, DS.Spacing.screen)
                 .padding(.bottom, DS.Spacing.xl)
             }
-            .background(DS.Palette.background.ignoresSafeArea())
+            .background { AppBackground() }
             .refreshable { await model.load() }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -72,15 +72,24 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)).capitalized)
-                .font(DS.Font.caption.weight(.semibold))
-                .foregroundStyle(DS.Palette.textSecondary)
-            Text("\(HomeViewModel.greeting()), \(app.profile?.displayName ?? "")")
-                .font(DS.Font.title)
-                .foregroundStyle(DS.Palette.textPrimary)
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)).capitalized)
+                    .font(DS.Font.caption.weight(.semibold))
+                    .foregroundStyle(DS.Palette.textSecondary)
+                Text("\(HomeViewModel.greeting()), \(app.profile?.displayName ?? "")")
+                    .font(DS.Font.title)
+                    .foregroundStyle(DS.Palette.textPrimary)
+            }
+            Spacer(minLength: DS.Spacing.s)
+            if model.streak > 0 {
+                StreakPill(days: model.streak)
+                    .transition(.scale.combined(with: .opacity))
+            }
         }
         .padding(.top, DS.Spacing.xs)
+        .animation(DS.Motion.bouncy, value: model.streak)
+        .sensoryFeedback(.success, trigger: model.streak) { old, new in new > old && old > 0 }
     }
 
     @ViewBuilder
@@ -96,7 +105,8 @@ struct HomeView: View {
             if let targets = app.targets {
                 SummaryCard(day: day, targets: targets, professional: app.professionalPlan?.professional).appear(index: 0)
             }
-            ScanCallToAction(scansRemaining: app.entitlements.hasUnlimitedScans ? nil : app.entitlements.scansRemaining, action: onScan).appear(index: 1)
+            ScanCallToAction(scansRemaining: app.entitlements.hasUnlimitedScans ? nil : app.entitlements.scansRemaining,
+                             included: app.entitlements.includesAIScans, action: onScan).appear(index: 1)
             if let insight = model.insights.first {
                 InsightCard(insight: insight) { path.append(.coach) }
                     .appear(index: 2)
@@ -131,31 +141,33 @@ private struct SummaryCard: View {
     var body: some View {
         let totals = day.totals
         let progress = NutritionStats.progress(consumed: totals.kcal, target: targets.calorieTarget)
-        Card {
-            HStack(spacing: DS.Spacing.l) {
-                CalorieRing(consumed: totals.kcal, target: targets.calorieTarget)
-                    .frame(width: 150, height: 150)
-                VStack(alignment: .leading, spacing: DS.Spacing.s) {
-                    metric(professional?.targetLabel ?? "Obiettivo", Format.kcal(Double(targets.calorieTarget)))
-                    metric("Consumate", Format.kcal(totals.kcal))
-                    metric("Raggiunto", Format.percent(progress))
-                }
+        Card(padding: DS.Spacing.l) {
+            CalorieRing(consumed: totals.kcal, target: targets.calorieTarget, lineWidth: 20)
+                .frame(width: 210, height: 210)
+                .frame(maxWidth: .infinity)
+            HStack {
+                metric(professional?.targetLabel ?? "Obiettivo", Format.kcal(Double(targets.calorieTarget)))
+                metric("Consumate", Format.kcal(totals.kcal))
+                metric("Raggiunto", Format.percent(progress))
             }
-            .frame(maxWidth: .infinity)
-            VStack(spacing: DS.Spacing.s) {
-                MacroBar(title: "Proteine", consumed: totals.proteinG, target: targets.proteinG, tint: DS.Palette.protein)
-                MacroBar(title: "Carboidrati", consumed: totals.carbsG, target: targets.carbsG, tint: DS.Palette.carbs)
-                MacroBar(title: "Grassi", consumed: totals.fatG, target: targets.fatG, tint: DS.Palette.fat)
+            .padding(.vertical, DS.Spacing.xs)
+            Divider()
+            HStack(alignment: .top, spacing: DS.Spacing.s) {
+                MacroRing(title: "Proteine", consumed: totals.proteinG, target: targets.proteinG, tint: DS.Palette.protein)
+                MacroRing(title: "Carboidrati", consumed: totals.carbsG, target: targets.carbsG, tint: DS.Palette.carbs)
+                MacroRing(title: "Grassi", consumed: totals.fatG, target: targets.fatG, tint: DS.Palette.fat)
             }
             .padding(.top, DS.Spacing.xs)
         }
     }
 
     private func metric(_ title: LocalizedStringKey, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
             Text(title).font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
             Text(value).font(DS.Font.headline.monospacedDigit()).contentTransition(.numericText())
+                .minimumScaleFactor(0.8).lineLimit(1)
         }
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
     }
 }
@@ -163,19 +175,24 @@ private struct SummaryCard: View {
 /// Il fulcro dell'app: pulsante grande per scansionare un piatto.
 private struct ScanCallToAction: View {
     private var scansText: LocalizedStringKey {
-        guard let scansRemaining else { return "Scansioni illimitate" }
+        guard included else { return "Incluso nei piani Plus e Pro" }
+        guard let scansRemaining else { return "Scansioni AI disponibili" }
         return scansRemaining > 0 ? "\(scansRemaining) scansioni disponibili oggi" : "Scansioni di oggi esaurite"
     }
 
     /// nil = illimitate (Pro).
     let scansRemaining: Int?
+    /// false per il piano Free: il pulsante apre la presentazione dei piani dentro lo scanner.
+    var included = true
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: DS.Spacing.m) {
                 Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 30, weight: .semibold))
+                    .font(.system(size: 26, weight: .semibold))
+                    .frame(width: 48, height: 48)
+                    .background(.white.opacity(0.18), in: .circle)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("SCANSIONA IL TUO PIATTO").font(DS.Font.headline).tracking(0.3)
                     Text(scansText)
@@ -183,15 +200,16 @@ private struct ScanCallToAction: View {
                         .opacity(0.85)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.headline)
+                Image(systemName: included ? "chevron.right" : "lock.fill").font(.headline)
             }
             .foregroundStyle(DS.Palette.onBrand)
             .padding(DS.Spacing.m)
             .frame(minHeight: 76)
             .background(
-                LinearGradient(colors: [DS.Palette.brand, DS.Palette.brand.opacity(0.85)],
+                LinearGradient(colors: [DS.Palette.brand, DS.Palette.brand.opacity(0.78)],
                                startPoint: .topLeading, endPoint: .bottomTrailing),
                 in: .rect(cornerRadius: DS.Radius.l))
+            .shadow(color: DS.Palette.brand.opacity(0.3), radius: 12, y: 6)
         }
         .buttonStyle(.pressable)
         .accessibilityHint(Text("Apre la fotocamera per analizzare un piatto"))
@@ -216,6 +234,7 @@ private struct InsightCard: View {
             }
             .padding(DS.Spacing.m)
             .background(DS.Palette.brandSoft, in: .rect(cornerRadius: DS.Radius.l))
+            .softShadow()
         }
         .buttonStyle(.plain)
     }
@@ -234,6 +253,9 @@ struct MealSectionCard: View {
     /// Settimana della rotazione del piano, mostrata solo se il piano ruota su più settimane.
     var plannedWeek: Int? = nil
 
+    /// Miniature locali delle foto, per i pasti scansionati.
+    @State private var photos: [UUID: UIImage] = [:]
+
     private var totals: Nutrients { meals.map(\.totals).total }
     private struct Row: Identifiable {
         let meal: Meal
@@ -245,16 +267,20 @@ struct MealSectionCard: View {
 
     var body: some View {
         Card {
-            HStack {
-                Label(type.title, systemImage: type.symbol).font(DS.Font.headline)
+            HStack(spacing: DS.Spacing.s) {
+                MealIcon(type: type)
                     .symbolEffect(.bounce, value: items.count)
-                    .accessibilityAddTraits(.isHeader)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(type.title).font(DS.Font.headline)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(Format.kcal(totals.kcal)).font(DS.Font.caption.monospacedDigit())
+                        .foregroundStyle(DS.Palette.textSecondary)
+                        .contentTransition(.numericText())
+                }
                 Spacer()
-                Text(Format.kcal(totals.kcal)).font(DS.Font.callout.monospacedDigit())
-                    .foregroundStyle(DS.Palette.textSecondary)
                 if let onAdd {
                     Button(action: onAdd) {
-                        Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(DS.Palette.brand)
+                        Image(systemName: "plus.circle.fill").font(.title).foregroundStyle(type.tint)
                     }
                     .frame(width: 44, height: 44)
                     .accessibilityLabel(Text("Aggiungi a \(type.title)"))
@@ -263,13 +289,20 @@ struct MealSectionCard: View {
             if items.isEmpty, let planned, let onLogPlanned {
                 PlannedMealPreview(meal: planned, week: plannedWeek, action: onLogPlanned)
             } else if items.isEmpty {
-                Text("Nessun alimento registrato").font(DS.Font.callout).foregroundStyle(DS.Palette.textTertiary)
+                Text(onAdd == nil ? "Nessun alimento registrato" : type.emptyHint)
+                    .font(DS.Font.callout).foregroundStyle(DS.Palette.textTertiary)
+                    .padding(.horizontal, DS.Spacing.s).padding(.vertical, DS.Spacing.xs)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(type.tint.opacity(0.07), in: .rect(cornerRadius: DS.Radius.s))
             } else {
                 MacroInline(protein: totals.proteinG, carbs: totals.carbsG, fat: totals.fatG)
                 Divider()
                 ForEach(items) { row in
                     let item = row.item
-                    HStack {
+                    HStack(spacing: DS.Spacing.s) {
+                        if row.meal.items.first?.id == item.id, let photo = photos[row.meal.id] {
+                            MealThumbnail(image: photo)
+                        }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.food.name).font(DS.Font.callout)
                             HStack(spacing: DS.Spacing.xxs) {
@@ -300,6 +333,14 @@ struct MealSectionCard: View {
             }
         }
         .animation(DS.Motion.standard, value: items.map(\.id))
+        .sensoryFeedback(.success, trigger: items.count) { old, new in new > old }
+        .task(id: meals.map(\.id)) {
+            var loaded: [UUID: UIImage] = [:]
+            for meal in meals where meal.source == .scan || meal.source == .description {
+                if let image = await MealPhotoStore.shared.thumbnail(for: meal.id) { loaded[meal.id] = image }
+            }
+            photos = loaded
+        }
     }
 }
 

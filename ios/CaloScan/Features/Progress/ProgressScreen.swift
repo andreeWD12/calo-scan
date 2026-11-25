@@ -20,7 +20,7 @@ struct ProgressScreen: View {
                     .padding(.horizontal, DS.Spacing.screen)
                     .padding(.bottom, DS.Spacing.xl)
             }
-            .background(DS.Palette.background.ignoresSafeArea())
+            .background { AppBackground() }
             .navigationTitle("Progressi")
             .refreshable { await model.load() }
             .toolbar {
@@ -72,7 +72,12 @@ struct ProgressScreen: View {
                     ForEach(ProgressViewModel.Range.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                if model.visibleEntries.count >= 2 {
+                if model.range == .all && app.entitlements.plan < .plus {
+                    // Storico completo del peso: Plus e Pro.
+                    WeightChart(entries: model.visibleEntries, goal: app.profile?.targetWeightKg)
+                        .frame(height: 220)
+                        .premiumLocked(.plus, title: "Andamento del peso dall'inizio", cornerRadius: DS.Radius.m)
+                } else if model.visibleEntries.count >= 2 {
                     WeightChart(entries: model.visibleEntries, goal: app.profile?.targetWeightKg)
                         .frame(height: 220)
                 } else {
@@ -82,6 +87,7 @@ struct ProgressScreen: View {
                 }
             }
             MeasurementsCard(measurements: model.measurements) { showAddMeasurement = true }
+                .premiumLocked(.plus, title: "Misure corporee")
             HistoryCard(entries: entries.reversed()) { entry in Task { await model.delete(entry) } }
         }
     }

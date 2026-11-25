@@ -8,8 +8,9 @@ final class FoodSearchViewModel {
     private(set) var results: Loadable<[FoodItem]> = .idle
     private let foods: any FoodSearchService
 
-    init(foods: any FoodSearchService) {
+    init(foods: any FoodSearchService, query: String = "") {
         self.foods = foods
+        self.query = query
     }
 
     /// Ricerca con debounce: viene annullata se l'utente continua a scrivere.
@@ -33,15 +34,26 @@ final class FoodSearchViewModel {
 /// Ricerca manuale degli alimenti nei database nutrizionali.
 struct FoodSearchView: View {
     @State private var model: FoodSearchViewModel
+    @State private var showsCustomFood = false
+    @State private var customFood: FoodItem?
     let onSelect: (FoodItem) -> Void
 
-    init(services: AppServices, onSelect: @escaping (FoodItem) -> Void) {
-        _model = State(initialValue: FoodSearchViewModel(foods: services.foods))
+    /// `initialQuery`: ricerca già compilata, ad esempio con il nome riconosciuto dallo scanner.
+    init(services: AppServices, initialQuery: String = "", onSelect: @escaping (FoodItem) -> Void) {
+        _model = State(initialValue: FoodSearchViewModel(foods: services.foods, query: initialQuery))
         self.onSelect = onSelect
     }
 
     var body: some View {
         List {
+            Section {
+                Button { showsCustomFood = true } label: {
+                    Label("Inserisci i valori dell'etichetta", systemImage: "square.and.pencil")
+                        .font(DS.Font.callout.weight(.medium))
+                }
+            } footer: {
+                Text("Per un alimento che non trovi, con calorie e macro letti dalla confezione.")
+            }
             switch model.results {
             case .idle:
                 Section {
@@ -72,6 +84,12 @@ struct FoodSearchView: View {
                     prompt: Text("Cerca un alimento"))
         .autocorrectionDisabled()
         .task(id: model.query) { await model.search() }
+        // L'alimento passa avanti solo a foglio chiuso, così la navigazione successiva non si blocca.
+        .sheet(isPresented: $showsCustomFood, onDismiss: {
+            if let food = customFood { customFood = nil; onSelect(food) }
+        }) {
+            CustomFoodView { customFood = $0 }
+        }
     }
 }
 
@@ -82,7 +100,7 @@ struct FoodRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(food.name).font(DS.Font.callout.weight(.medium)).foregroundStyle(DS.Palette.textPrimary)
-                Text([food.brand, food.source.label].compactMap { $0 }.joined(separator: " · "))
+                Text(food.source.label)
                     .font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
                 PregnancyFoodBadge(name: food.name)
             }

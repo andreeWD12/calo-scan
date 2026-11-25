@@ -3,6 +3,8 @@ import Foundation
 /// Origine dei valori nutrizionali. L'app mostra sempre la fonte all'utente.
 public enum FoodSource: String, Codable, Sendable {
     case usda, openFoodFacts = "open_food_facts", custom
+    /// Valori per 100 g stimati dall'AI quando nessun database ha l'alimento.
+    case aiEstimate = "ai_estimate"
 }
 
 /// Alimento con valori per 100 g provenienti da un database attendibile (o creato dall'utente).
@@ -117,15 +119,45 @@ public struct ScannedItem: Identifiable, Codable, Hashable, Sendable {
     public var needsReview: Bool { matchedFood == nil || confidence == .low }
 }
 
+/// Domanda sì/no sul piatto. Se l'utente risponde "Sì" si aggiunge `item` (es. "Hai condito con olio?" → olio, 10 g).
+public struct ScanFollowUp: Identifiable, Codable, Hashable, Sendable {
+    public let id: UUID
+    public var question: String
+    public var item: ScannedItem?
+
+    public init(id: UUID = UUID(), question: String, item: ScannedItem? = nil) {
+        self.id = id; self.question = question; self.item = item
+    }
+}
+
 public struct ScanResult: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var items: [ScannedItem]
-    /// Domande di chiarimento generate dall'analisi (es. "Quanto olio è stato usato?").
+    /// Domande di chiarimento in solo testo (formato precedente, usato se mancano i `followUps`).
     public var questions: [String]
+    /// Domande sì/no con l'alimento da aggiungere in caso di risposta affermativa.
+    public var followUps: [ScanFollowUp]
     public var overallConfidenceScore: Double
 
-    public init(id: UUID, items: [ScannedItem], questions: [String], overallConfidenceScore: Double) {
-        self.id = id; self.items = items; self.questions = questions
+    public init(id: UUID, items: [ScannedItem], questions: [String], followUps: [ScanFollowUp] = [],
+                overallConfidenceScore: Double) {
+        self.id = id; self.items = items; self.questions = questions; self.followUps = followUps
         self.overallConfidenceScore = overallConfidenceScore
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, items, questions, followUps, overallConfidenceScore }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        items = try c.decode([ScannedItem].self, forKey: .items)
+        questions = try c.decodeIfPresent([String].self, forKey: .questions) ?? []
+        followUps = try c.decodeIfPresent([ScanFollowUp].self, forKey: .followUps) ?? []
+        overallConfidenceScore = try c.decode(Double.self, forKey: .overallConfidenceScore)
+    }
+
+    /// Domande da mostrare: quelle sì/no se ci sono, altrimenti quelle in solo testo.
+    public var allFollowUps: [ScanFollowUp] {
+        followUps.isEmpty ? questions.map { ScanFollowUp(question: $0) } : followUps
     }
 }

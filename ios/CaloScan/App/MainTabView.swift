@@ -33,6 +33,7 @@ struct MainTabView: View {
     @State private var selection: AppTab = .home
     @State private var showScanner = false
     @State private var upsellPlan: Plan?
+    @State private var tabBarHeight: CGFloat = 64
     @Namespace private var scannerZoom
 
     var body: some View {
@@ -42,8 +43,12 @@ struct MainTabView: View {
             tab(.progress) { ProgressScreen(services: app.services) }
             tab(.profile) { ProfileView() }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        // Spazio in fondo a ogni lista e ScrollView delle sezioni, alto quanto la barra: così si scorre
+        // fino all'ultimo elemento. (Un safeAreaInset esterno non arriva sempre dentro i NavigationStack.)
+        .contentMargins(.bottom, tabBarHeight, for: .scrollContent)
+        .overlay(alignment: .bottom) {
             TabBar(selection: $selection, zoomNamespace: scannerZoom, onScan: { showScanner = true })
+                .onGeometryChangeCompat { tabBarHeight = $0 }
                 .overlay(alignment: .top) {
                     if let prompt = app.upsell.current, !showScanner {
                         UpsellBanner(prompt: prompt,
@@ -98,6 +103,17 @@ struct MainTabView: View {
 }
 
 private extension View {
+    /// Altezza della vista, aggiornata quando cambia (es. testo più grande con Dynamic Type).
+    func onGeometryChangeCompat(_ action: @escaping (CGFloat) -> Void) -> some View {
+        background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { action(proxy.size.height) }
+                    .onChange(of: proxy.size.height) { _, height in action(height) }
+            }
+        }
+    }
+
     /// Zoom dal pulsante Scanner alla fotocamera (iOS 18+); su iOS 17 resta la presentazione standard.
     @ViewBuilder
     func zoomTransition(sourceID: String, in namespace: Namespace.ID) -> some View {
@@ -136,23 +152,29 @@ private struct TabBar: View {
         }
         .padding(.horizontal, DS.Spacing.xs)
         .padding(.top, DS.Spacing.xs)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
+        // Sfondo e linea di separazione stanno DIETRO ai pulsanti: il pulsante Scanner, che sporge
+        // verso l'alto, copre la linea invece di esserne attraversato.
+        .background(alignment: .top) {
+            Rectangle().fill(.bar)
+                .overlay(alignment: .top) { Divider() }
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private func tabButton(_ tab: AppTab) -> some View {
         Button {
             selection = tab
         } label: {
-            VStack(spacing: 3) {
+            VStack(spacing: 4) {
                 Image(systemName: tab.symbol)
                     .symbolVariant(selection == tab ? .fill : .none)
-                    .font(.system(size: 20))
+                    .font(.system(size: 25, weight: .regular))
+                    .frame(height: 28)
                     .symbolEffect(.bounce.down, value: selection == tab)
                     .contentTransition(.symbolEffect(.replace))
                 Text(tab.title).font(.caption2.weight(.medium))
             }
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(selection == tab ? DS.Palette.brand : DS.Palette.textTertiary)
         }
         .buttonStyle(.plain)
@@ -169,15 +191,17 @@ private struct TabBar: View {
                 ZStack {
                     Circle().fill(DS.Palette.brand)
                         .shadow(color: DS.Palette.brand.opacity(0.35), radius: 10, y: 4)
+                    // Bordo del colore dello sfondo: stacca il pulsante dalla barra.
+                    Circle().strokeBorder(DS.Palette.background, lineWidth: 4)
                     Image(systemName: "camera.viewfinder")
-                        .font(.system(size: 26, weight: .semibold))
+                        .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(DS.Palette.onBrand)
                 }
-                .frame(width: 62, height: 62)
+                .frame(width: 66, height: 66)
                 .symbolEffect(.bounce, value: scanTaps)
                 .zoomSource(id: "scanner", in: zoomNamespace)
-                .offset(y: -14)
-                .padding(.bottom, -14)
+                .offset(y: -16)
+                .padding(.bottom, -16)
                 Text("Scanner").font(.caption2.weight(.semibold)).foregroundStyle(DS.Palette.brand)
             }
             .frame(maxWidth: .infinity)

@@ -34,11 +34,17 @@ struct ScanResultView: View {
                     .listRowBackground(Color.clear)
             }
 
-            if !model.questions.isEmpty {
-                Section("Da confermare") {
-                    ForEach(model.questions, id: \.self) { q in
-                        Label(q, systemImage: "questionmark.circle").font(DS.Font.callout)
+            if !model.followUps.isEmpty {
+                Section {
+                    ForEach(model.followUps) { followUp in
+                        FollowUpRow(followUp: followUp) { yes in
+                            withAnimation(DS.Motion.snappy) { model.answer(followUp, yes: yes) }
+                        }
                     }
+                } header: {
+                    Text("Qualche dettaglio sul piatto")
+                } footer: {
+                    Text("Rispondi per una stima più precisa. Puoi anche saltare: non serve per salvare.")
                 }
             }
 
@@ -157,6 +163,9 @@ private struct DraftItemRow: View {
                         .font(DS.Font.caption).foregroundStyle(DS.Palette.warning)
                 } else if let n = item.nutrients {
                     MacroInline(protein: n.proteinG, carbs: n.carbsG, fat: n.fatG)
+                    if item.food?.source == .aiEstimate {
+                        Text("Valori stimati dall'AI").font(DS.Font.caption).foregroundStyle(DS.Palette.textTertiary)
+                    }
                 }
                 if !item.ingredients.isEmpty {
                     Text(item.ingredients.joined(separator: ", "))
@@ -177,5 +186,34 @@ private struct DraftItemRow: View {
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityHint(Text("Tocca per modificare"))
+    }
+}
+
+/// Domanda sì/no dell'analisi. Con "Sì" l'alimento proposto entra nel pasto, con "No" la domanda sparisce.
+private struct FollowUpRow: View {
+    let followUp: ScanFollowUp
+    let onAnswer: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
+            Label(followUp.question, systemImage: "questionmark.bubble")
+                .font(DS.Font.callout.weight(.medium))
+            if let item = followUp.item {
+                Text("Se sì aggiungiamo \(item.matchedFood?.name ?? item.detectedName), circa \(Format.grams(item.estimatedGrams)).")
+                    .font(DS.Font.caption).foregroundStyle(DS.Palette.textSecondary)
+                HStack(spacing: DS.Spacing.xs) {
+                    Button("Sì") { onAnswer(true) }
+                        .buttonStyle(.borderedProminent).tint(DS.Palette.brand)
+                    Button("No") { onAnswer(false) }
+                        .buttonStyle(.bordered).tint(.secondary)
+                }
+                .font(DS.Font.callout.weight(.semibold))
+            } else {
+                Button("Ok, ho capito") { onAnswer(false) }
+                    .buttonStyle(.bordered).tint(.secondary)
+                    .font(DS.Font.callout.weight(.semibold))
+            }
+        }
+        .padding(.vertical, DS.Spacing.xxs)
     }
 }

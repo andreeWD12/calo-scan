@@ -141,8 +141,8 @@ final class UpsellCenter {
                 ? String(localized: "Scansioni di oggi finite")
                 : String(localized: "Ti resta 1 scansione AI oggi")
             let message = target == .plus
-                ? String(localized: "Si rinnovano domani. Con Plus hai 20 scansioni al giorno.")
-                : String(localized: "Si rinnovano domani. Con Pro hai 100 scansioni al giorno.")
+                ? String(localized: "Con Plus hai 4 scansioni AI al giorno, una per ogni pasto.")
+                : String(localized: "Si rinnovano domani. Con Pro hai 15 scansioni al giorno.")
             return UpsellPrompt(kind: kind, target: target, title: title, message: message, symbol: "camera.viewfinder")
         case .coachRunningLow:
             let title = remaining == 0

@@ -28,17 +28,28 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
    brew install supabase/tap/supabase
    supabase login
    supabase link --project-ref <ref del progetto>
-   supabase db push                                   # crea tabelle e regole RLS (supabase/migrations)
-   supabase functions deploy save-profile delete-account
+   supabase db push --remote                          # crea tabelle, regole RLS e permessi (supabase/migrations)
+   supabase functions deploy save-profile delete-account save-professional-plan
    ```
+   Ogni migrazione concede esplicitamente i permessi (`grant`) sulle proprie tabelle: in questo progetto
+   le nuove tabelle non li ricevono in automatico, e senza di essi l'app riceve "permission denied".
    `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` sono già disponibili alle funzioni: non vanno impostati.
 
-## Fase 4–5 – Backend e AI
+## Fase 5 – AI
 
-7. `supabase login && supabase link --project-ref <ref>` per applicare migrazioni e pubblicare le funzioni.
-8. **Chiave del provider AI multimodale** (es. Anthropic) → `supabase secrets set AI_API_KEY=...`. Mai nell'app.
-9. **USDA FoodData Central API key** (gratuita su fdc.nal.usda.gov/api-key-signup) → `USDA_FDC_API_KEY`.
+8. **Chiave Anthropic** (console.anthropic.com → API Keys) e **chiave USDA FoodData Central**
+   (gratuita su fdc.nal.usda.gov/api-key-signup). Solo come segreti del server, mai nell'app:
+   ```
+   supabase secrets set ANTHROPIC_API_KEY=... USDA_FDC_API_KEY=...
+   supabase db push --remote
+   supabase functions deploy food-search analyze-food get-entitlements
+   ```
+   Facoltativi: `AI_MODEL` (predefinito `claude-opus-5-5`; un modello più economico abbassa i costi
+   ma può riconoscere peggio i piatti) e `AI_EFFORT` (`low`, `medium` predefinito, `high`).
    Open Food Facts non richiede chiave.
+   Lo scanner AI è solo per Plus e Pro. Per provarlo prima degli abbonamenti (Fase 8) dai il piano Pro
+   al tuo account: copia il tuo User UID da Supabase → Authentication → Users e poi
+   `supabase secrets set TESTER_USER_IDS=<il tuo UID>` (più account separati da virgola).
 
 ## Fase 8 – Abbonamenti
 

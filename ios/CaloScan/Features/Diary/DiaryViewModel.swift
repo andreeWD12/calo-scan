@@ -115,6 +115,7 @@ final class DiaryViewModel {
     func delete(_ meal: Meal) async {
         do {
             try await services.meals.delete(mealID: meal.id)
+            await MealPhotoStore.shared.remove(meal.id)
             await load()
         } catch {
             day = .failed(APIError.from(error))

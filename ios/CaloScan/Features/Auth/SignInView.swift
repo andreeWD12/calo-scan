@@ -42,7 +42,7 @@ struct SignInView: View {
             .padding(DS.Spacing.screen)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .navigationTitle("Accedi")
         .navigationBarTitleDisplayMode(.inline)
         .authAlert(model)

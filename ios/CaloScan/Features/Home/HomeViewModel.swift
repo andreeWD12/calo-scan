@@ -7,6 +7,8 @@ import CaloScanCore
 final class HomeViewModel {
     private(set) var today: Loadable<DayLog> = .idle
     private(set) var insights: [CoachInsight] = []
+    /// Giorni consecutivi con almeno un alimento registrato (fino a oggi o ieri).
+    private(set) var streak = 0
 
     private let services: AppServices
 
@@ -17,7 +19,13 @@ final class HomeViewModel {
     func load() async {
         if today.value == nil { today = .loading }
         do {
-            today = .loaded(try await services.meals.dayLog(for: Calendar.current.startOfDay(for: .now)))
+            // Una sola richiesta per oggi e gli ultimi 59 giorni: serve anche per la serie.
+            let calendar = Calendar.current
+            let todayStart = calendar.startOfDay(for: .now)
+            let from = calendar.date(byAdding: .day, value: -59, to: todayStart) ?? todayStart
+            let logs = try await services.meals.dayLogs(from: from, to: todayStart)
+            streak = Self.streak(in: logs, today: todayStart, calendar: calendar)
+            today = .loaded(logs.last { calendar.isDate($0.day, inSameDayAs: todayStart) } ?? DayLog(day: todayStart, meals: []))
         } catch {
             today = .failed(APIError.from(error))
         }
@@ -41,10 +49,29 @@ final class HomeViewModel {
     func delete(_ meal: Meal) async {
         do {
             try await services.meals.delete(mealID: meal.id)
+            await MealPhotoStore.shared.remove(meal.id)
             await load()
         } catch {
             today = .failed(APIError.from(error))
         }
+    }
+
+    /// Conta i giorni di fila con pasti registrati. Se oggi è ancora vuoto la serie parte da ieri,
+    /// così non si "perde" al mattino prima della colazione.
+    static func streak(in logs: [DayLog], today: Date, calendar: Calendar = .current) -> Int {
+        let logged = Set(logs.filter { !$0.isEmpty }.map { calendar.startOfDay(for: $0.day) })
+        var day = calendar.startOfDay(for: today)
+        if !logged.contains(day) {
+            guard let yesterday = calendar.date(byAdding: .day, value: -1, to: day) else { return 0 }
+            day = yesterday
+        }
+        var count = 0
+        while logged.contains(day) {
+            count += 1
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: day) else { break }
+            day = previous
+        }
+        return count
     }
 
     static func greeting(for date: Date = .now) -> String {

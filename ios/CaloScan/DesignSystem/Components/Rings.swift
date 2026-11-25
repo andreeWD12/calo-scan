@@ -14,10 +14,12 @@ struct CalorieRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(DS.Palette.surfaceMuted, lineWidth: lineWidth)
+            Circle().stroke(DS.Palette.brand.opacity(0.1), lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: min(shown, 1))
-                .stroke(progress > 1.1 ? DS.Palette.warning : DS.Palette.brand,
+                .stroke(AngularGradient(colors: progress > 1.1 ? [DS.Palette.warning.opacity(0.7), DS.Palette.warning]
+                                                               : [DS.Palette.brand.opacity(0.55), DS.Palette.brand],
+                                        center: .center, startAngle: .degrees(0), endAngle: .degrees(360 * min(max(shown, 0.01), 1))),
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .onAppear { withMotion(DS.Motion.fill, reduceMotion: reduceMotion) { shown = progress } }

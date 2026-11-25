@@ -56,7 +56,7 @@ struct SignUpView: View {
             .toggleStyle(CheckboxToggleStyle())
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(DS.Palette.background.ignoresSafeArea())
+        .background { AppBackground() }
         .navigationTitle("Registrazione")
         .navigationBarTitleDisplayMode(.inline)
         .authAlert(model)

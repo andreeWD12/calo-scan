@@ -136,18 +136,20 @@ enum Plan: String, Codable, Comparable, Sendable, CaseIterable {
 struct Entitlements: Codable, Equatable, Sendable {
     let plan: Plan
     let scansUsedToday: Int
-    /// nil = scansioni illimitate (Pro). Resta solo il limite anti-abuso del server su raffiche automatiche.
+    /// Scansioni AI incluse oggi: Free 0, Plus 4, Pro 15 (decise dal server). nil = senza tetto giornaliero.
     let scansLimitToday: Int?
     let coachMessagesUsedToday: Int
     let coachMessagesLimitToday: Int
     let expiresAt: Date?
     let willRenew: Bool
 
-    static let free = Entitlements(plan: .free, scansUsedToday: 0, scansLimitToday: 3,
+    static let free = Entitlements(plan: .free, scansUsedToday: 0, scansLimitToday: 0,
                                    coachMessagesUsedToday: 0, coachMessagesLimitToday: 5,
                                    expiresAt: nil, willRenew: false)
 
     var hasUnlimitedScans: Bool { scansLimitToday == nil }
+    /// Lo scanner AI è incluso solo nei piani a pagamento.
+    var includesAIScans: Bool { scansLimitToday != 0 }
     var scansRemaining: Int { scansLimitToday.map { max($0 - scansUsedToday, 0) } ?? .max }
 }
 

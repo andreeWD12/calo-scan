@@ -29,7 +29,7 @@ struct DiaryView: View {
                 .padding(.horizontal, DS.Spacing.screen)
                 .padding(.bottom, DS.Spacing.xl)
             }
-            .background(DS.Palette.background.ignoresSafeArea())
+            .background { AppBackground() }
             .navigationTitle("Diario")
             .refreshable { await model.load() }
             .animation(DS.Motion.standard, value: model.mode)
@@ -103,13 +103,10 @@ struct DiaryView: View {
                                        message: "Quando registri i pasti qui vedrai medie, andamento e progressi.",
                                        systemImage: "chart.bar")
                     } else if model.mode == .week {
-                        WeekStatsView(logs: logs, interval: model.interval, targets: targets,
-                                      isAdvanced: app.entitlements.plan >= .plus)
-                    } else if app.entitlements.plan >= .plus {
-                        MonthStatsView(logs: logs, weights: model.weights, targets: targets)
+                        WeekStatsView(logs: logs, interval: model.interval, targets: targets)
                     } else {
-                        UpgradeCard(title: "Statistiche mensili complete",
-                                    message: "Grafico delle calorie, evoluzione del peso, costanza e analisi delle abitudini sono inclusi in Plus e Pro.")
+                        MonthStatsView(logs: logs, weights: model.weights, targets: targets)
+                            .premiumLocked(.plus, title: "Statistiche mensili complete")
                     }
                 }
             }
