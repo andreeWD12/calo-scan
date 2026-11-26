@@ -85,6 +85,9 @@ La build automatica li crea a ogni aggiornamento della PR: GitHub › **Actions*
 in fondo alla pagina **Artifacts** › `app-store-screenshots` (file zip). Sono 5: Home, scansione, Diario, Progressi, Coach.
 Trascinali in ordine in App Store Connect › la versione 1.0 › *iPhone 6,9"*.
 
+**iPad** (l'app gira anche su iPad, in verticale): servono quelli 13" (2064 × 2752), nell'artifact `app-store-screenshots-ipad`,
+da trascinare nella sezione *iPad 13"*. Il file `06-abbonamenti` (paywall) va in *Review Information* di ogni abbonamento.
+
 Sono schermate reali dell'app con dati d'esempio (piano Pro), come chiede la linea guida 2.3.3.
 
 ## 3. Abbonamenti (nomi e descrizioni per App Store Connect)

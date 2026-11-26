@@ -18,6 +18,20 @@ final class AppStoreScreenshotsUITests: XCTestCase {
         shot("03-diario", route: "diary")
         shot("04-progressi", route: "progress")
         shot("05-coach", route: "coach")
+        paywall()
+    }
+
+    /// Paywall con i prezzi d'esempio (piano Free): per "Informazioni per la revisione" degli abbonamenti.
+    @MainActor
+    private func paywall() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-PreviewMode", "-PreviewPaywall", "-celebrations.enabled", "NO",
+                               "-AppleLanguages", "(it)", "-AppleLocale", "it_IT"]
+        app.launch()
+        XCTAssertTrue(app.buttons.firstMatch.waitForExistence(timeout: 20))
+        sleep(4)
+        save(app, "06-abbonamenti")
+        app.terminate()
     }
 
     // MARK: -

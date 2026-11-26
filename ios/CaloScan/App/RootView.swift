@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Routing radice in base allo stato della sessione.
 struct RootView: View {
@@ -18,6 +19,11 @@ struct RootView: View {
                 MainTabView()
             }
         }
+        // iPad: contenuto in una colonna centrata, come su iPhone ma più larga, per non allungare
+        // schede e liste su tutto lo schermo. Fogli e fotocamera restano quelli di sistema.
+        .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 760 : .infinity)
+        .frame(maxWidth: .infinity)
+        .background(DS.Palette.background.ignoresSafeArea())
         .animation(DS.Motion.standard, value: app.session)
         .tint(DS.Palette.brand)
         .preferredColorScheme(appearance.colorScheme)
