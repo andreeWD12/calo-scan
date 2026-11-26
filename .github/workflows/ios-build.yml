@@ -145,6 +145,16 @@ jobs:
   # Scaricali da GitHub › Actions › questa esecuzione › Artifacts › app-store-screenshots.
   store-screenshots:
     runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: iphone          # 6,9" → 1320 × 2868
+            match: "x['name'].startswith('iPhone') and 'Pro Max' in x['name']"
+            artifact: app-store-screenshots
+          - device: ipad            # 13" → 2064 × 2752
+            match: "x['name'].startswith('iPad Pro') and '13' in x['name']"
+            artifact: app-store-screenshots-ipad
     timeout-minutes: 45
     defaults:
       run:
@@ -155,9 +165,9 @@ jobs:
         run: |
           brew install xcodegen
           xcodegen generate
-      - name: Prepara il simulatore (Pro Max, barra di stato pulita)
+      - name: Prepara il simulatore (${{ matrix.device }}, barra di stato pulita)
         run: |
-          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone') and 'Pro Max' in x['name']))")
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if ${{ matrix.match }}))")
           echo "UDID=$UDID" >> "$GITHUB_ENV"
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
@@ -180,10 +190,10 @@ jobs:
         run: |
           for f in store/*.png; do
             sips -s format jpeg -s formatOptions 60 -Z 700 "$f" --out "${f%.png}.jpg" >/dev/null
-            echo "=== IMG store-$(basename "${f%.png}") ==="; base64 -i "${f%.png}.jpg" | tr -d '\n'; echo; echo "=== END ==="
+            echo "=== IMG store-${{ matrix.device }}-$(basename "${f%.png}") ==="; base64 -i "${f%.png}.jpg" | tr -d '\n'; echo; echo "=== END ==="
           done
       # App Store Connect rifiuta le immagini con trasparenza: JPEG a piena risoluzione, senza canale alfa.
-      - name: Converti in JPEG senza trasparenza (1320 × 2868)
+      - name: Converti in JPEG senza trasparenza
         if: success()
         run: |
           mkdir -p upload
@@ -195,6 +205,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: app-store-screenshots
+          name: ${{ matrix.artifact }}
           path: ios/upload/*.jpg
           if-no-files-found: warn

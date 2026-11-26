@@ -10,7 +10,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
-    TARGETED_DEVICE_FAMILY: "1"          # solo iPhone
+    TARGETED_DEVICE_FAMILY: "1,2"        # iPhone e iPad
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     DEAD_CODE_STRIPPING: YES
 configFiles:
@@ -46,6 +46,8 @@ targets:
           UIColorName: LaunchBackground
           UIImageName: LaunchLogo
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # iPad: verticale (anche capovolto), a schermo intero.
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown]
         UIRequiresFullScreen: true            # solo verticale: richiesto da Xcode se non si supportano tutte le rotazioni
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
