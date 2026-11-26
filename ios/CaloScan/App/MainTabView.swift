@@ -69,7 +69,14 @@ struct MainTabView: View {
                 .zoomTransition(sourceID: "scanner", in: scannerZoom)
         }
         .onChange(of: app.router.pending) { _, link in handle(link) }
-        .onAppear { handle(app.router.pending) }
+        .onAppear {
+            handle(app.router.pending)
+            #if DEBUG
+            // `-PreviewPaywall`: apre subito il paywall (screenshot per la revisione degli abbonamenti).
+            if ProcessInfo.processInfo.arguments.contains("-PreviewMode"),
+               ProcessInfo.processInfo.arguments.contains("-PreviewPaywall") { upsellPlan = .plus }
+            #endif
+        }
     }
 
     /// Ogni sezione resta montata; si passa da una all'altra all'istante.
