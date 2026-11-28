@@ -126,15 +126,29 @@ Elenco completo dei servizi esterni. Ogni fase indica quando serve ciascuna voce
     ```
     Verifica: Edge Functions › `push-dispatch` › Logs mostra ogni 10 minuti "0 inviate, 0 da riprovare".
 19. **Premi degli inviti** (codici offerta Apple) – **da fare dopo la prima approvazione**: Apple genera codici monouso solo quando
-    l'abbonamento è approvato e l'app è "Pronta per la distribuzione". Fino ad allora gli inviti funzionano lo stesso: chi ha un invito
-    valido vede "lo stiamo preparando" e riceve codice e notifica appena importi il lotto (alla prossima apertura di Invita un amico).
-    App Store Connect › Abbonamenti › `caloscan.plus.monthly` › **Codici offerta** › *Crea*:
-    nome di riferimento `ref30`, idoneità **Nuovi clienti**, *Pagamento a consumo* per **1 mese** al prezzo scontato più vicino al 70%
-    tra quelli proposti (es. 2,99 € su 4,99 € = 40%). Se lo sconto non è il 30%, imposta l'etichetta mostrata in app: `supabase secrets set REFERRAL_DISCOUNT_LABEL="40%"`.
-    Poi *Genera codici monouso* (es. 500, scadenza la più lontana possibile) e scarica il CSV. Prepara un file `codici.csv` con le colonne
-    `code,offer_id,expires_at` (es. `ABCD1234EFGH,ref30,2027-03-31T23:59:59Z`) e importalo da **Table Editor** › `offer_code_pool` › *Insert* › *Import data from CSV*.
-    Facoltativi: `supabase secrets set APP_STORE_ID=1234567890` (il link condiviso apre la pagina dell'app) e `REFERRAL_DISCOUNT_LABEL="30%"`.
-    Quando restano pochi codici liberi (`select count(*) from offer_code_pool where assigned_to is null;`) generane un nuovo lotto.
+    l'abbonamento è approvato. Fino ad allora gli inviti funzionano lo stesso: chi ha un invito valido vede "lo stiamo preparando"
+    e riceve codice e notifica appena importi il lotto.
+    1. App Store Connect › la tua app › **Abbonamenti** › Plus mensile (`caloscan.plus.monthly`) › **Codici offerta** › *Crea codice offerta*:
+       nome di riferimento `ref30`; idoneità **Nuovi clienti** (chi non è mai stato abbonato); tipo **Pagamento a consumo**
+       (*Pay as you go*), durata **1 mese**; prezzo: per l'Italia **2,99 €** (su 4,99 € è il 40%: i prezzi Apple finiscono in ,99 e il 30% esatto,
+       3,49 €, non esiste). Lascia che App Store Connect calcoli gli altri paesi. Conferma.
+    2. Nello stesso codice offerta › *Codici monouso* › *Genera*: quantità **500**, scadenza **la più lontana proposta**. Dopo qualche minuto
+       compare *Scarica*: salva il file (es. in `~/Downloads`). Annota la scadenza.
+    3. Dal Terminale, in `~/calo-scan` (dopo `git pull`):
+       ```
+       scripts/import-offer-codes.sh ~/Downloads/<file scaricato> <scadenza AAAA-MM-GG>
+       ```
+       Controlla che il numero di codici trovati sia 500. Lo script crea `<file>-import.sql`: aprilo, copia tutto in
+       Supabase › **SQL Editor** e premi *Run*. Il risultato `premi_assegnati_ora` indica quanti premi in attesa sono partiti subito.
+       Il file dei codici e quello .sql restano sul tuo Mac: non metterli nel repository (sono codici che valgono soldi).
+    4. Etichetta mostrata in app e App Store ID (App Store Connect › *Informazioni app* › Apple ID):
+       ```
+       supabase secrets set REFERRAL_DISCOUNT_LABEL="40%" APP_STORE_ID=1234567890
+       ```
+       Se scegli un altro prezzo, l'etichetta è lo sconto arrotondato (es. 3,99 € su 4,99 € = `"20%"`).
+    5. Prova: con un account che ha un invito valido apri Profilo › Invita un amico: compare il codice con *Riscatta*.
+    Codici liberi rimasti: `select count(*) from public.offer_code_pool where assigned_to is null and expires_at > now() + interval '7 days';`
+    Controllalo una volta al mese e, sotto 100 o un mese prima della scadenza, genera un nuovo lotto e ripeti i passi 2–3.
 20. **Pagine web** (GitHub Pages, gratis perché il repository è pubblico): GitHub › Settings › Pages › *Deploy from a branch*, branch `main`,
     cartella `/ (root)`. Dopo il merge rispondono:
     `https://andreewd12.github.io/calo-scan/privacy/`, `.../terms/` e `.../support/`. Prima completa **l'indirizzo** del titolare
@@ -188,7 +202,7 @@ Testi, risposte e liste di controllo pronti da copiare sono in **`docs/APP_STORE
 30. **Invia**: *Add for Review* › *Submit to App Review*. La revisione richiede di solito 1–3 giorni. Se Apple chiede chiarimenti o rifiuta,
     copia il messaggio di Apple in questo progetto: lo sistemiamo insieme. Puoi scegliere "Rilascia manualmente" per decidere tu il giorno.
 31. **Dopo l'approvazione**: crea i codici offerta `ref30` degli inviti (passo 19) e imposta `APP_STORE_ID`
-    (App Store Connect › *App Information* › Apple ID) sia in `ios/Config/Secrets.xcconfig` sia con
+    (App Store Connect › *Informazioni app* › Apple ID) sia in `ios/Config/Secrets.xcconfig` sia con
     `supabase secrets set APP_STORE_ID=...`. L'`APP_STORE_ID` nell'app vale dalla versione successiva.
 
 Tutti i segreti server sono elencati in `supabase/.env.example`.
