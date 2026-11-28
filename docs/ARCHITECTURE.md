@@ -246,13 +246,13 @@ I codici si creano in **App Store Connect** (Abbonamenti › Codici offerta): co
 
 ## Inviti ("Invita un amico")
 
-**Premio**: chi invita riceve **uno sconto sul primo mese** di Plus o Pro: **30%**, **uno solo e non accumulabile**, anche se invita più amici. Lo sconto non viene applicato dall'app: è un **codice offerta Apple monouso** (linea guida 3.1.1).
+**Premio**: chi invita riceve **uno sconto sul primo mese** di Plus mensile (**40%**: 2,99 € invece di 4,99 €), **uno solo e non accumulabile**, anche se invita più amici. Lo sconto non viene applicato dall'app: è un **codice offerta Apple monouso** (linea guida 3.1.1).
 
 **Configurazione in App Store Connect** (una volta, e ricaricando il lotto quando serve):
-1. Abbonamenti › Plus mensile (e Pro mensile) › Codici offerta › nuovo codice: idoneità "Nuovi clienti", tipo "pay as you go" (prezzo scontato per il primo periodo), 1 mese al **30% di sconto** (prezzo del primo mese = 70% del prezzo mensile, per ogni paese).
+1. Abbonamenti › Plus mensile › Codici offerta › nuovo codice `ref30`: idoneità "Nuovi clienti", tipo "pay as you go" (prezzo scontato per il primo periodo), 1 mese a 2,99 € invece di 4,99 € (40%: i prezzi Apple finiscono in ,99). La percentuale mostrata in app viene dal secret `REFERRAL_DISCOUNT_LABEL` (predefinito 30%).
 2. Genera **codici monouso** (rispettando i limiti trimestrali e le scadenze indicati da App Store Connect) e scarica il CSV.
-3. Importa il CSV nella tabella `offer_code_pool` (solo service_role). Da lì il server assegna i codici da solo: nessuna azione manuale per ogni invito.
-4. Il server avvisa (email all'amministratore) quando restano meno di 100 codici liberi o quando il lotto sta per scadere: si genera un nuovo lotto e si ripete il passo 3.
+3. `scripts/import-offer-codes.sh <file> <scadenza>` trasforma il file di Apple in un SQL da eseguire nel SQL Editor: inserisce i codici in `offer_code_pool` (solo service_role, duplicati ignorati) e assegna subito i premi in attesa. Da lì il server assegna i codici da solo: nessuna azione manuale per ogni invito.
+4. Nessun avviso automatico: l'amministratore controlla i codici liberi una volta al mese (query in SETUP passo 19) e, sotto 100 o a un mese dalla scadenza, genera un nuovo lotto e ripete il passo 3.
 
 **Regole** (`supabase/functions/_shared/referral.ts`, testate):
 - Ogni utente ha un codice personale di 8 caratteri (`generateReferralCode`, alfabeto senza 0/O/1/I/L, CSPRNG); l'app lo mostra come `ABCD-2345`.

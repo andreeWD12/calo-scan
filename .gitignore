@@ -12,3 +12,6 @@ supabase/.temp/
 supabase/functions/.env
 # OS
 .DS_Store
+
+# Codici offerta Apple scaricati da App Store Connect e SQL generato
+*-import.sql
